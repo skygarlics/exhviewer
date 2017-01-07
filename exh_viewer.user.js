@@ -108,7 +108,7 @@ function cElement(tag, insert, property, func) {
 function addNavBar() {
   var html = '<div class="navbar navbar-inverse navbar-static-top"><div class="navbar-inner"><div class="container"><a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"><span>&#9776</span></a><a class="brand" id="galleryInfo">Gallery Info</a><div class="nav-collapse collapse"><ul class="nav navbar-nav"><li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li><li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li><li><a title="v key" id="fitVertical"><span class="icon_white">&#8597;</span> Fit</a></li><li><a title="h key" id="fitHorizontal"><span class="icon_white">&#8596;</span> Fit</a></li><li><a id="fullscreen"><span class="icon_white">&#9974;</span> Fullscreen</a></li><li><a title="f key" id="fullSpread"><span class="icon_white">&#9208;</span> Full Spread</a></li><li><a title="s key" id="singlePage"><span class="icon_white">&#9209;</span> Single Page</a></li><li><a title="r key" id="reload"><span class="icon_white">&#10227;</span> Reload</a></li><li><a title="t key" id="autoPager"><span>&#9200;</span> Auto</a></li><li><input id="pageTimer" type="text" style="width: 40px;"></li></ul><ul class="nav navbar-nav navbar-search pull-right"><li><select class="input-medium" id="single-page-select"></select></li><li><select class="input-medium" id="two-page-select"></select></li></ul></div></div></div></div>'
   ;
-  document.body.innerHTML += html;
+  document.body.innerHTML += html; 
 }
 function addImgFrame() {
   html = '<div id="comicImages" class="fitVertical" tabindex="1"><a id="leftBtn" style="position: fixed; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a><a id="rightBtn" style="position: fixed; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a></div><div id="preload"></div>'
@@ -319,25 +319,8 @@ function init() {
     var ids = JSON.parse(response.responseText).tokenlist[0];
     getGdata(ids.gid, ids.token, setGallery);
   });
-  function setGallery(response) {
-    // make image list
-    var gmetadata = JSON.parse(response.responseText).gmetadata[0];
-    number_of_images = gmetadata.filecount;
-    createDropdown();
-    var gallery_url = 'https://exhentai.org/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p='
 
-    // load current page. first things first
-    // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
-    var gallery_page_len = Math.ceil(number_of_images / 40);
-    var current_gallery_page = Math.ceil(curPanel / 40);
-    var page_img_len;
-    if (current_gallery_page < gallery_page_len) {
-      page_img_len = 40;
-    } else {
-      page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
-    }
-    page_img_len = Number(page_img_len);
-    simpleRequest(gallery_url + current_gallery_page, pushImgs);
+  function setGallery(response) {
 
     function pushImgs(response) {
       var doc = parseHTML(response);
@@ -354,33 +337,52 @@ function init() {
         }
       }
     }
-    
-    // wait until end
-    var limit = 100;
-    function wait(callback, checkFn) {
-      if (limit <= 0) {
-        console.log('Timeout : hashChanged');
-        callback();
-      } else if (checkFn()) {
-        callback();
-      } else {
-        limit -= 1;
-        setTimeout(wait, 100, callback, checkFn);
-      }
-    }
 
-    setTimeout(wait, 100, function () {
+    // make image list
+    var gmetadata = JSON.parse(response.responseText).gmetadata[0];
+    number_of_images = gmetadata.filecount;
+    createDropdown();
+    var gallery_url = 'https://exhentai.org/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p='
+
+    // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
+    var gallery_page_len = Math.ceil(number_of_images / 40);
+
+    // load current page. first things first
+    var current_gallery_page = Math.ceil(curPanel / 40);
+    var page_img_len;
+    if (current_gallery_page < gallery_page_len) {
+      page_img_len = 40;
+    } else {
+      page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
+    }
+    page_img_len = Number(page_img_len);
+
+    // promise pattern
+    var p1 = new Promise(
+      function(resolve, reject) {
+        simpleRequest(gallery_url + (current_gallery_page - 1), function(resp){
+          pushImgs(resp);
+          resolve();
+        });
+      }
+    );
+
+    p1.then(function() {
       window.location.hash = curPanel;
       hashChanged();
-    }, function () {
-      return Object.keys(images).length >= page_img_len
     });
 
     // load rest of galleries
     for (var i = 0; i < gallery_page_len; i++) {
-      simpleRequest(gallery_url + i, pushImgs);
+      if (i == current_gallery_page-1) {
+        //already loaded
+      }
+      else {
+        simpleRequest(gallery_url + i, pushImgs);
+      }
     }
   }
+
   window.onhashchange = hashChanged;
   document.addEventListener('keydown', doHotkey);
   document.addEventListener('wheel', doWheel);
@@ -549,36 +551,22 @@ function drawPanel() {
     }
   }
   //console.log(update_entry);
+
+  var promise_entry = [];
   for (var idx = 0; idx < update_entry.length; idx++) {
     var img = images[update_entry[idx]];
-    if (!(isUpdated(img))) {
-      updateImg(img);
-    }
+    promise_entry.push(new Promise(function(resolve, reject){
+      if (img['updated'] == true) {
+        resolve();
+      }
+      else {
+        updateImg(img, resolve);
+      }
+    }));
   }
 
-  var limit = 100;
-  function wait(callback, checkFn) {
-    //console.log('waiting...');
-    if (limit <= 0) {
-      console.log('Timeout : drawPanel_');
-      callback();
-    } else if (checkFn()) {
-      callback();
-    } else {
-      limit -= 1;
-      setTimeout(wait, 100, callback, checkFn);
-    }
-  }
-  wait(drawPanel_, function () {
-    var ret = true;
-    for (idx = 0; idx < update_entry.length; idx++) {
-      var img = images[update_entry[idx]];
-      if (!(isUpdated(img))){
-        ret = false;
-      }
-    }
-    //console.log('check : isUpadated: '+ ret);
-    return ret
+  Promise.all(promise_entry).then(function() {
+    drawPanel_();
   });
 }
 
@@ -590,21 +578,14 @@ function reloadImg() {
     //console.log('url :'+img.url);
     img.url = img.url.replace(/\?.*/, '');
     img.url += ((img.url + '').indexOf('?') > - 1 ? '&' : '?') + "nl=" + img.nl;
+    img['updated'] = false;
     img.nl = null;
   }
   drawPanel();
 }
 
-function isUpdated(img) {
-  if (!(img.width) || !(img.height) || !(img.path) || !(img.nl)) {
-    return false
-  } else {
-    return true
-  }
-}
-
-function updateImg(img) {
-  console.log('updateImg called. img_num : ' + img.page);
+function updateImg(img, callback) {
+  //console.log('updateImg called. img_num : ' + img.page);
   simpleRequest(img.url, function (response) {
     var doc = parseHTML(response);
     var file_info = doc.getElementById('i4').firstChild.firstChild.textContent;
@@ -613,10 +594,12 @@ function updateImg(img) {
     img['path'] = doc.getElementById('img').src;
     img['width'] = Number(match[1]);
     img['height'] = Number(match[2]);
+    img['updated'] = true;
 
     var nl_regex = /^return nl\('(.*)'\)$/g;
     var nl_match = nl_regex.exec(doc.getElementById("loadfail").attributes["onclick"].nodeValue);
     img['nl'] = nl_match[1]
+    callback();
   });
 }
 
