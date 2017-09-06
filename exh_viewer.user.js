@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       160822
-// @date          2016.08.22
+// @version       170906
+// @date          2017.09.06
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -37,18 +37,59 @@ var addStyle = typeof GM_addStyle !== 'undefined' ? GM_addstyle :
 function (css) {
   var parent = document.head || document.documentElement;
   var style = document.createElement('style');
-  style.type = 'text/css'
+  style.type = 'text/css';
   var textNode = document.createTextNode(css);
   style.appendChild(textNode);
   parent.appendChild(style);
-}
+};
 
 clearStyle();
 addStyle('div#i1 {display:none;} p.ip {display:none;}');
 var bt_css = GM_getResourceText('bt');
 addStyle(bt_css);
-addStyle('html, body {    height: 100%;}body {    background: #171717 none repeat scroll 0 0;    color: #999;    height: 100%;    overflow: hidden;}h1 {    color: #fff;}body .modal {    color: #333;}#comicImages {    height: 100%;    outline: 0 none;    overflow: auto;    text-align: center;}#introText {    margin-top: 100px;}.fitVertical img {    max-height: calc(100% - 41px);    width: auto;}.spread2 .fitVertical img {    max-width: 50%;}.spread1 .fitVeritcal img {    max-width: 100%;}.spread2 .fitHorizontal img {    height: auto;    width: 50%;}.spread1 .fitHorizontal img {    height: auto;    width: 100%;}.fitBoth img {    height: auto;    max-height: calc(100% - 41px);    width: auto;}.spread1 .fitBoth img {    max-width: 100%;}.spread2 .fitBoth img {    max-width: 50%;}#preload {    display: none;}.img-url {display: none;}a:hover {cursor: pointer; text-decoration: none;}a:visited, a:active {color: inherit;}.nav select {    margin: 5px 0;}.disabled > a:hover {    background-color: transparent;    background-image: none;    color: #333333 !important;    cursor: default;    text-decoration: none;}.disabled > a {    color: #333333 !important;}:-moz-full-screen {    background: #000 none repeat scroll 0 0;}.fitVertical:-moz-full-screen img {    max-height: 100% !important;} .icon_white {color:white;} #pageTimer {padding: 0px 0px; margin:10px 15px}'
-);
+
+// Viewer styles
+addStyle("html, body {height: 100%;}"+
+  "body {background: #171717 none repeat scroll 0 0; color: #999; height: 100%; overflow: hidden;}"+
+  "h1 {color: #fff;}"+
+  "body .modal {color: #333;}"+
+  "#comicImages {height: 100%; outline: 0 none; overflow: auto; text-align: center;}"+
+  "#introText {margin-top: 100px;}"+
+  ".fitVertical img {max-height: calc(100% - 41px); width: auto;}"+
+  ".spread2 .fitVertical img {max-width: 50%;}"+
+  ".spread1 .fitVeritcal img {max-width: 100%;}"+
+  ".spread2 .fitHorizontal img {height: auto; width: 50%;}"+
+  ".spread1 .fitHorizontal img {height: auto; width: 100%;}"+
+  ".fitBoth img {height: auto; max-height: calc(100% - 41px); width: auto;}"+
+  ".spread1 .fitBoth img {max-width: 100%;}"+
+  ".spread2 .fitBoth img {max-width: 50%;}"+
+  "#preload {display: none;}.img-url {display: none;}"+
+  "a:hover {cursor: pointer; text-decoration: none;}"+
+  "a:visited, a:active {color: inherit;}"+
+  ".nav select {margin: 5px 0;}"+
+  ".disabled > a:hover { background-color: transparent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
+  ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
+  ".icon_white {color:white;}"+
+  "#pageTimer {padding: 0px 0px; margin:10px 15px}"
+  );
+
+// Image rendering option. needs ID to render swap
+var renderType = 2;
+var parent = document.head || document.documentElement;
+var style = document.createElement('style');
+style.type = 'text/css';
+var renderStyle = document.createTextNode('');
+renderChange();
+renderStyle.id = 'renderStyle';
+style.appendChild(renderStyle);
+parent.appendChild(style);
+
+// imagehight styles when fullscreen
+addStyle(".fitVertical:-webkit-full-screen img {max-height: 100% !important;} "+
+  ".fitVertical:-moz-full-screen img {max-height: 100% !important;} "+
+  ".fitVertical:-ms-fullscreen img {max-height: 100% !important;} "+
+  ".fitVertical:fullscreen img {max-height: 100% !important;} ");
+
 // interface
 function cElement(tag, insert, property, func) {
   var _DIRECT = [
@@ -105,14 +146,36 @@ function cElement(tag, insert, property, func) {
   }
   return element;
 }
+
 function addNavBar() {
-  var html = '<div class="navbar navbar-inverse navbar-static-top"><div class="navbar-inner"><div class="container"><a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"><span>&#9776</span></a><a class="brand" id="galleryInfo">Gallery Info</a><div class="nav-collapse collapse"><ul class="nav navbar-nav"><li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li><li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li><li><a title="v key" id="fitVertical"><span class="icon_white">&#8597;</span> Fit</a></li><li><a title="h key" id="fitHorizontal"><span class="icon_white">&#8596;</span> Fit</a></li><li><a id="fullscreen"><span class="icon_white">&#9974;</span> Fullscreen</a></li><li><a title="f key" id="fullSpread"><span class="icon_white">&#9208;</span> Full Spread</a></li><li><a title="s key" id="singlePage"><span class="icon_white">&#9209;</span> Single Page</a></li><li><a title="r key" id="reload"><span class="icon_white">&#10227;</span> Reload</a></li><li><a title="t key" id="autoPager"><span>&#9200;</span> Auto</a></li><li><input id="pageTimer" type="text" style="width: 40px;"></li></ul><ul class="nav navbar-nav navbar-search pull-right"><li><select class="input-medium" id="single-page-select"></select></li><li><select class="input-medium" id="two-page-select"></select></li></ul></div></div></div></div>'
-  ;
-  document.body.innerHTML += html; 
+  var html = '<div class="navbar navbar-inverse navbar-static-top"><div class="navbar-inner"><div class="container">' +
+  '<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">' +
+  '<span>&#9776</span></a><a class="brand" id="galleryInfo">Gallery Info</a>' +
+  '<div class="nav-collapse collapse">' +
+  '<ul class="nav navbar-nav">' +
+  '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>' +
+  '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>' +
+  '<li><a title="v key" id="fitVertical"><span class="icon_white">&#8597;</span> Fit</a></li>' +
+  '<li><a title="h key" id="fitHorizontal"><span class="icon_white">&#8596;</span> Fit</a></li>' +
+  '<li><a id="fullscreen"><span class="icon_white">&#9974;</span> Fullscreen</a></li>' +
+  '<li><a title="f key" id="fullSpread"><span class="icon_white">🕮</span> Full Spread</a></li>' +
+  '<li><a title="s key" id="singlePage"><span class="icon_white">🗏</span> Single Page</a></li>' +
+  '<li><a title="r key" id="reload"><span class="icon_white">&#10227;</span> Reload</a></li>' +
+  '<li><a title="t key" id="autoPager"><span>▶</span> Auto</a></li><li><input id="pageTimer" type="text" style="width: 40px;"></li>' +
+  '<li><a title="rendering" id="rendingChanger"><span>🖾</span> Rendering</a></li></ul>' +
+  '<ul class="nav navbar-nav navbar-search pull-right">' +
+  '<li><select class="input-medium" id="single-page-select"></select></li>' +
+  '<li><select class="input-medium" id="two-page-select"></select></li>' +
+  '</ul></div></div></div></div>';
+  document.body.innerHTML += html;
 }
+
 function addImgFrame() {
-  html = '<div id="comicImages" class="fitVertical" tabindex="1"><a id="leftBtn" style="position: fixed; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a><a id="rightBtn" style="position: fixed; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a></div><div id="preload"></div>'
-  ;
+  html = '<div id="comicImages" class="fitVertical" tabindex="1">' +
+  '<a id="leftBtn" style="position: fixed; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a>' +
+  '<a id="rightBtn" style="position: fixed; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a>' +
+  '</div>' +
+  '<div id="preload"></div>';
   document.body.innerHTML += html;
 }
 document.body.setAttribute('className', 'spread1');
@@ -122,8 +185,9 @@ addImgFrame();
 Array.prototype.contains = function (needle) {
   for (var i = 0; i < this.length; i++) if (this[i] === needle) return true;
   return false;
-}// gallery datas
+};
 
+// gallery datas
 var API_URL = 'https://exhentai.org/api.php';
 var xmlhttpRequest = typeof GM_xmlhttpRequest !== 'undefined' ? GM_xmlhttpRequest :
 function (details) {
@@ -184,7 +248,7 @@ function (details) {
   try
   {
     xmlhttp.send((typeof (details.data) !== 'undefined') ? details.data : null);
-  } 
+  }
   catch (e)
   {
     if (details.onerror) {
@@ -239,7 +303,7 @@ var images = {};
 var display = 1;
 var curPanel;
 var number_of_images;
-var goofy_enabled = false
+var goofy_enabled = false;
 var single_displayed = true;
 //var numThin = 0;
 //var portrait = false;
@@ -270,7 +334,7 @@ function enable(elem) {
   elem.children().addClass('icon_white');
 }
 function getToken(callback) {
-  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(.*?)-(\d+)(?:#\d+)*$/g;
+  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
   var match = page_regex.exec(document.location);
   var data = {
     'method': 'gtoken',
@@ -308,11 +372,11 @@ function getGdata(gid, token, callback) {
 function parseHTML(response) {
   var doc = document.implementation.createHTMLDocument('temp');
   doc.documentElement.innerHTML = response.responseText;
-  return doc
+  return doc;
 }
 function init() {
   // set cur panel
-  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(.*?)-(\d+)(?:#\d+)*$/g;
+  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
   var match = page_regex.exec(document.location);
   curPanel = Number(match[3]);
   getToken(function (response) {
@@ -324,9 +388,9 @@ function init() {
 
     function pushImgs(response) {
       var doc = parseHTML(response);
-      var imgs = doc.getElementsByClassName('gdtm')
+      var imgs = doc.getElementsByClassName('gdtm');
       for (var idx = 0; idx < imgs.length; idx++) {
-        var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(.*?)-(\d+)(?:#\d+)*$/g;
+        var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
         var img = imgs[idx];
         var url_temp = img.firstChild.firstChild.href;
         var match_temp = regex_temp.exec(url_temp);
@@ -334,7 +398,7 @@ function init() {
           page: match_temp[3],
           url: url_temp,
           token: match_temp[1]
-        }
+        };
       }
     }
 
@@ -342,7 +406,7 @@ function init() {
     var gmetadata = JSON.parse(response.responseText).gmetadata[0];
     number_of_images = gmetadata.filecount;
     createDropdown();
-    var gallery_url = 'https://exhentai.org/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p='
+    var gallery_url = 'https://exhentai.org/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
 
     // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
     var gallery_page_len = Math.ceil(number_of_images / 40);
@@ -356,7 +420,6 @@ function init() {
       page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
     }
     page_img_len = Number(page_img_len);
-
     // promise pattern
     var p1 = new Promise(
       function(resolve, reject) {
@@ -366,7 +429,6 @@ function init() {
         });
       }
     );
-
     p1.then(function() {
       window.location.hash = curPanel;
       hashChanged();
@@ -394,6 +456,7 @@ function init() {
   document.getElementById('fullscreen').addEventListener('click', fullscreen);
   document.getElementById('fullSpread').addEventListener('click', fullSpread);
   document.getElementById('singlePage').addEventListener('click', singleSpread);
+  document.getElementById('rendingChanger').addEventListener('click', renderChange);
   document.getElementById('reload').addEventListener('click', reloadImg);
   document.getElementById('autoPager').addEventListener('click', toggleTimer);
   document.getElementById('single-page-select').addEventListener('change', singlePageChange);
@@ -408,6 +471,21 @@ function init() {
   }
 }
 init();
+
+
+function renderChange() {
+  renderType = (renderType + 1) % 3;
+  // var renderStyle = document.getElementById('renderStyle');
+  if (renderType === 0) {
+      renderStyle.textContent = 'img {image-rendering: -webkit-optimize-contrast;}';
+  }
+  if (renderType === 1) {
+      renderStyle.textContent = 'img {image-rendering: auto;}';
+  }
+  if (renderType === 2) {
+      renderStyle.textContent = 'img {image-rendering: pixelated;}';
+  }
+}
 
 function singlePageChange() {
   //console.log('singlePageChange called');
@@ -433,7 +511,7 @@ function toggleTimer() {
   //console.log('toggleTimer called');
   var second = document.getElementById('pageTimer').value;
   if (second < 1 || isNaN((second))) {
-    return
+    return;
   }
   toggleTimer.flag = toggleTimer.flag ? 0 : 1;
   if (toggleTimer.flag) {
@@ -556,7 +634,7 @@ function drawPanel() {
   for (var idx = 0; idx < update_entry.length; idx++) {
     var img = images[update_entry[idx]];
     promise_entry.push(new Promise(function(resolve, reject){
-      if (img['updated'] == true) {
+      if (img['updated'] === true) {
         resolve();
       }
       else {
@@ -574,7 +652,7 @@ function reloadImg() {
   //console.log('reloadImg called');
   var entry = [Number(curPanel), Number(curPanel)-1];
   for (var idx = 0; idx < entry.length; idx++) {
-    var img = images[entry[idx]]
+    var img = images[entry[idx]];
     //console.log('url :'+img.url);
     img.url = img.url.replace(/\?.*/, '');
     img.url += ((img.url + '').indexOf('?') > - 1 ? '&' : '?') + "nl=" + img.nl;
@@ -598,7 +676,7 @@ function updateImg(img, callback) {
 
     var nl_regex = /^return nl\('(.*)'\)$/g;
     var nl_match = nl_regex.exec(doc.getElementById("loadfail").attributes["onclick"].nodeValue);
-    img['nl'] = nl_match[1]
+    img['nl'] = nl_match[1];
     callback();
   });
 }
@@ -688,7 +766,7 @@ function drawPanel_() {
   */
   
   document.getElementById('comicImages').innerHTML = '<a id="leftBtn" style="position: fixed; z-index: 1; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a>    <a id="rightBtn" style="position: fixed; z-index: 1; width: 30%; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a>'
-  + document.getElementById('comicImages').innerHTML
+  + document.getElementById('comicImages').innerHTML;
   document.getElementById('leftBtn').addEventListener('click', nextPanel);
   document.getElementById('rightBtn').addEventListener('click', prevPanel);
   $('#comicImages').scrollTop(0);
@@ -763,7 +841,7 @@ function nextPanel() {
     if (dropdown.next().length) {
       if (dropdown.next().next().length && !(single_displayed)) {
         dropdown.prop('selected', false).next().next().prop('selected', true);
-      } else { 
+      } else {
         dropdown.prop('selected', false).next().prop('selected', true);
       }
       twoPageChange();
