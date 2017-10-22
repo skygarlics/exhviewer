@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       170906
-// @date          2017.09.06
+// @version       171022
+// @date          2017.10.22
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -17,7 +17,51 @@
 // @grant         GM_listValues
 // @grant         GM_getResourceText
 // ==/UserScript==
+
+/*
+// updatecheck
+function checkUpdate() {
+  var github_api = "https://api.github.com";
+  var repo_path = "/skygarlics/exhviewer"
+  var resp_json;
+  simpleRequest(github_api + '/repos' + repo_path + '/releases/latest', (response) => {
+    resp_json = JSON.parse(response.responseText);
+  })
+  // past version
+  var p_version = parseInt(GM_info.script.version);
+  // new version
+  var n_version = parseInt(resp_json["tag_name"]);
+  if (p_version < n_version)
+    return {"version": n_version, "url": resp_json["assets"]["browser_download_url"]};
+  else
+    return 0;
+}
+
+function downloader(url) {
+  // create invisible iframe
+  var elem = document.createElement("iframe");
+  elem.style.display = "none";
+  document.body.appendChild(elem);
+
+  document.getElementById("downloader").src = url;
+
+  document.body.removeChild(elem);
+}
+
+function update() {
+  var n_version = checkUpdate();
+  if (n_version)
+    if (confirm("새 버전 : " + n_version["version"] + "\n업데이트 하시겠습니까?")) {
+      alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
+      downloader(n_version["url"]);
+    }
+}()
+*/
+
 //style
+
+document.body.innerHTML = "";
+
 function clearStyle() {
   for (var i = document.styleSheets.length - 1; i >= 0; i--) {
     document.styleSheets[i].disabled = true;
@@ -126,7 +170,7 @@ function cElement(tag, insert, property, func) {
     parent.insertBefore(element, before);
   }
   if (!tag)
-  return element;
+    return element;
   if (property) {
     if (typeof property === 'object') {
       for (var i in property) {
@@ -385,7 +429,6 @@ function init() {
   });
 
   function setGallery(response) {
-
     function pushImgs(response) {
       var doc = parseHTML(response);
       var imgs = doc.getElementsByClassName('gdtm');
