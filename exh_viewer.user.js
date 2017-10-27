@@ -114,7 +114,9 @@ addStyle("html, body {height: 100%;}"+
   ".disabled > a:hover { background-color: transparent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
   ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
   ".icon_white {color:white;}"+
-  "#pageTimer {padding: 0px 0px; margin:10px 15px}"
+  "#pageTimer {padding: 0px 0px; margin:10px 15px}"+
+  "#single-page-select {width: 60px}"+
+  "#two-page-select {width: 60px}"
   );
 
 // Image rendering option. needs ID to render swap
@@ -193,8 +195,8 @@ function cElement(tag, insert, property, func) {
 
 function addNavBar() {
   var html = '<div class="navbar navbar-inverse navbar-static-top"><div class="navbar-inner"><div class="container">' +
-  '<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">' +
-  '<span>&#9776</span></a><a class="brand" id="galleryInfo">Gallery Info</a>' +
+  '<a class="brand" id="galleryInfo">Gallery</a>' +
+  '<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"><span>&#9776</span></a>' +
   '<div class="nav-collapse collapse">' +
   '<ul class="nav navbar-nav">' +
   '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>' +
@@ -205,9 +207,9 @@ function addNavBar() {
   '<li><a title="f key" id="fullSpread"><span class="icon_white">🕮</span> Full Spread</a></li>' +
   '<li><a title="s key" id="singlePage"><span class="icon_white">🗏</span> Single Page</a></li>' +
   '<li><a title="r key" id="reload"><span class="icon_white">&#10227;</span> Reload</a></li>' +
-  '<li><a title="t key" id="autoPager"><span>▶</span> Auto</a></li><li><input id="pageTimer" type="text" style="width: 40px;"></li>' +
   '<li><a title="rendering" id="rendingChanger"><span>🖾</span> Rendering</a></li></ul>' +
-  '<ul class="nav navbar-nav navbar-search pull-right">' +
+  '<ul class="nav navbar-nav navbar-search pull-left">' +
+  '<li><a title="t key" id="autoPager"><span>▶</span> Auto</a></li><li><input id="pageTimer" type="text" style="width: 40px;"></li>' +
   '<li><select class="input-medium" id="single-page-select"></select></li>' +
   '<li><select class="input-medium" id="two-page-select"></select></li>' +
   '</ul></div></div></div></div>';
