@@ -60,8 +60,6 @@ function update() {
 
 //style
 
-document.body.innerHTML = "";
-
 function clearStyle() {
   for (var i = document.styleSheets.length - 1; i >= 0; i--) {
     document.styleSheets[i].disabled = true;
