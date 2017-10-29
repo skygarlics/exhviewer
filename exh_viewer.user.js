@@ -18,48 +18,7 @@
 // @grant         GM_getResourceText
 // ==/UserScript==
 
-/*
-// updatecheck
-function checkUpdate() {
-  var github_api = "https://api.github.com";
-  var repo_path = "/skygarlics/exhviewer"
-  var resp_json;
-  simpleRequest(github_api + '/repos' + repo_path + '/releases/latest', (response) => {
-    resp_json = JSON.parse(response.responseText);
-  })
-  // past version
-  var p_version = parseInt(GM_info.script.version);
-  // new version
-  var n_version = parseInt(resp_json["tag_name"]);
-  if (p_version < n_version)
-    return {"version": n_version, "url": resp_json["assets"]["browser_download_url"]};
-  else
-    return 0;
-}
-
-function downloader(url) {
-  // create invisible iframe
-  var elem = document.createElement("iframe");
-  elem.style.display = "none";
-  document.body.appendChild(elem);
-
-  document.getElementById("downloader").src = url;
-
-  document.body.removeChild(elem);
-}
-
-function update() {
-  var n_version = checkUpdate();
-  if (n_version)
-    if (confirm("새 버전 : " + n_version["version"] + "\n업데이트 하시겠습니까?")) {
-      alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
-      downloader(n_version["url"]);
-    }
-}()
-*/
-
 //style
-
 function clearStyle() {
   for (var i = document.styleSheets.length - 1; i >= 0; i--) {
     document.styleSheets[i].disabled = true;
@@ -560,6 +519,34 @@ function init() {
 }
 init();
 
+///////////////////////////////////////////////////////////////
+
+/*
+function openInNewTab(url) {
+  var win = window.open(url, '_blank');
+  win.focus();
+}
+
+function checkUpdate() {
+  var github_api = "https://api.github.com";
+  var repo_path = "/skygarlics/exhviewer";
+  // past version
+  var p_version = 171030;
+  simpleRequest(github_api + '/repos' + repo_path + '/releases/latest', (response) => {
+    resp_json = JSON.parse(response.responseText);
+    var n_version = parseInt(resp_json["tag_name"]);
+    var url = resp_json["assets"][0]["browser_download_url"];
+    if ((p_version < n_version) && confirm("새 버전 : " + n_version + "\n업데이트 하시겠습니까?")) {
+        alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
+        openInNewTab(url);
+    }
+  });
+}
+
+checkUpdate();
+*/
+
+////////////////////////////////////////////////////////////////
 
 function renderChange() {
   renderType = (renderType + 1) % 3;
@@ -583,7 +570,7 @@ function singlePageChange() {
 function twoPageChange() {
   //consle.log('twoPageChange called');
   twoPageChange_(document.getElementById('two-page-select'));
-} 
+}
 
 function doWheel(e) {
   if (e.deltaY > 0) {
@@ -907,7 +894,7 @@ function prevPanel() {
     if (dropdown.prev().length) {
       dropdown.prop('selected', false).prev().prop('selected', true);
       singlePageChange();
-    }    
+    }
   } else {
     var dropdown = $('#two-page-select option:selected');
     if (dropdown.prev().length) {
@@ -1036,7 +1023,6 @@ function twoPageChange_(sel) {
   //drawPanel();
   $("#two-page-select").trigger("blur");
 }
-
 
 function fitHorizontal() {
   // console.log('fitHorizontal called');
