@@ -6,6 +6,7 @@
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
+// @include       https://e-hentai.org/s/*
 // @version       1
 // @require       https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js
 // @require       https://maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.1/js/bootstrap.min.js
@@ -17,6 +18,20 @@
 // @grant         GM_listValues
 // @grant         GM_getResourceText
 // ==/UserScript==
+
+// update functions is currently disabled due to tampermonkey's cross origin warning
+// if you want use update function, make update_check true
+var update_check = false;
+var API_URL = null;
+
+var host_regex = /^(.+)\/\/(.+?)\/(.+)/g;
+var host = host_regex.exec(document.location)[2];
+if (host === 'exhentai.org')
+    API_URL = 'https://exhentai.org/api.php';
+else if (host === 'e-hentai.org')
+    API_URL = 'https://e-hentai.org/api.php';
+else
+    alert("Host unavailable!\nHOST: "+host);
 
 //style
 function clearStyle() {
@@ -184,12 +199,11 @@ function addNavBar() {
   '<ul id="funcs" class="nav navbar-nav">' +
     '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>' +
     '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>' +
-    '<li><a id="fullscreen"><span>&#9974; Fullscreen</a></li>'+
+    '<li><a id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
     '<li><a title="t key" id="autoPager"><span>▶</span> Slideshow</a><input id="pageTimer" type="text""></li>' +
     '<li><select class="input-medium" id="single-page-select"></select></li>' +
     '<li><select class="input-medium" id="two-page-select"></select></li>' +
   '</ul>'+
-  // setting buttons
 
   '<ul id="settings" class="nav navbar-nav navbar-search pull-right">' +
     '<li class="dropdown">'+
@@ -227,7 +241,6 @@ $('.dropdown-menu').on('click', function(e) {
   e.stopPropagation();
 });
 ///////////////////////////////////////////////////////////////////
-var API_URL = 'https://exhentai.org/api.php';
 
 // code from koreapyj/dcinside_lite
 Array.prototype.contains = function (needle) {
@@ -400,7 +413,7 @@ function getToken(callback) {
 function goGallery() {
   getToken(function (response) {
     ids = JSON.parse(response.responseText).tokenlist[0];
-    location.href = 'https://exhentai.org/g/' + ids.gid + '/' + ids.token;
+    location.href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
   });
 }
 function getGdata(gid, token, callback) {
@@ -452,7 +465,7 @@ function init() {
     var gmetadata = JSON.parse(response.responseText).gmetadata[0];
     number_of_images = gmetadata.filecount;
     createDropdown();
-    var gallery_url = 'https://exhentai.org/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
+    var gallery_url = 'https://' + host + '/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
 
     // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
     var gallery_page_len = Math.ceil(number_of_images / 40);
@@ -521,7 +534,7 @@ init();
 
 ///////////////////////////////////////////////////////////////
 
-/*
+
 function openInNewTab(url) {
   var win = window.open(url, '_blank');
   win.focus();
@@ -529,10 +542,10 @@ function openInNewTab(url) {
 
 function checkUpdate() {
   var github_api = "https://api.github.com";
-  var repo_path = "/skygarlics/exhviewer";
+  var repo_path = "/repos/skygarlics/exhviewer";
   // past version
   var p_version = 171030;
-  simpleRequest(github_api + '/repos' + repo_path + '/releases/latest', (response) => {
+  simpleRequest(github_api + repo_path + '/releases/latest', (response) => {
     resp_json = JSON.parse(response.responseText);
     var n_version = parseInt(resp_json["tag_name"]);
     var url = resp_json["assets"][0]["browser_download_url"];
@@ -543,8 +556,9 @@ function checkUpdate() {
   });
 }
 
-checkUpdate();
-*/
+if (update_check) {
+  checkUpdate();
+}
 
 ////////////////////////////////////////////////////////////////
 
