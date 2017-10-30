@@ -1,6 +1,5 @@
 [![works badge](https://cdn.rawgit.com/skygarlics/works-on-my-machine/v0.2.0/badge.svg)](https://github.com/skygarlics/works-on-my-machine)  
 # ExhViewer
-------
 Exhentai.org imageviewer like hitomi.la and some additional features
 
 ## Additional feature
