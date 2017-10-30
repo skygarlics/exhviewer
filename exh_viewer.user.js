@@ -103,9 +103,10 @@ addStyle("html, body {height: 100%;}"+
   "#singlePage {min-width: 98px}"+
   "#singlePage > span {text-align: center; display: inline-block; min-width: 18px}"+
 
-  "#autoPager {float:left}"+
-  "#pageTimer {margin:5px 15px; width: 46px}"+
-  ".input-medium {margin: 5px 15px; width: 58px}"+
+  "#autoPager {display: inline}"+
+  "#pageTimer {margin:5px 15px 5px 3px; width: 46px;}"+
+  "#pageChanger {display: inline}"+
+  ".input-medium {margin: 5px 15px 5px 3px; width: 58px;}"+
   "#single-page-select {width: 60px}"+
   "#two-page-select {width: 60px}"+
 
@@ -116,8 +117,7 @@ addStyle("html, body {height: 100%;}"+
   "}"+
 
   "@media (max-width: 979px) {"+
-    "#settings {padding: 10px 0px 10px 0px}" +
-    "#pageTimer {float: left}"+
+    "#settings {padding: 5px 0px 5px 0px}" +
   "}"
   );
 // Image rendering option. needs ID to render swap
@@ -195,18 +195,20 @@ function cElement(tag, insert, property, func) {
 }
 
 function addNavBar() {
-  var html = '<div class="navbar navbar-inverse navbar-static-top"><div class="navbar-inner"><div class="container">' +
+  var html = '<div class="navbar navbar-inverse navbar-static-top"><div class="navbar-inner"><div class="container">'+
   '<a class="brand" id="galleryInfo">Gallery</a>' +
-  '<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"><span>&#9776</span></a>' +
+  '<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"><span>&#9776</span></a>'+
 
   '<div class="nav-collapse collapse">' +
   '<ul id="funcs" class="nav navbar-nav">' +
-    '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>' +
-    '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>' +
+    '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>'+
+    '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>'+
     '<li><a title="Enter or Space" id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
-    '<li><a title="t key" id="autoPager"><span>▶</span> Slideshow</a><input id="pageTimer" type="text" value="10"></li>' +
-    '<li><select class="input-medium" id="single-page-select"></select></li>' +
-    '<li><select class="input-medium" id="two-page-select"></select></li>' +
+    '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
+    '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
+      '<select class="input-medium" id="single-page-select"></select>'+
+      '<select class="input-medium" id="two-page-select"></select>'+
+    '</li>'+
   '</ul>'+
 
   '<ul id="settings" class="nav navbar-nav navbar-search pull-right">' +
@@ -218,7 +220,7 @@ function addNavBar() {
       '<li><a title="v" id="fitVertical"><span>&#8597;</span> Fit</a></li>' +
       '<li><a title="h" id="fitHorizontal"><span>&#8596;</span> Fit</a></li>' +
       '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
-      '<li><a title="s" id="singlePage"><span>🗏</span> Single Page</a></li>' +
+      '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
       '<li><a title="rendering" id="rendingChanger"><span>🖾</span> Rendering</a></li>' +
     '</ul>'+
     '</li>'+
@@ -512,7 +514,11 @@ function init() {
   window.onhashchange = hashChanged;
   document.addEventListener('keydown', doHotkey);
   document.addEventListener('wheel', doWheel);
-  document.getElementById('galleryInfo').addEventListener('click', goGallery);
+  // document.getElementById('galleryInfo').addEventListener('click', goGallery);
+  getToken(function (response) {
+    ids = JSON.parse(response.responseText).tokenlist[0];
+    document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
+  });
   document.getElementById('prevPanel').addEventListener('click', prevPanel);
   document.getElementById('nextPanel').addEventListener('click', nextPanel);
   document.getElementById('fitVertical').addEventListener('click', fitVertical);
@@ -523,6 +529,7 @@ function init() {
   document.getElementById('rendingChanger').addEventListener('click', renderChange);
   document.getElementById('reload').addEventListener('click', reloadImg);
   document.getElementById('autoPager').addEventListener('click', toggleTimer);
+    document.getElementById('pageChanger').addEventListener('click', goPanel);
   document.getElementById('single-page-select').addEventListener('change', singlePageChange);
   document.getElementById('two-page-select').addEventListener('change', twoPageChange);
   $('.navbar ul li').show();
@@ -603,7 +610,7 @@ function doWheel(e) {
 function toggleTimer() {
   //console.log('toggleTimer called');
   var second = document.getElementById('pageTimer').value;
-  if (second < 1 || isNaN((second))) {
+  if (second < 1 || isNaN(second)) {
     return;
   }
   toggleTimer.flag = toggleTimer.flag ? 0 : 1;
@@ -910,15 +917,43 @@ function hashChanged() {
   }
 }
 
+function filterInt(value) {
+  if(/^(\-|\+)?([0-9]+)$/.test(value))
+    return Number(value);
+  return NaN;
+}
+
+function goPanel() {
+  let target = filterInt(prompt('target page'));
+  if (isNaN(target) || (target < 0)|| (target > number_of_images))
+    return;
+  panelChange(target);
+}
+
+function panelChange(target) {
+  if (display == 1) {
+    $('#single-page-select').prop('selectedIndex', target - 1);
+    singlePageChange();
+  } else {
+    $('#two-page-select').prop('selectedIndex', target - 1);
+    twoPageChange();
+  }
+}
+
 function prevPanel() {
   // console.log('prevPanel called');
   if (display == 1) {
+    /* original code
     var dropdown = $('#single-page-select option:selected');
     if (dropdown.prev().length) {
       dropdown.prop('selected', false).prev().prop('selected', true);
       singlePageChange();
+    }*/
+    if (curPanel > 1) {
+      panelChange(curPanel - 1);
     }
   } else {
+    /* original code
     var dropdown = $('#two-page-select option:selected');
     if (dropdown.prev().length) {
       if (dropdown.prev().prev().length && (images[curPanel - 2].width <= images[curPanel - 2].height)) {
@@ -927,6 +962,13 @@ function prevPanel() {
         dropdown.prop('selected', false).prev().prop('selected', true);
       }
       twoPageChange();
+    }*/
+    if (curPanel > 1) {
+      if ((curPanel > 2) && (images[curPanel - 2].width <= images[curPanel - 2].height)) {
+        panelChange(curPanel - 2);
+      } else {
+        panelChange(curPanel - 1);
+      }
     }
   }
   // $('#comicImages').focusWithoutScrolling();
@@ -936,12 +978,17 @@ function prevPanel() {
 function nextPanel() {
   // console.log('nextPanel called');
   if (display == 1) {
+    /* original code
     var dropdown = $('#single-page-select option:selected');
     if (dropdown.next().length) {
       dropdown.prop('selected', false).next().prop('selected', true);
       singlePageChange();
+    }*/
+    if (curPanel < number_of_images) {
+      panelChange(curPanel + 1);
     }
   } else {
+    /* original code
     var dropdown = $('#two-page-select option:selected');
     if (dropdown.next().length) {
       if (dropdown.next().next().length && !(single_displayed)) {
@@ -950,6 +997,14 @@ function nextPanel() {
         dropdown.prop('selected', false).next().prop('selected', true);
       }
       twoPageChange();
+    }
+    */
+    if (curPanel < number_of_images) {
+      if ((curPanel + 1 < number_of_images) && !(single_displayed)) {
+        panelChange(curPanel + 2);
+      } else {
+        panelChange(curPanel + 1);
+      }
     }
   }
   // $('#comicImages').focusWithoutScrolling();
@@ -960,8 +1015,8 @@ function fullSpread() {
   //console.log('fullSpread called');
   $('#singlePage').parent().show();
   $('#fullSpread').parent().hide();
-  $('#single-page-select').parent().hide();
-  $('#two-page-select').parent().show();
+  $('#single-page-select').hide();
+  $('#two-page-select').show();
   $('#singlePage').show();
   updateDropdown(2);
   spread(2);
@@ -971,8 +1026,8 @@ function singleSpread() {
   //console.log('singleSpread called');
   $('#singlePage').parent().hide();
   $('#fullSpread').parent().show();
-  $('#two-page-select').parent().hide();
-  $('#single-page-select').parent().show();
+  $('#two-page-select').hide();
+  $('#single-page-select').show();
   $('#fullSpread').show();
   updateDropdown(1);
   spread(1);
