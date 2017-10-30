@@ -33,6 +33,10 @@ else if (host === 'e-hentai.org')
 else
     alert("Host unavailable!\nHOST: "+host);
 
+// remove original events.
+document.onkeydown = null;
+document.onkeyup = null;
+
 //style
 function clearStyle() {
   for (var i = document.styleSheets.length - 1; i >= 0; i--) {
@@ -199,8 +203,8 @@ function addNavBar() {
   '<ul id="funcs" class="nav navbar-nav">' +
     '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>' +
     '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>' +
-    '<li><a id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
-    '<li><a title="t key" id="autoPager"><span>▶</span> Slideshow</a><input id="pageTimer" type="text""></li>' +
+    '<li><a title="Enter or Space" id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
+    '<li><a title="t key" id="autoPager"><span>▶</span> Slideshow</a><input id="pageTimer" type="text" value="10"></li>' +
     '<li><select class="input-medium" id="single-page-select"></select></li>' +
     '<li><select class="input-medium" id="two-page-select"></select></li>' +
   '</ul>'+
@@ -210,11 +214,11 @@ function addNavBar() {
     '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options'+
     '<span class="caret"></span></a>'+
     '<ul class="inverse-dropdown dropdown-menu">'+
-      '<li><a title="r key" id="reload"><span>&#10227;</span> Reload</a></li>'+
-      '<li><a title="v key" id="fitVertical"><span>&#8597;</span> Fit</a></li>' +
-      '<li><a title="h key" id="fitHorizontal"><span>&#8596;</span> Fit</a></li>' +
-      '<li><a title="f key" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
-      '<li><a title="s key" id="singlePage"><span>🗏</span> Single Page</a></li>' +
+      '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
+      '<li><a title="v" id="fitVertical"><span>&#8597;</span> Fit</a></li>' +
+      '<li><a title="h" id="fitHorizontal"><span>&#8596;</span> Fit</a></li>' +
+      '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
+      '<li><a title="s" id="singlePage"><span>🗏</span> Single Page</a></li>' +
       '<li><a title="rendering" id="rendingChanger"><span>🖾</span> Rendering</a></li>' +
     '</ul>'+
     '</li>'+
@@ -649,10 +653,16 @@ function doHotkey(e) {
   } else if (key == 13) {
     //alert('ENTER pressed')
     fullscreen();
+  } else if (key == 32) {
+    //alert('SPACE pressed')
+    fullscreen();
+  }
   } else if (key == 84) {
     //alert('T pressed');
+    toggleTimer();
   }
 }
+
 function createDropdown() {
   for (var i = 1; i <= number_of_images; i++) {
     var option = $('<option>', {
