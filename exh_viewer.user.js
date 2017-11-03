@@ -74,13 +74,13 @@ addStyle("html, body {height: 100%;}"+
   "h1 {color: #fff;}"+
   "body .modal {color: #333;}"+
 
-  "#comicImages {height: 100%; outline: 0 none; overflow: auto; text-align: center;}"+
-  "#introText {margin-top: 100px;}"+
-  ".fitVertical img {max-height: calc(100% - 41px); width: auto;}"+
+  "#comicImages {height: calc(100% - 41px); overflow: auto; text-align: center;}"+
+  "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
+  ".fitVertical img {display: inline-block; vertical-align: middle; max-height: 100%; width: auto;}"+
   ".spread2 .fitVertical img {max-width: 50%;}"+
   ".spread1 .fitVeritcal img {max-width: 100%;}"+
-  ".spread2 .fitHorizontal img {height: auto; width: 50%;}"+
-  ".spread1 .fitHorizontal img {height: auto; width: 100%;}"+
+  ".spread2 .fitHorizontal img {height: auto; width: auto; max-width:50%;}"+
+  ".spread1 .fitHorizontal img {height: auto; width: auto;}"+
   ".fitBoth img {height: auto; max-height: calc(100% - 41px); width: auto;}"+
   ".spread1 .fitBoth img {max-width: 100%;}"+
   ".spread2 .fitBoth img {max-width: 50%;}"+
@@ -132,10 +132,10 @@ style.appendChild(renderStyle);
 parent.appendChild(style);
 
 // imagehight styles when fullscreen
-addStyle(".fitVertical:-webkit-full-screen img {max-height: 100% !important;} "+
-  ".fitVertical:-moz-full-screen img {max-height: 100% !important;} "+
-  ".fitVertical:-ms-fullscreen img {max-height: 100% !important;} "+
-  ".fitVertical:fullscreen img {max-height: 100% !important;} ");
+addStyle(".fitVertical:-webkit-full-screen img {margin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} "+
+  ".fitVertical:-moz-full-screen img {argin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} "+
+  ".fitVertical:-ms-fullscreen img {argin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} "+
+  ".fitVertical:fullscreen img {argin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} ");
 
 // interface
 function cElement(tag, insert, property, func) {
@@ -234,6 +234,7 @@ function addImgFrame() {
   html = '<div id="comicImages" class="fitVertical" tabindex="1">' +
   '<a id="leftBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-left: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a>' +
   '<a id="rightBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-right: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a>' +
+  '<div class="centerer"></div>'+
   '</div>' +
   '<div id="preload"></div>';
   document.body.innerHTML += html;
@@ -241,6 +242,8 @@ function addImgFrame() {
 document.body.setAttribute('className', 'spread1');
 addNavBar();
 addImgFrame();
+
+comicImages = document.getElementById("comicImages");
 
 // prevent dropdown from close
 $('.dropdown-menu').on('click', function(e) {
@@ -513,7 +516,6 @@ function init() {
 
   window.onhashchange = hashChanged;
   document.addEventListener('keydown', doHotkey);
-  document.addEventListener('wheel', doWheel);
   // document.getElementById('galleryInfo').addEventListener('click', goGallery);
   getToken(function (response) {
     ids = JSON.parse(response.responseText).tokenlist[0];
@@ -606,6 +608,19 @@ function doWheel(e) {
     prevPanel();
   }
 }
+
+function wheelComicImages(e) {
+  var prev_scrollTop = comicImages.scrollTop;
+  var scrollTo = e.wheelDelta*-1 + prev_scrollTop;
+  comicImages.scrollTop = scrollTo;
+  if (comicImages.scrollTop == prev_scrollTop){
+    if (e.deltaY > 0)
+      nextPanel();
+    else if (e.deltaY < 0)
+      prevPanel();
+  }
+}
+
 
 function toggleTimer() {
   //console.log('toggleTimer called');
@@ -792,7 +807,6 @@ function drawPanel_() {
   // console.log('drawPanel_ called display:' + display);
   $('#preload').empty();
   // $('#comicImages').empty();
-  var comicImages = document.getElementById('comicImages');
   var imgs = comicImages.getElementsByTagName('img');
   while (imgs.length > 0) {
     comicImages.removeChild(imgs[0]);
@@ -1104,6 +1118,10 @@ function twoPageChange_(sel) {
 
 function fitHorizontal() {
   // console.log('fitHorizontal called');
+  document.removeEventListener('wheel', doWheel);
+  document.getElementById("rightBtn").addEventListener("wheel", wheelComicImages);
+  document.getElementById("leftBtn").addEventListener("wheel", wheelComicImages);
+
   $('#comicImages').removeClass();
   $('#comicImages').addClass('fitHorizontal');
   $('#fitVertical').parent().show();
@@ -1116,6 +1134,8 @@ function fitHorizontal() {
 
 function fitVertical() {
   // console.log('fitVertical called');
+  document.addEventListener('wheel', doWheel);
+  
   $('#comicImages').removeClass();
   $('#comicImages').addClass('fitVertical');
   $('#fitHorizontal').parent().show();
@@ -1127,16 +1147,32 @@ function fitVertical() {
 }
 
 function fullscreen() {
+  var isInFullScreen = (document.fullscreenElement && document.fullscreenElement !== null) ||
+    (document.webkitFullscreenElement && document.webkitFullscreenElement !== null) ||
+    (document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
+    (document.msFullscreenElement && document.msFullscreenElement !== null);
   // console.log('fullscreen called');
-  var elem = document.getElementById('comicImages');
-  if (elem.requestFullscreen) {
-    elem.requestFullscreen();
-  } else if (elem.msRequestFullscreen) {
-    elem.msRequestFullscreen();
-  } else if (elem.mozRequestFullScreen) {
-    elem.mozRequestFullScreen();
-  } else if (elem.webkitRequestFullscreen) {
-    elem.webkitRequestFullscreen();
+  var elem = comicImages;
+  if (!isInFullScreen) {
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    }
   }
   // document.getElementById('comicImages').focusWithoutScrolling();
 }
