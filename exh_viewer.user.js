@@ -132,10 +132,14 @@ style.appendChild(renderStyle);
 parent.appendChild(style);
 
 // imagehight styles when fullscreen
-addStyle(".fitVertical:-webkit-full-screen img {margin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} "+
-  ".fitVertical:-moz-full-screen img {argin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} "+
-  ".fitVertical:-ms-fullscreen img {argin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} "+
-  ".fitVertical:fullscreen img {argin:auto; position: absolute; top: 0; left: 0; bottom: 0; right: 0; max-height: 100% !important;} ");
+addStyle("div:-webkit-full-screen {background-color: black;}"+
+  "div:-moz-full-screen {background-color: black;}"+
+  "div:-ms-fullscreen {background-color: black;}"+
+  "div:fullscreen {background-color: black;}"+
+  ".fitVertical:-webkit-full-screen img {max-height: 100% !important;}"+
+  ".fitVertical:-moz-full-screen img {max-height: 100% !important;}"+
+  ".fitVertical:-ms-fullscreen img {max-height: 100% !important;}"+
+  ".fitVertical:fullscreen img {max-height: 100% !important;}");
 
 // interface
 function cElement(tag, insert, property, func) {
@@ -531,7 +535,7 @@ function init() {
   document.getElementById('rendingChanger').addEventListener('click', renderChange);
   document.getElementById('reload').addEventListener('click', reloadImg);
   document.getElementById('autoPager').addEventListener('click', toggleTimer);
-    document.getElementById('pageChanger').addEventListener('click', goPanel);
+  document.getElementById('pageChanger').addEventListener('click', goPanel);
   document.getElementById('single-page-select').addEventListener('change', singlePageChange);
   document.getElementById('two-page-select').addEventListener('change', twoPageChange);
   $('.navbar ul li').show();
@@ -642,46 +646,64 @@ function toggleTimer() {
 
 function doHotkey(e) {
   var key = e.keyCode;
-  if (key == 74) {
-    //alert('J paressed');
-    nextPanel();
-  } else if (key == 81) {
-    //alert('Q pressed');
-    nextPanel();
-  } else if (key == 37) {
-    //alert('LEFT pressed');
-    nextPanel();
-  } else if (key == 75) {
-    //alert('K pressed');
-    prevPanel();
-  } else if (key == 69) {
-    //alert('E pressed');
-    prevPanel();
-  } else if (key == 39) {
-    //alert('RIGHT pressed')
-    prevPanel();
-  } else if (key == 86) {
-    //alert('V pressed')
-    fitVertical();
-  } else if (key == 72) {
-    //alert('H pressed')
-    fitHorizontal();
-  } else if (key == 70) {
-    //alert('F pressed')
-    fullSpread();
-  } else if (key == 83) {
-    //alert('S pressed')
-    singleSpread();
-  } else if (key == 13) {
-    //alert('ENTER pressed')
-    fullscreen();
-  } else if (key == 32) {
-    //alert('SPACE pressed')
-    fullscreen();
-  } else if (key == 84) {
-    //alert('T pressed');
-    toggleTimer();
-  }
+  switch (key) {
+    case 74:
+      //alert('J paressed');
+      nextPanel();
+      break;
+    case 81:
+      //alert('Q pressed');
+      nextPanel();
+      break;
+    case 37:
+      //alert('LEFT pressed');
+      nextPanel();
+      break;
+    case 75:
+      //alert('K pressed');
+      prevPanel();
+      break;
+    case 69:
+      //alert('E pressed');
+      prevPanel();
+      break;
+    case 39:
+      //alert('RIGHT pressed')
+      prevPanel();
+      break;
+    case 86:
+      //alert('V pressed')
+      fitVertical();
+      break;
+    case 72:
+      //alert('H pressed')
+      fitHorizontal();
+      break;
+    case 70:
+      //alert('F pressed')
+      fullSpread();
+      break;
+    case 83:
+      //alert('S pressed')
+      singleSpread();
+      break;
+    case 13:
+      //alert('ENTER pressed')
+      fullscreen();
+      break;
+    case 32:
+      //alert('SPACE pressed')
+      fullscreen();
+      break;
+    case 84:
+      //alert('T pressed');
+      toggleTimer();
+      break;
+    case 82:
+      //alert('R pressed');
+      reloadImg();
+      break;
+    }
 }
 
 function createDropdown() {
