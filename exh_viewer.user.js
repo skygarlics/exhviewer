@@ -8,15 +8,16 @@
 // @include       https://exhentai.org/s/*
 // @include       https://e-hentai.org/s/*
 // @version       1
-// @require       https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js
-// @require       https://maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.1/js/bootstrap.min.js
-// @resource      bt https://maxcdn.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css
+// @require       https://code.jquery.com/jquery-3.2.1.min.js
+// @require       https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js
+// @resource      bt https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css
 // @grant         GM_xmlhttpRequest
 // @grant         GM_getValue
 // @grant         GM_setValue
 // @grant         GM_deleteValue
 // @grant         GM_listValues
 // @grant         GM_getResourceText
+// @grant					GM.getResourceUrl
 // ==/UserScript==
 
 // update functions is currently disabled due to tampermonkey's cross origin warning
@@ -65,16 +66,31 @@ function (css) {
 
 clearStyle();
 addStyle('div#i1 {display:none;} p.ip {display:none;}');
-var bt_css = GM_getResourceText('bt');
-addStyle(bt_css);
+
+// GM_getResourceText is deprecated in Greasemonkey4
+async function addStyleFromResource(res) {
+  if (typeof GM_getResourceText !== 'undefined'){
+    var bt_css = GM_getResourceText(res);
+		addStyle(bt_css);
+  } else {
+    var fileName = await GM.getResourceUrl(res);
+  	var head = document.head;
+	  var link = document.createElement("link");
+	  link.type = "text/css";
+	  link.rel = "stylesheet";
+	  link.href = fileName;
+	  head.appendChild(link);
+  }
+};
+addStyleFromResource('bt');
 
 // Viewer styles
 addStyle("html, body {height: 100%;}"+
-  "body {background: #171717 none repeat scroll 0 0; color: #999; height: 100%; overflow: hidden;}"+
+  "body {background: #171717; font-size: 15px; font-weight:bold; background-color: #171717 !important; color: #999; height: 100%; overflow: hidden;}"+
   "h1 {color: #fff;}"+
   "body .modal {color: #333;}"+
 
-  "#comicImages {height: calc(100% - 41px); overflow: auto; text-align: center;}"+
+  "#comicImages {height: calc(100% - 52px); overflow: auto; text-align: center;}"+
   "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
   ".fitVertical img {display: inline-block; vertical-align: middle; max-height: 100%; width: auto;}"+
   ".spread2 .fitVertical img {max-width: 50%;}"+
@@ -90,7 +106,9 @@ addStyle("html, body {height: 100%;}"+
   ".disabled > a:hover { background-color: transparent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
   ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
   ".icon_white {color: white;}"+
+  ".imageBtn:hover {text-decoration:none;}"+
 
+  "#interfaceNav {margin: 0px; border: 0px;}"+
   ".dropdown-menu {text-align: left;}"+
   ".inverse-dropdown{background-color: #222; border-color: #080808;}"+
   ".inverse-dropdown > li > a {color: #999999}"+
@@ -104,20 +122,15 @@ addStyle("html, body {height: 100%;}"+
   "#singlePage > span {text-align: center; display: inline-block; min-width: 18px}"+
 
   "#autoPager {display: inline}"+
-  "#pageTimer {margin:5px 15px 5px 3px; width: 46px;}"+
+  "#pageTimer {margin: 15px 15px 15px 3px; border: 0px; height: 18px; width: 46px;}"+
   "#pageChanger {display: inline}"+
-  ".input-medium {margin: 5px 15px 5px 3px; width: 58px;}"+
+  ".input-medium {margin: 15px 15px 15px 3px; height: 20px; width: 58px;}"+
   "#single-page-select {width: 60px}"+
   "#two-page-select {width: 60px}"+
 
   "@media (min-width: 980px) {"+
-    ".nav-collapse.collapse {margin: 0px 0px 0px 65px}"+
     ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
-    ".navbar .nav-collapse {text-align: center;}"+
-  "}"+
-
-  "@media (max-width: 979px) {"+
-    "#settings {padding: 5px 0px 5px 0px}" +
+    ".navbar .navbar-collapse {text-align: center;}"+
   "}"
   );
 // Image rendering option. needs ID to render swap
@@ -199,45 +212,45 @@ function cElement(tag, insert, property, func) {
 }
 
 function addNavBar() {
-  var html = '<div class="navbar navbar-inverse navbar-static-top"><div class="navbar-inner"><div class="container">'+
-  '<a class="brand" id="galleryInfo">Gallery</a>' +
-  '<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"><span>&#9776</span></a>'+
-
-  '<div class="nav-collapse collapse">' +
-  '<ul id="funcs" class="nav navbar-nav">' +
-    '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>'+
-    '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>'+
-    '<li><a title="Enter or Space" id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
-    '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
-    '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
-      '<select class="input-medium" id="single-page-select"></select>'+
-      '<select class="input-medium" id="two-page-select"></select>'+
-    '</li>'+
-  '</ul>'+
-
-  '<ul id="settings" class="nav navbar-nav navbar-search pull-right">' +
-    '<li class="dropdown">'+
-    '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options'+
-    '<span class="caret"></span></a>'+
-    '<ul class="inverse-dropdown dropdown-menu">'+
-      '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
-      '<li><a title="v" id="fitVertical"><span>&#8597;</span> Fit</a></li>' +
-      '<li><a title="h" id="fitHorizontal"><span>&#8596;</span> Fit</a></li>' +
-      '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
-      '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
-      '<li><a title="rendering" id="rendingChanger"><span>🖾</span> Rendering</a></li>' +
-    '</ul>'+
-    '</li>'+
-  '</ul>'+
-  '</div>'+
-  '</div></div></div>';
+  var html =
+  '<nav id="interfaceNav"class="navbar navbar-inverse navbar-static-top">'+
+    '<div class="container-fluid">'+
+      '<div class="navbar-header">'+
+        '<a class="navbar-brand" id="galleryInfo">Gallery</a>' +
+        '<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span>&#9776</span></button>'+
+      '</div>'+
+      '<div class="collapse navbar-collapse" id="collapseNavbar">' +
+        '<ul id="funcs" class="nav navbar-nav">' +
+          '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>'+
+          '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>'+
+          '<li><a title="Enter or Space" id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
+          '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
+          '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
+            '<select class="input-medium" id="single-page-select"></select>'+
+            '<select class="input-medium" id="two-page-select"></select>'+
+          '</li>'+
+          '<li class="dropdown">'+
+            '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options<span class="caret"></span></a>'+
+            '<ul class="inverse-dropdown dropdown-menu">'+
+              '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
+              '<li><a title="v" id="fitVertical"><span>&#8597;</span> Fit</a></li>' +
+              '<li><a title="h" id="fitHorizontal"><span>&#8596;</span> Fit</a></li>' +
+              '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
+              '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
+              '<li><a title="rendering" id="rendingChanger"><span>🖾</span> Rendering</a></li>' +
+            '</ul>'+
+          '</li>'+
+        '</ul>'+
+      '</div>'+
+    '</div>'+
+  '</nav>';
   document.body.innerHTML += html;
 }
 
 function addImgFrame() {
   html = '<div id="comicImages" class="fitVertical" tabindex="1">' +
-  '<a id="leftBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-left: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a>' +
-  '<a id="rightBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-right: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a>' +
+  '<a id="leftBtn" class="imageBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-left: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a>' +
+  '<a id="rightBtn" class="imageBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-right: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a>' +
   '<div class="centerer"></div>'+
   '</div>' +
   '<div id="preload"></div>';
@@ -1157,7 +1170,7 @@ function fitHorizontal() {
 function fitVertical() {
   // console.log('fitVertical called');
   document.addEventListener('wheel', doWheel);
-  
+
   $('#comicImages').removeClass();
   $('#comicImages').addClass('fitVertical');
   $('#fitHorizontal').parent().show();
