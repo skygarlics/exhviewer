@@ -84,35 +84,46 @@ async function addStyleFromResource(res) {
 addStyleFromResource('bt');
 
 // Viewer styles
-addStyle("html, body {height: 100%;}"+
+addStyle(
+  "html, body {height: 100%;}"+
   "body {background: #171717; font-size: 15px; font-weight:bold; background-color: #171717 !important; color: #999; height: 100%; overflow: hidden;}"+
   "h1 {color: #fff;}"+
   "body .modal {color: #333;}"+
+  ".nav>li>a {padding: 15px 10px}"+
 
-  "#comicImages {height: calc(100% - 52px); overflow: auto; text-align: center;}"+
+  "#comicImages {height: calc(100% - 50px); overflow: auto; text-align: center; white-space:nowrap;}"+
   "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
-  ".fitVertical img {display: inline-block; vertical-align: middle; max-height: 100%; width: auto;}"+
-  ".spread2 .fitVertical img {max-width: 50%;}"+
+
+  // !!todo!! add fitBoth
+
+  // fitVertical styles
+  ".fitVertical img {display: inline-block; vertical-align: middle; max-height:100%}"+
   ".spread1 .fitVeritcal img {max-width: 100%;}"+
-  ".spread2 .fitHorizontal img {height: auto; width: auto; max-width:50%;}"+
-  ".spread1 .fitHorizontal img {height: auto; width: auto;}"+
-  ".fitBoth img {height: auto; max-height: calc(100% - 41px); width: auto;}"+
-  ".spread1 .fitBoth img {max-width: 100%;}"+
-  ".spread2 .fitBoth img {max-width: 50%;}"+
+  ".spread2 .fitVertical img {max-width: 50%;}"+
+
+  // fitHorizontal styles
+  ".fitHorizontal img {display: inline-block; vertical-align: middle; max-width:100%}"+
+  ".spread2 .fitHorizontal img {max-width:50%;}"+
+  ".spread1 .fitHorizontal img {max-width: 100%;}"+
+
   "#preload {display: none;}.img-url {display: none;}"+
   "a:hover {cursor: pointer; text-decoration: none;}"+
   "a:visited, a:active {color: inherit;}"+
   ".disabled > a:hover { background-color: transparent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
   ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
   ".icon_white {color: white;}"+
-  ".imageBtn:hover {text-decoration:none;}"+
+  ".imageBtn, .imageBtn:hover {position: fixed; margin-bottom: 25px; z-index: 1; width: calc(50% - 25px); height: calc(100% - 50px - 25px); font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
+  "#leftBtn {margin-left: 25px; left: 0px;}"+
+  "#rightBtn {margin-right: 25px; right: 0px;}"+
 
+  // dropdown styles
   "#interfaceNav {margin: 0px; border: 0px;}"+
   ".dropdown-menu {text-align: left;}"+
   ".inverse-dropdown{background-color: #222; border-color: #080808;}"+
   ".inverse-dropdown > li > a {color: #999999}"+
   ".inverse-dropdown > li > a:hover {color: #fff; background-color: #000}"+
 
+  // width style for narrow characters
   "#fitVertical > span {text-align:center; display: inline-block; min-width: 14px}"+
   "#fitHorizontal > span {text-align: center; display: inline-block; min-width: 14px}"+
   "#fullSpread {min-width: 98px}"+
@@ -127,7 +138,7 @@ addStyle("html, body {height: 100%;}"+
   "#single-page-select {width: 60px}"+
   "#two-page-select {width: 60px}"+
 
-  "@media (min-width: 980px) {"+
+  "@media (min-width: 768px) {"+
     ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
     ".navbar .navbar-collapse {text-align: center;}"+
   "}"
@@ -216,7 +227,7 @@ function addNavBar() {
     '<div class="container-fluid">'+
       '<div class="navbar-header">'+
         '<a class="navbar-brand" id="galleryInfo">Gallery</a>' +
-        '<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span>&#9776</span></button>'+
+        '<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span> </button>'+
       '</div>'+
       '<div class="collapse navbar-collapse" id="collapseNavbar">' +
         '<ul id="funcs" class="nav navbar-nav">' +
@@ -247,15 +258,16 @@ function addNavBar() {
 }
 
 function addImgFrame() {
-  html = '<div id="comicImages" class="fitVertical" tabindex="1">' +
-  '<a id="leftBtn" class="imageBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-left: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; left: 0px;">&#11164;</a>' +
-  '<a id="rightBtn" class="imageBtn" style="position: fixed; z-index: 1; width: calc(50% - 25px); margin-right: 25px; height: 100%; font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; right: 0px;">&#11166;</a>' +
+  html =
+  '<div id="comicImages" class="fitVertical" tabindex="1">' +
+  '<a id="leftBtn" class="imageBtn">&#11164;</a>' +
+  '<a id="rightBtn" class="imageBtn">&#11166;</a>' +
   '<div class="centerer"></div>'+
   '</div>' +
   '<div id="preload"></div>';
   document.body.innerHTML += html;
 }
-document.body.setAttribute('className', 'spread1');
+document.body.setAttribute('class', 'spread1');
 addNavBar();
 addImgFrame();
 
