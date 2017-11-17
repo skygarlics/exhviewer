@@ -123,9 +123,9 @@ addStyle(
   "#interfaceNav {margin: 0px; border: 0px;}"+
   ".dropdown-menu {text-align: left;}"+
   ".dropdown-menu span {text-align: center; display: inline-block; min-width: 18px}"+
-  ".inverse-dropdown{background-color: #222; border-color: #080808;}"+
-  ".inverse-dropdown > li > a {color: #999999}"+
-  ".inverse-dropdown > li > a:hover {color: #fff; background-color: #000;}"+
+  ".inverse-dropdown {background-color: #222 !important; border-color: #080808 !important;}"+
+  ".inverse-dropdown > li > a {color: #999999 !important}"+
+  ".inverse-dropdown > li > a:hover {color: #fff !important; background-color: #000 !important;}"+
 
   "#autoPager {display: inline}"+
   "#pageTimer {margin: 15px 15px 15px 3px; border: 0px; height: 18px; width: 46px;}"+
