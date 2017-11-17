@@ -94,17 +94,20 @@ addStyle(
   "#comicImages {height: calc(100% - 50px); overflow: auto; text-align: center; white-space:nowrap;}"+
   "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
 
-  // !!todo!! add fitBoth
+  // fitBoth
+  ".fitBoth img {display: inline-block; vertical-align: middle; max-height:100%; max-width: 100%;}"+
+  //".spread1 .fitVeritcal img {max-width: 100%;}"+
+  ".spread2 .fitBoth img {max-width: 50%;}"+
 
   // fitVertical styles
   ".fitVertical img {display: inline-block; vertical-align: middle; max-height:100%}"+
-  ".spread1 .fitVeritcal img {max-width: 100%;}"+
+  //".spread1 .fitVeritcal img {max-width: 100%;}"+
   ".spread2 .fitVertical img {max-width: 50%;}"+
 
   // fitHorizontal styles
   ".fitHorizontal img {display: inline-block; vertical-align: middle; max-width:100%}"+
+  //".spread1 .fitHorizontal img {max-width: 100%;}"+
   ".spread2 .fitHorizontal img {max-width:50%;}"+
-  ".spread1 .fitHorizontal img {max-width: 100%;}"+
 
   "#preload {display: none;}.img-url {display: none;}"+
   "a:hover {cursor: pointer; text-decoration: none;}"+
@@ -243,11 +246,13 @@ function addNavBar() {
             '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options<span class="caret"></span></a>'+
             '<ul class="inverse-dropdown dropdown-menu">'+
               '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
-              '<li><a title="v" id="fitVertical"><span>&#8597;</span> Fit</a></li>' +
-              '<li><a title="h" id="fitHorizontal"><span>&#8596;</span> Fit</a></li>' +
+              // To button's text indicate current state, its text content is previous state
+              '<li><a title="b" class="fitBtn" id="fitBoth"><span>┃</span> Fit Vertical</a></li>' +
+              '<li><a title="v" class="fitBtn" id="fitVertical"><span>━</span> Fit Horizontal</a></li>' +
+              '<li><a title="h" class="fitBtn" id="fitHorizontal"><span>╋</span> Fit Both</a></li>' +
               '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
               '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
-              '<li><a title="rendering" id="rendingChanger"><span>🖾</span> Rendering</a></li>' +
+              '<li><a title="rendering" id="renderingChanger"><span>🖾</span> Rendering</a></li>' +
             '</ul>'+
           '</li>'+
         '</ul>'+
@@ -549,14 +554,16 @@ function init() {
     ids = JSON.parse(response.responseText).tokenlist[0];
     document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
   });
+  document.addEventListener('wheel', doWheel);
   document.getElementById('prevPanel').addEventListener('click', prevPanel);
   document.getElementById('nextPanel').addEventListener('click', nextPanel);
+  document.getElementById('fitBoth').addEventListener('click', fitBoth);
   document.getElementById('fitVertical').addEventListener('click', fitVertical);
   document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
   document.getElementById('fullscreen').addEventListener('click', fullscreen);
   document.getElementById('fullSpread').addEventListener('click', fullSpread);
   document.getElementById('singlePage').addEventListener('click', singleSpread);
-  document.getElementById('rendingChanger').addEventListener('click', renderChange);
+  document.getElementById('renderingChanger').addEventListener('click', renderChange);
   document.getElementById('reload').addEventListener('click', reloadImg);
   document.getElementById('autoPager').addEventListener('click', toggleTimer);
   document.getElementById('pageChanger').addEventListener('click', goPanel);
@@ -565,7 +572,7 @@ function init() {
   $('.navbar ul li').show();
   $('#fullSpread').hide();
   $('#singlePage').hide();
-  fitVertical();
+  fitBoth();
   var docElm = document.documentElement;
   if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
     $('#fullscreen').parent().hide();
@@ -628,18 +635,8 @@ function twoPageChange() {
 }
 
 function doWheel(e) {
-  if (e.deltaY > 0) {
-    //alert('Wheel down');
-    nextPanel();
-  } else if (e.deltaY < 0) {
-    //alert('Wheel up');
-    prevPanel();
-  }
-}
-
-function wheelComicImages(e) {
-  var prev_scrollTop = comicImages.scrollTop;
-  var scrollTo = e.wheelDelta*-1 + prev_scrollTop;
+  let prev_scrollTop = comicImages.scrollTop;
+  let scrollTo = e.wheelDelta*-1 + prev_scrollTop;
   comicImages.scrollTop = scrollTo;
   if (comicImages.scrollTop == prev_scrollTop){
     if (e.deltaY > 0)
@@ -648,7 +645,6 @@ function wheelComicImages(e) {
       prevPanel();
   }
 }
-
 
 function toggleTimer() {
   //console.log('toggleTimer called');
@@ -1164,16 +1160,24 @@ function twoPageChange_(sel) {
   $("#two-page-select").trigger("blur");
 }
 
+function resetFit() {
+  $('#comicImages').removeClass();
+  $('.fitBtn').parent().hide()
+}
+
+function fitBoth() {
+  // console.log('fitboth called');
+  resetFit();
+  $('#comicImages').addClass('fitBoth');
+  $('#fitHorizontal').parent().show();
+  $('body').scrollTop(0);
+}
+
 function fitHorizontal() {
   // console.log('fitHorizontal called');
-  document.removeEventListener('wheel', doWheel);
-  document.getElementById("rightBtn").addEventListener("wheel", wheelComicImages);
-  document.getElementById("leftBtn").addEventListener("wheel", wheelComicImages);
-
-  $('#comicImages').removeClass();
+  resetFit();
   $('#comicImages').addClass('fitHorizontal');
   $('#fitVertical').parent().show();
-  $('#fitHorizontal').parent().hide();
   // $('li').removeClass('active');
   // $('#fitHorizontal').parent().addClass('active');
   // $('#comicImages').focusWithoutScrolling();
@@ -1182,12 +1186,9 @@ function fitHorizontal() {
 
 function fitVertical() {
   // console.log('fitVertical called');
-  document.addEventListener('wheel', doWheel);
-
-  $('#comicImages').removeClass();
+  resetFit();
   $('#comicImages').addClass('fitVertical');
-  $('#fitHorizontal').parent().show();
-  $('#fitVertical').parent().hide();
+  $('#fitBoth').parent().show();
   // $('li').removeClass('active');
   // $('#fitVertical').parent().addClass('active');
   // $('#comicImages').focusWithoutScrolling();
