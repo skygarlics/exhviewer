@@ -146,13 +146,13 @@ addStyle(
     ".navbar .navbar-collapse {text-align: center;}"+
   "}"
   );
+
 // Image rendering option. needs ID to render swap
 var renderType = 2;
 var parent = document.head || document.documentElement;
 var style = document.createElement('style');
 style.type = 'text/css';
 var renderStyle = document.createTextNode('');
-renderChange();
 renderStyle.id = 'renderStyle';
 style.appendChild(renderStyle);
 parent.appendChild(style);
@@ -252,7 +252,7 @@ function addNavBar() {
               '<li><a title="h" class="fitBtn" id="fitHorizontal"><span>╋</span> Fit Both</a></li>' +
               '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
               '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
-              '<li><a title="rendering" id="renderingChanger"><span>🖾</span> Rendering</a></li>' +
+              '<li><a title="rendering" id="renderingChanger"><span>🖽</span> Rendering</a></li>' +
             '</ul>'+
           '</li>'+
         '</ul>'+
@@ -577,6 +577,8 @@ function init() {
   if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
     $('#fullscreen').parent().hide();
   }
+
+  renderChange();
 }
 init();
 
@@ -615,12 +617,15 @@ function renderChange() {
   // var renderStyle = document.getElementById('renderStyle');
   if (renderType === 0) {
       renderStyle.textContent = 'img {image-rendering: -webkit-optimize-contrast;}';
+      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> optimized';
   }
   if (renderType === 1) {
       renderStyle.textContent = 'img {image-rendering: auto;}';
+      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> auto';
   }
   if (renderType === 2) {
       renderStyle.textContent = 'img {image-rendering: pixelated;}';
+      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> pixelated';
   }
 }
 
