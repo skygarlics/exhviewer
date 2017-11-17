@@ -122,17 +122,10 @@ addStyle(
   // dropdown styles
   "#interfaceNav {margin: 0px; border: 0px;}"+
   ".dropdown-menu {text-align: left;}"+
+  ".dropdown-menu span {text-align: center; display: inline-block; min-width: 18px}"+
   ".inverse-dropdown{background-color: #222; border-color: #080808;}"+
   ".inverse-dropdown > li > a {color: #999999}"+
-  ".inverse-dropdown > li > a:hover {color: #fff; background-color: #000}"+
-
-  // width style for narrow characters
-  "#fitVertical > span {text-align:center; display: inline-block; min-width: 14px}"+
-  "#fitHorizontal > span {text-align: center; display: inline-block; min-width: 14px}"+
-  "#fullSpread {min-width: 98px}"+
-  "#fullSpread > span {text-align: center; display: inline-block; min-width: 18px}"+
-  "#singlePage {min-width: 98px}"+
-  "#singlePage > span {text-align: center; display: inline-block; min-width: 18px}"+
+  ".inverse-dropdown > li > a:hover {color: #fff; background-color: #000;}"+
 
   "#autoPager {display: inline}"+
   "#pageTimer {margin: 15px 15px 15px 3px; border: 0px; height: 18px; width: 46px;}"+
@@ -148,7 +141,7 @@ addStyle(
   );
 
 // Image rendering option. needs ID to render swap
-var renderType = 2;
+var renderType = 0;
 var parent = document.head || document.documentElement;
 var style = document.createElement('style');
 style.type = 'text/css';
@@ -616,7 +609,7 @@ function renderChange() {
   renderType = (renderType + 1) % 3;
   // var renderStyle = document.getElementById('renderStyle');
   if (renderType === 0) {
-      renderStyle.textContent = 'img {image-rendering: -webkit-optimize-contrast;}';
+      renderStyle.textContent = 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}';
       document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> optimized';
   }
   if (renderType === 1) {
@@ -624,7 +617,7 @@ function renderChange() {
       document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> auto';
   }
   if (renderType === 2) {
-      renderStyle.textContent = 'img {image-rendering: pixelated;}';
+      renderStyle.textContent = 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}';
       document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> pixelated';
   }
 }
