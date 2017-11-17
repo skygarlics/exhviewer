@@ -1002,6 +1002,7 @@ function panelChange(target) {
 
 function prevPanel() {
   // console.log('prevPanel called');
+  curPanel = parseInt(curPanel);
   if (display == 1) {
     /* original code
     var dropdown = $('#single-page-select option:selected');
@@ -1037,6 +1038,7 @@ function prevPanel() {
 
 function nextPanel() {
   // console.log('nextPanel called');
+  curPanel = parseInt(curPanel);
   if (display == 1) {
     /* original code
     var dropdown = $('#single-page-select option:selected');
