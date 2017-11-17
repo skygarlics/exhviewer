@@ -93,9 +93,10 @@ addStyle(
 
   "#comicImages {height: calc(100% - 50px); overflow: auto; text-align: center; white-space:nowrap;}"+
   "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
+  "#imageDragger {pointer-events: none; cursor: default; position: fixed; margin-bottom: 25px; z-index: 1; width: 30%; height: calc(100% - 50px - 25px); left: 35%; display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
 
   // fitBoth
-  ".fitBoth img {display: inline-block; vertical-align: middle; max-height:100%; max-width: 100%;}"+
+  ".fitBoth img {display: inline-block; vertical-align: middle; max-height:100%}"+
   //".spread1 .fitVeritcal img {max-width: 100%;}"+
   ".spread2 .fitBoth img {max-width: 50%;}"+
 
@@ -112,10 +113,10 @@ addStyle(
   "#preload {display: none;}.img-url {display: none;}"+
   "a:hover {cursor: pointer; text-decoration: none;}"+
   "a:visited, a:active {color: inherit;}"+
-  ".disabled > a:hover { background-color: transparent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
+  ".disabled > a:hover { background-color: transpsrent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
   ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
   ".icon_white {color: white;}"+
-  ".imageBtn, .imageBtn:hover {position: fixed; margin-bottom: 25px; z-index: 1; width: calc(50% - 25px); height: calc(100% - 50px - 25px); font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
+  ".imageBtn, .imageBtn:hover {position: fixed; margin-bottom: 25px; z-index: 1; width: calc(35% - 25px); height: calc(100% - 50px - 25px); font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
   "#leftBtn {margin-left: 25px; left: 0px;}"+
   "#rightBtn {margin-right: 25px; right: 0px;}"+
 
@@ -259,6 +260,7 @@ function addImgFrame() {
   html =
   '<div id="comicImages" class="fitVertical" tabindex="1">' +
   '<a id="leftBtn" class="imageBtn">&#11164;</a>' +
+  // '<a id="imageDragger"></a>'+
   '<a id="rightBtn" class="imageBtn">&#11166;</a>' +
   '<div class="centerer"></div>'+
   '</div>' +
@@ -562,6 +564,9 @@ function init() {
   document.getElementById('pageChanger').addEventListener('click', goPanel);
   document.getElementById('single-page-select').addEventListener('change', singlePageChange);
   document.getElementById('two-page-select').addEventListener('change', twoPageChange);
+  document.getElementById('comicImages').addEventListener('dragstart', imgDragStart);
+  document.getElementById('comicImages').addEventListener('drag', imgDrag);
+  document.getElementById('comicImages').addEventListener('dragend', imgDragEnd);
   $('.navbar ul li').show();
   $('#fullSpread').hide();
   $('#singlePage').hide();
@@ -632,6 +637,59 @@ function twoPageChange() {
   twoPageChange_(document.getElementById('two-page-select'));
 }
 
+
+var curDown = false;
+var prevX, prevY;
+
+function imgDrag(e) {
+  if (curDown) {
+    if (e.pageX > 0) {
+      comicImages.scrollLeft += prevX - e.pageX;
+      prevX = e.pageX;
+    }
+    if (e.pageY > 0) {
+      comicImages.scrollTop += prevY - e.pageY;
+      prevY = e.pageY;
+    }
+  }
+}
+
+function imgDragStart(e) {
+  prevX = e.pageX;
+  prevY = e.pageY;
+  curDown = true;
+}
+
+function imgDragEnd(e) {
+  curDown = false;
+}
+
+
+/*
+$(function(){
+  var curDown = false,
+      curYPos = 0,
+      curXPos = 0;
+  $('#comicImages').mousemove(function(m){
+    if(curDown === true){
+     $('#comicImages').scrollTop($('#comicImages').scrollTop() + (curYPos - m.pageY)*dragSensi);
+     curYPos = m.pageY
+     $('#comicImages').scrollLeft($('#comicImages').scrollLeft() + (curXPos - m.pageX)*dragSensi);
+     curXPos = m.pageX
+    }
+  });
+
+  $('#comicImages').mousedown(function(m){
+    curDown = true;
+    curYPos = m.pageY;
+    curXPos = m.pageX;
+  });
+
+  $('#comicImages').mouseup(function(){
+    curDown = false;
+  });
+})
+*/
 function doWheel(e) {
   let prev_scrollTop = comicImages.scrollTop;
   let scrollTo = e.wheelDelta*-1 + prev_scrollTop;
