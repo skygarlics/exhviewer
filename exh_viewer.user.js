@@ -750,6 +750,10 @@ function doHotkey(e) {
       //alert('RIGHT pressed')
       prevPanel();
       break;
+    case 66:
+      //alert('B pressed')
+      fitBoth();
+      break;
     case 86:
       //alert('V pressed')
       fitVertical();
