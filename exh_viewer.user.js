@@ -690,16 +690,19 @@ $(function(){
   });
 })
 */
+
 function doWheel(e) {
   let prev_scrollTop = comicImages.scrollTop;
-  let scrollTo = e.wheelDelta*-1 + prev_scrollTop;
-  comicImages.scrollTop = scrollTo;
-  if (comicImages.scrollTop == prev_scrollTop){
-    if (e.deltaY > 0)
-      nextPanel();
-    else if (e.deltaY < 0)
-      prevPanel();
-  }
+  // let scrollTo = prev_scrollTop + e.deltaY;
+  // comicImages.scrollTop = scrollTo;
+  setTimeout(() => {
+    if (comicImages.scrollTop == prev_scrollTop){
+      if (e.deltaY > 0)
+        nextPanel();
+      else if (e.deltaY < 0)
+        prevPanel();
+    }
+  }, 50);
 }
 
 function toggleTimer() {
@@ -1218,7 +1221,7 @@ function twoPageChange_(sel) {
 
 function resetFit() {
   $('#comicImages').removeClass();
-  $('.fitBtn').parent().hide()
+  $('.fitBtn').parent().hide();
 }
 
 function fitBoth() {
