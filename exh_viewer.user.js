@@ -24,6 +24,16 @@
 var update_check = false;
 var API_URL = null;
 
+var images = {};
+var display = 1;
+var curPanel;
+var number_of_images;
+var comicImages;
+var goofy_enabled = false;
+var single_displayed = true;
+//var numThin = 0;
+//var portrait = false;
+
 var host_regex = /^(.+)\/\/(.+?)\/(.+)/g;
 var host = host_regex.exec(document.location)[2];
 if (host === 'exhentai.org')
@@ -38,7 +48,7 @@ document.onkeydown = null;
 document.onkeyup = null;
 
 //style
-function clearStyle() {
+var clearStyle = function () {
   for (var i = document.styleSheets.length - 1; i >= 0; i--) {
     document.styleSheets[i].disabled = true;
   }
@@ -51,7 +61,7 @@ function clearStyle() {
       elmOne.remove();
     }
   }
-}
+};
 
 var addStyle = typeof GM_addStyle !== 'undefined' ? GM_addstyle :
 function (css) {
@@ -63,11 +73,8 @@ function (css) {
   parent.appendChild(style);
 };
 
-clearStyle();
-addStyle('div#i1 {display:none;} p.ip {display:none;}');
-
 // GM_getResourceText is deprecated in Greasemonkey4
-async function addStyleFromResource(res) {
+var addStyleFromResource = async function asdf (res) {
   if (typeof GM_getResourceText !== 'undefined'){
     var bt_css = GM_getResourceText(res);
 		addStyle(bt_css);
@@ -80,11 +87,10 @@ async function addStyleFromResource(res) {
 	  link.href = fileName;
 	  head.appendChild(link);
   }
-};
-addStyleFromResource('bt');
+}
 
 // Viewer styles
-addStyle(
+var viewer_style =
   "html, body {height: 100%;}"+
   "body {background: #171717; font-size: 15px; font-weight:bold; background-color: #171717 !important; color: #999; height: 100%; overflow: hidden;}"+
   "h1 {color: #fff;}"+
@@ -96,7 +102,7 @@ addStyle(
   "#imageDragger {pointer-events: none; cursor: default; position: fixed; margin-bottom: 25px; z-index: 1; width: 30%; height: calc(100% - 50px - 25px); left: 35%; display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
 
   // fitBoth
-  ".fitBoth img {display: inline-block; vertical-align: middle; max-height:100%}"+
+  ".fitBoth img {display: inline-block; vertical-align: middle; max-width: 100%; max-height:100%}"+
   //".spread1 .fitVeritcal img {max-width: 100%;}"+
   ".spread2 .fitBoth img {max-width: 50%;}"+
 
@@ -138,8 +144,7 @@ addStyle(
   "@media (min-width: 768px) {"+
     ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
     ".navbar .navbar-collapse {text-align: center;}"+
-  "}"
-  );
+  "}";
 
 // Image rendering option. needs ID to render swap
 var renderType = 0;
@@ -152,17 +157,17 @@ style.appendChild(renderStyle);
 parent.appendChild(style);
 
 // imagehight styles when fullscreen
-addStyle("div:-webkit-full-screen {background-color: black;}"+
+var fullscreen_style = "div:-webkit-full-screen {background-color: black;}"+
   "div:-moz-full-screen {background-color: black;}"+
   "div:-ms-fullscreen {background-color: black;}"+
   "div:fullscreen {background-color: black;}"+
   ".fitVertical:-webkit-full-screen img {max-height: 100% !important;}"+
   ".fitVertical:-moz-full-screen img {max-height: 100% !important;}"+
   ".fitVertical:-ms-fullscreen img {max-height: 100% !important;}"+
-  ".fitVertical:fullscreen img {max-height: 100% !important;}");
+  ".fitVertical:fullscreen img {max-height: 100% !important;}";
 
 // interface
-function cElement(tag, insert, property, func) {
+var cElement = function (tag, insert, property, func) {
   var _DIRECT = [
     'className',
     'innerHTML',
@@ -216,9 +221,9 @@ function cElement(tag, insert, property, func) {
     element.addEventListener('click', func, false);
   }
   return element;
-}
+};
 
-function addNavBar() {
+var addNavBar = function () {
   var html =
   '<nav id="interfaceNav"class="navbar navbar-inverse navbar-static-top">'+
     '<div class="container-fluid">'+
@@ -254,9 +259,9 @@ function addNavBar() {
     '</div>'+
   '</nav>';
   document.body.innerHTML += html;
-}
+};
 
-function addImgFrame() {
+var addImgFrame = function () {
   html =
   '<div id="comicImages" class="fitVertical" tabindex="1">' +
   '<a id="leftBtn" class="imageBtn">&#11164;</a>' +
@@ -266,12 +271,7 @@ function addImgFrame() {
   '</div>' +
   '<div id="preload"></div>';
   document.body.innerHTML += html;
-}
-document.body.setAttribute('class', 'spread1');
-addNavBar();
-addImgFrame();
-
-comicImages = document.getElementById("comicImages");
+};
 
 // prevent dropdown from close
 $('.dropdown-menu').on('click', function(e) {
@@ -361,7 +361,8 @@ function (details) {
   if (bfloc !== null)
   history.pushState(bfloc, bfloc, bfloc);
 };
-function simpleRequest(url, callback, method, headers, data, error) {
+
+var simpleRequest = function (url, callback, method, headers, data, error) {
   var details = {
     method: method ? method : 'GET',
     url: url,
@@ -392,45 +393,36 @@ function simpleRequest(url, callback, method, headers, data, error) {
     details.onerror = error;
   }
   xmlhttpRequest(details);
-}
+};
 
 //////////////////////////////////////////////////////////////////
 
-var images = {};
-var display = 1;
-var curPanel;
-var number_of_images;
-var goofy_enabled = false;
-var single_displayed = true;
-//var numThin = 0;
-//var portrait = false;
-
-function user_lang() {
+var user_lang = function () {
   var userLang = navigator.language || navigator.userLanguage;
   return userLang.toLowerCase();
-}
-function is_english() {
+};
+var is_english = function () {
   var userLang = user_lang();
   return /^en/.test(userLang);
-}
-function is_japanese() {
+};
+var is_japanese = function () {
   var userLang = user_lang();
   return /^ja/.test(userLang);
-}
+};
 function eachWord(str) {
   return str.replace(/\w\S*/g, function (txt) {
     return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
   });
-}
-function disable(elem) {
+};
+var disable = function (elem) {
   elem.parent().addClass('disabled');
   elem.children().removeClass('icon_white');
-}
-function enable(elem) {
+};
+var enable = function (elem) {
   elem.parent().removeClass('disabled');
   elem.children().addClass('icon_white');
-}
-function getToken(callback) {
+};
+var getToken = function (callback) {
   var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
   var match = page_regex.exec(document.location);
   var data = {
@@ -446,14 +438,15 @@ function getToken(callback) {
   simpleRequest(API_URL, callback, 'POST', {
   }, JSON.stringify(data)
   );
-}
+};
+
 function goGallery() {
   getToken(function (response) {
     ids = JSON.parse(response.responseText).tokenlist[0];
     location.href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
   });
 }
-function getGdata(gid, token, callback) {
+var getGdata = function (gid, token, callback) {
   var data = {
     'method': 'gdata',
     'gidlist': [
@@ -464,131 +457,22 @@ function getGdata(gid, token, callback) {
   simpleRequest(API_URL, callback, 'POST', {
   }, JSON.stringify(data)
   );
-}///////////////////////////////////////////////////////
+};
 
-function parseHTML(response) {
+var parseHTML = function (response) {
   var doc = document.implementation.createHTMLDocument('temp');
   doc.documentElement.innerHTML = response.responseText;
   return doc;
-}
-function init() {
-  // set cur panel
-  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-  var match = page_regex.exec(document.location);
-  curPanel = Number(match[3]);
-  getToken(function (response) {
-    var ids = JSON.parse(response.responseText).tokenlist[0];
-    getGdata(ids.gid, ids.token, setGallery);
-  });
-
-  function setGallery(response) {
-    function pushImgs(response) {
-      var doc = parseHTML(response);
-      var imgs = doc.getElementsByClassName('gdtm');
-      for (var idx = 0; idx < imgs.length; idx++) {
-        var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-        var img = imgs[idx];
-        var url_temp = img.firstChild.firstChild.href;
-        var match_temp = regex_temp.exec(url_temp);
-        images[match_temp[3] - 1] = {
-          page: match_temp[3],
-          url: url_temp,
-          token: match_temp[1]
-        };
-      }
-    }
-
-    // make image list
-    var gmetadata = JSON.parse(response.responseText).gmetadata[0];
-    number_of_images = gmetadata.filecount;
-    createDropdown();
-    var gallery_url = 'https://' + host + '/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
-
-    // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
-    var gallery_page_len = Math.ceil(number_of_images / 40);
-
-    // load current page. first things first
-    var current_gallery_page = Math.ceil(curPanel / 40);
-    var page_img_len;
-    if (current_gallery_page < gallery_page_len) {
-      page_img_len = 40;
-    } else {
-      page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
-    }
-    page_img_len = Number(page_img_len);
-
-    // promise pattern
-    var p1 = new Promise(
-      function(resolve, reject) {
-        simpleRequest(gallery_url + (current_gallery_page - 1), function(resp){
-          pushImgs(resp);
-          resolve();
-        });
-      }
-    );
-    p1.then(function() {
-      window.location.hash = curPanel;
-      hashChanged();
-    });
-
-    // load rest of galleries
-    for (var i = 0; i < gallery_page_len; i++) {
-      if (i == current_gallery_page-1) {
-        //already loaded
-      }
-      else {
-        simpleRequest(gallery_url + i, pushImgs);
-      }
-    }
-  }
-
-  window.onhashchange = hashChanged;
-  document.addEventListener('keydown', doHotkey);
-  // document.getElementById('galleryInfo').addEventListener('click', goGallery);
-  getToken(function (response) {
-    ids = JSON.parse(response.responseText).tokenlist[0];
-    document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
-  });
-  document.addEventListener('wheel', doWheel);
-  document.getElementById('prevPanel').addEventListener('click', prevPanel);
-  document.getElementById('nextPanel').addEventListener('click', nextPanel);
-  document.getElementById('fitBoth').addEventListener('click', fitBoth);
-  document.getElementById('fitVertical').addEventListener('click', fitVertical);
-  document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
-  document.getElementById('fullscreen').addEventListener('click', fullscreen);
-  document.getElementById('fullSpread').addEventListener('click', fullSpread);
-  document.getElementById('singlePage').addEventListener('click', singleSpread);
-  document.getElementById('renderingChanger').addEventListener('click', renderChange);
-  document.getElementById('reload').addEventListener('click', reloadImg);
-  document.getElementById('autoPager').addEventListener('click', toggleTimer);
-  document.getElementById('pageChanger').addEventListener('click', goPanel);
-  document.getElementById('single-page-select').addEventListener('change', singlePageChange);
-  document.getElementById('two-page-select').addEventListener('change', twoPageChange);
-  document.getElementById('comicImages').addEventListener('dragstart', imgDragStart);
-  document.getElementById('comicImages').addEventListener('drag', imgDrag);
-  document.getElementById('comicImages').addEventListener('dragend', imgDragEnd);
-  $('.navbar ul li').show();
-  $('#fullSpread').hide();
-  $('#singlePage').hide();
-  fitBoth();
-  var docElm = document.documentElement;
-  if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
-    $('#fullscreen').parent().hide();
-  }
-
-  renderChange();
-}
-init();
+};
 
 ///////////////////////////////////////////////////////////////
 
-
-function openInNewTab(url) {
+var openInNewTab = function (url) {
   var win = window.open(url, '_blank');
   win.focus();
-}
+};
 
-function checkUpdate() {
+var checkUpdate = function () {
   var github_api = "https://api.github.com";
   var repo_path = "/repos/skygarlics/exhviewer";
   // past version
@@ -602,15 +486,11 @@ function checkUpdate() {
         openInNewTab(url);
     }
   });
-}
-
-if (update_check) {
-  checkUpdate();
-}
+};
 
 ////////////////////////////////////////////////////////////////
 
-function renderChange() {
+var renderChange = function () {
   renderType = (renderType + 1) % 3;
   // var renderStyle = document.getElementById('renderStyle');
   if (renderType === 0) {
@@ -625,23 +505,58 @@ function renderChange() {
       renderStyle.textContent = 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}';
       document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> pixelated';
   }
-}
+};
 
-function singlePageChange() {
+// original page changers
+var singlePageChange_ = function (sel) {
+  // console.log('singlePageChange called');
+  var val = sel.value;
+  enable($('#prevPanel'));
+  enable($('#nextPanel'));
+  if (val == 1) {
+    disable($('#prevPanel'));
+  } else if (val == number_of_images) {
+    disable($('#nextPanel'));
+  }
+  curPanel = val;
+  goofy_enabled = true;
+  window.location.hash = val;
+  goofy_enabled = false;
+  //drawPanel();
+  $('#single-page-select').trigger('blur');
+};
+
+var singlePageChange = function ( ){
   //console.log('singlePageChange called');
   singlePageChange_(document.getElementById('single-page-select'));
-}
+};
 
-function twoPageChange() {
+var twoPageChange_ = function (sel) {
+  //console.log('twoPageChange called');
+  var val = sel.value;
+  enable($("#prevPanel"));
+  enable($("#nextPanel"));
+  if (val == 1) {
+    disable($('#prevPanel'));
+  } else if (val == number_of_images) {
+    disable($('#nextPanel'));
+  }
+  curPanel = val;
+  goofy_enabled = true;
+  window.location.hash = val;
+  goofy_enabled = false;
+  $("#two-page-select").trigger("blur");
+};
+
+var twoPageChange = function () {
   //consle.log('twoPageChange called');
   twoPageChange_(document.getElementById('two-page-select'));
-}
-
+};
 
 var curDown = false;
 var prevX, prevY;
 
-function imgDrag(e) {
+var imgDrag = function (e) {
   if (curDown) {
     if (e.pageX > 0) {
       comicImages.scrollLeft += prevX - e.pageX;
@@ -652,46 +567,19 @@ function imgDrag(e) {
       prevY = e.pageY;
     }
   }
-}
+};
 
-function imgDragStart(e) {
+var imgDragStart = function (e) {
   prevX = e.pageX;
   prevY = e.pageY;
   curDown = true;
-}
+};
 
-function imgDragEnd(e) {
+var imgDragEnd = function (e) {
   curDown = false;
-}
+};
 
-
-/*
-$(function(){
-  var curDown = false,
-      curYPos = 0,
-      curXPos = 0;
-  $('#comicImages').mousemove(function(m){
-    if(curDown === true){
-     $('#comicImages').scrollTop($('#comicImages').scrollTop() + (curYPos - m.pageY)*dragSensi);
-     curYPos = m.pageY
-     $('#comicImages').scrollLeft($('#comicImages').scrollLeft() + (curXPos - m.pageX)*dragSensi);
-     curXPos = m.pageX
-    }
-  });
-
-  $('#comicImages').mousedown(function(m){
-    curDown = true;
-    curYPos = m.pageY;
-    curXPos = m.pageX;
-  });
-
-  $('#comicImages').mouseup(function(){
-    curDown = false;
-  });
-})
-*/
-
-function doWheel(e) {
+var doWheel = function (e) {
   let prev_scrollTop = comicImages.scrollTop;
   // let scrollTo = prev_scrollTop + e.deltaY;
   // comicImages.scrollTop = scrollTo;
@@ -703,9 +591,9 @@ function doWheel(e) {
         prevPanel();
     }
   }, 50);
-}
+};
 
-function toggleTimer() {
+var toggleTimer = function () {
   //console.log('toggleTimer called');
   var second = document.getElementById('pageTimer').value;
   if (second < 1 || isNaN(second)) {
@@ -721,9 +609,9 @@ function toggleTimer() {
     pagerButton.firstChild.classList.remove('icon_white');
     clearInterval(toggleTimer.interval);
   }
-}
+};
 
-function doHotkey(e) {
+var doHotkey = function (e) {
   var key = e.keyCode;
   switch (key) {
     case 74:
@@ -787,9 +675,9 @@ function doHotkey(e) {
       reloadImg();
       break;
     }
-}
+};
 
-function createDropdown() {
+var createDropdown = function () {
   for (var i = 1; i <= number_of_images; i++) {
     var option = $('<option>', {
       html: '' + i,
@@ -804,9 +692,9 @@ function createDropdown() {
     });
     $('#two-page-select').append(option);
   }
-}
+};
 
-function updateDropdown(num) {
+var updateDropdown = function (num) {
   if (num == 1){
     $("#single-page-select option:selected").prop("selected", false);
     $("#single-page-select option").each(function() {
@@ -829,21 +717,11 @@ function updateDropdown(num) {
         goofy_enabled = false;
         //$(this).parent().trigger("change");
       }
-      /*
-      var ok = re.exec($(this).val());
-      if (ok[1] == curPanel || ok[2] == curPanel) {
-        $(this).prop("selected", true);
-        goofy_enabled = true;
-        window.location.hash = ok[0];
-        goofy_enabled = false;
-        $(this).parent().trigger("change");
-      }
-      */
     });
   }
-}
+};
 
-function drawPanel() {
+var drawPanel = function () {
   // console.log('drawPanel() called curPanel: '+ curPanel);
   // set before call drawPanel_()
   // update_entry fills from idx-2 to idx+2
@@ -872,9 +750,9 @@ function drawPanel() {
   Promise.all(promise_entry).then(function() {
     drawPanel_();
   });
-}
+};
 
-function reloadImg() {
+var reloadImg = function () {
   //console.log('reloadImg called');
   var entry = [Number(curPanel), Number(curPanel)-1];
   for (var idx = 0; idx < entry.length; idx++) {
@@ -886,9 +764,9 @@ function reloadImg() {
     img.nl = null;
   }
   drawPanel();
-}
+};
 
-function updateImg(img, callback) {
+var updateImg = function (img, callback) {
   //console.log('updateImg called. img_num : ' + img.page);
   simpleRequest(img.url, function (response) {
     var doc = parseHTML(response);
@@ -905,10 +783,10 @@ function updateImg(img, callback) {
     img['nl'] = nl_match[1];
     callback();
   });
-}
+};
 
 // original drawPanel()
-function drawPanel_() {
+var drawPanel_ = function () {
   // console.log('drawPanel_ called display:' + display);
   $('#preload').empty();
   // $('#comicImages').empty();
@@ -992,28 +870,19 @@ function drawPanel_() {
     });
     $('#comicImages').append(image);
   }
-  /*
-  if (portrait) {
-    $('#fullSpread').parent().hide();
-    $('#singlePage').parent().hide();
-  }
-  */
   document.getElementById('leftBtn').addEventListener('click', nextPanel);
   document.getElementById('rightBtn').addEventListener('click', prevPanel);
   $('#comicImages').scrollTop(0);
   $('body').scrollTop(0);
   // $('#comicImages').focusWithoutScrolling();
-}
+};
 
-function hashChanged() {
+var hashChanged = function () {
   // console.log('hashChanged called');
   if (goofy_enabled) return;
   var hash = location.hash;
   if (hash) {
     hash = Number(hash.replace('#', ''));
-    //var re = /^(\d+)-\d*$/;
-    //var ok = re.exec(hash);
-    //if (ok && ok[1] <= number_of_images && ok[1] > 0) {
     if (display == 2 && !isNaN(hash) && hash <= number_of_images && hash > 0) {
       curPanel = hash;
       fullSpread();
@@ -1034,22 +903,22 @@ function hashChanged() {
   if (Number(curPanel) >= number_of_images) {
     disable($('#nextPanel'));
   }
-}
+};
 
-function filterInt(value) {
+var filterInt = function (value) {
   if(/^(\-|\+)?([0-9]+)$/.test(value))
     return Number(value);
   return NaN;
-}
+};
 
-function goPanel() {
+var goPanel = function () {
   let target = filterInt(prompt('target page'));
   if (isNaN(target) || (target < 0)|| (target > number_of_images))
     return;
   panelChange(target);
-}
+};
 
-function panelChange(target) {
+var panelChange = function (target) {
   if (display == 1) {
     $('#single-page-select').prop('selectedIndex', target - 1);
     singlePageChange();
@@ -1057,32 +926,16 @@ function panelChange(target) {
     $('#two-page-select').prop('selectedIndex', target - 1);
     twoPageChange();
   }
-}
+};
 
-function prevPanel() {
+var prevPanel = function () {
   // console.log('prevPanel called');
   curPanel = parseInt(curPanel);
   if (display == 1) {
-    /* original code
-    var dropdown = $('#single-page-select option:selected');
-    if (dropdown.prev().length) {
-      dropdown.prop('selected', false).prev().prop('selected', true);
-      singlePageChange();
-    }*/
     if (curPanel > 1) {
       panelChange(curPanel - 1);
     }
   } else {
-    /* original code
-    var dropdown = $('#two-page-select option:selected');
-    if (dropdown.prev().length) {
-      if (dropdown.prev().prev().length && (images[curPanel - 2].width <= images[curPanel - 2].height)) {
-        dropdown.prop('selected', false).prev().prev().prop('selected', true);
-      } else {
-        dropdown.prop('selected', false).prev().prop('selected', true);
-      }
-      twoPageChange();
-    }*/
     if (curPanel > 1) {
       if ((curPanel > 2) && (images[curPanel - 2].width <= images[curPanel - 2].height)) {
         panelChange(curPanel - 2);
@@ -1093,33 +946,16 @@ function prevPanel() {
   }
   // $('#comicImages').focusWithoutScrolling();
   $('body').scrollTop(0);
-}
+};
 
-function nextPanel() {
+var nextPanel = function () {
   // console.log('nextPanel called');
   curPanel = parseInt(curPanel);
   if (display == 1) {
-    /* original code
-    var dropdown = $('#single-page-select option:selected');
-    if (dropdown.next().length) {
-      dropdown.prop('selected', false).next().prop('selected', true);
-      singlePageChange();
-    }*/
     if (curPanel < number_of_images) {
       panelChange(curPanel + 1);
     }
   } else {
-    /* original code
-    var dropdown = $('#two-page-select option:selected');
-    if (dropdown.next().length) {
-      if (dropdown.next().next().length && !(single_displayed)) {
-        dropdown.prop('selected', false).next().next().prop('selected', true);
-      } else {
-        dropdown.prop('selected', false).next().prop('selected', true);
-      }
-      twoPageChange();
-    }
-    */
     if (curPanel < number_of_images) {
       if ((curPanel + 1 < number_of_images) && !(single_displayed)) {
         panelChange(curPanel + 2);
@@ -1130,9 +966,9 @@ function nextPanel() {
   }
   // $('#comicImages').focusWithoutScrolling();
   $('body').scrollTop(0);
-}
+};
 
-function fullSpread() {
+var fullSpread = function () {
   //console.log('fullSpread called');
   $('#singlePage').parent().show();
   $('#fullSpread').parent().hide();
@@ -1141,9 +977,9 @@ function fullSpread() {
   $('#singlePage').show();
   updateDropdown(2);
   spread(2);
-}
+};
 
-function singleSpread() {
+var singleSpread = function () {
   //console.log('singleSpread called');
   $('#singlePage').parent().hide();
   $('#fullSpread').parent().show();
@@ -1152,9 +988,9 @@ function singleSpread() {
   $('#fullSpread').show();
   updateDropdown(1);
   spread(1);
-}
+};
 
-function spread(num) {
+var spread = function (num) {
   $('body').removeClass('spread' + display);
   display = num;
   $('body').addClass('spread' + display);
@@ -1162,7 +998,7 @@ function spread(num) {
     /* original logic
     var found = false;
     var pattern = curPanel + '-';
-    $('#two-page-select option').each(function () {
+    var () = $('#two-page-select option').each(function  {
       if ($(this).val().search(pattern) > - 1) {
         found = true;
       }
@@ -1173,92 +1009,38 @@ function spread(num) {
     */
   }
   drawPanel();
-}
+};
 
-// original page changers
-function singlePageChange_(sel) {
-  // console.log('singlePageChange called');
-  var val = sel.value;
-  enable($('#prevPanel'));
-  enable($('#nextPanel'));
-  if (val == 1) {
-    disable($('#prevPanel'));
-  } else if (val == number_of_images) {
-    disable($('#nextPanel'));
-  }
-  curPanel = val;
-  goofy_enabled = true;
-  window.location.hash = val;
-  goofy_enabled = false;
-  //drawPanel();
-  $('#single-page-select').trigger('blur');
-}
-
-function twoPageChange_(sel) {
-  //console.log('twoPageChange called');
-  var val = sel.value;
-  enable($("#prevPanel"));
-  enable($("#nextPanel"));
-  /*
-  var re = /^(\d+)-(\d*)$/;
-  var ok = re.exec(val);
-  if (ok[1] == 1) {
-      disable($("#prevPanel"));
-  }
-  if (ok[1] >= number_of_images || ok[2] >= number_of_images) {
-      disable($("#nextPanel"));
-  }
-  curPanel = ok[1];
-  */
-  if (val == 1) {
-    disable($('#prevPanel'));
-  } else if (val == number_of_images) {
-    disable($('#nextPanel'));
-  }
-  curPanel = val;
-  goofy_enabled = true;
-  window.location.hash = val;
-  goofy_enabled = false;
-  //drawPanel();
-  $("#two-page-select").trigger("blur");
-}
-
-function resetFit() {
+var resetFit = function () {
   $('#comicImages').removeClass();
   $('.fitBtn').parent().hide();
-}
+};
 
-function fitBoth() {
+var fitBoth = function () {
   // console.log('fitboth called');
   resetFit();
   $('#comicImages').addClass('fitBoth');
   $('#fitHorizontal').parent().show();
   $('body').scrollTop(0);
-}
+};
 
-function fitHorizontal() {
+var fitHorizontal = function () {
   // console.log('fitHorizontal called');
   resetFit();
   $('#comicImages').addClass('fitHorizontal');
   $('#fitVertical').parent().show();
-  // $('li').removeClass('active');
-  // $('#fitHorizontal').parent().addClass('active');
-  // $('#comicImages').focusWithoutScrolling();
   $('body').scrollTop(0);
-}
+};
 
-function fitVertical() {
+var fitVertical = function () {
   // console.log('fitVertical called');
   resetFit();
   $('#comicImages').addClass('fitVertical');
   $('#fitBoth').parent().show();
-  // $('li').removeClass('active');
-  // $('#fitVertical').parent().addClass('active');
-  // $('#comicImages').focusWithoutScrolling();
   $('body').scrollTop(0);
-}
+};
 
-function fullscreen() {
+var fullscreen = function () {
   var isInFullScreen = (document.fullscreenElement && document.fullscreenElement !== null) ||
     (document.webkitFullscreenElement && document.webkitFullscreenElement !== null) ||
     (document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
@@ -1286,5 +1068,128 @@ function fullscreen() {
         document.msExitFullscreen();
     }
   }
-  // document.getElementById('comicImages').focusWithoutScrolling();
-}
+};
+
+var init = function () {
+  if (update_check) {
+    checkUpdate();
+  }
+
+  addNavBar();
+  addImgFrame();
+
+  clearStyle();
+  addStyleFromResource('bt');
+  addStyle('div#i1 {display:none;} p.ip {display:none;}');
+  addStyle(viewer_style);
+  addStyle(fullscreen_style);
+  document.body.setAttribute('class', 'spread1');
+
+  comicImages = document.getElementById("comicImages");
+
+  // set cur panel
+  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
+  var match = page_regex.exec(document.location);
+  curPanel = Number(match[3]);
+  getToken(function (response) {
+    var ids = JSON.parse(response.responseText).tokenlist[0];
+    getGdata(ids.gid, ids.token, setGallery);
+  });
+
+  var setGallery = function (response) {
+    var pushImgs = function (response) {
+      var doc = parseHTML(response);
+      var imgs = doc.getElementsByClassName('gdtm');
+      for (var idx = 0; idx < imgs.length; idx++) {
+        var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
+        var img = imgs[idx];
+        var url_temp = img.firstChild.firstChild.href;
+        var match_temp = regex_temp.exec(url_temp);
+        images[match_temp[3] - 1] = {
+          page: match_temp[3],
+          url: url_temp,
+          token: match_temp[1]
+        };
+      }
+    };
+
+    // make image list
+    var gmetadata = JSON.parse(response.responseText).gmetadata[0];
+    number_of_images = gmetadata.filecount;
+    createDropdown();
+    var gallery_url = 'https://' + host + '/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
+
+    // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
+    var gallery_page_len = Math.ceil(number_of_images / 40);
+
+    // load current page. first things first
+    var current_gallery_page = Math.ceil(curPanel / 40);
+    var page_img_len;
+    if (current_gallery_page < gallery_page_len) {
+      page_img_len = 40;
+    } else {
+      page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
+    }
+    page_img_len = Number(page_img_len);
+
+    // promise pattern
+    var p1 = new Promise(
+      function(resolve, reject) {
+        simpleRequest(gallery_url + (current_gallery_page - 1), function(resp){
+          pushImgs(resp);
+          resolve();
+        });
+      }
+    );
+    p1.then(function() {
+      window.location.hash = curPanel;
+      hashChanged();
+    });
+
+    // load rest of galleries
+    for (var i = 0; i < gallery_page_len; i++) {
+      if (i == current_gallery_page-1) {
+        //already loaded
+      }
+      else {
+        simpleRequest(gallery_url + i, pushImgs);
+      }
+    }
+  };
+
+  window.onhashchange = hashChanged;
+  document.addEventListener('keydown', doHotkey);
+  // document.getElementById('galleryInfo').addEventListener('click', goGallery);
+  getToken(function (response) {
+    ids = JSON.parse(response.responseText).tokenlist[0];
+    document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
+  });
+  document.addEventListener('wheel', doWheel);
+  document.getElementById('prevPanel').addEventListener('click', prevPanel);
+  document.getElementById('nextPanel').addEventListener('click', nextPanel);
+  document.getElementById('fitBoth').addEventListener('click', fitBoth);
+  document.getElementById('fitVertical').addEventListener('click', fitVertical);
+  document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
+  document.getElementById('fullscreen').addEventListener('click', fullscreen);
+  document.getElementById('fullSpread').addEventListener('click', fullSpread);
+  document.getElementById('singlePage').addEventListener('click', singleSpread);
+  document.getElementById('renderingChanger').addEventListener('click', renderChange);
+  document.getElementById('reload').addEventListener('click', reloadImg);
+  document.getElementById('autoPager').addEventListener('click', toggleTimer);
+  document.getElementById('pageChanger').addEventListener('click', goPanel);
+  document.getElementById('single-page-select').addEventListener('change', singlePageChange);
+  document.getElementById('two-page-select').addEventListener('change', twoPageChange);
+  document.getElementById('comicImages').addEventListener('dragstart', imgDragStart);
+  document.getElementById('comicImages').addEventListener('drag', imgDrag);
+  document.getElementById('comicImages').addEventListener('dragend', imgDragEnd);
+  $('.navbar ul li').show();
+  $('#fullSpread').hide();
+  $('#singlePage').hide();
+  var docElm = document.documentElement;
+  if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
+    $('#fullscreen').parent().hide();
+  }
+  renderChange();
+  fitBoth();
+};
+init();
