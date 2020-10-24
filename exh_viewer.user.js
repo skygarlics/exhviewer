@@ -1075,6 +1075,9 @@ var init = function () {
     checkUpdate();
   }
 
+  // clear page
+  document.body.innerHTML = '';
+
   addNavBar();
   addImgFrame();
 
