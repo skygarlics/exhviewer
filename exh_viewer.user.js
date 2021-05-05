@@ -1189,4 +1189,5 @@ var init = function () {
   fitBoth();
 };
 
-window.onload = init;
+window.onload = pageChanged;
+init();
