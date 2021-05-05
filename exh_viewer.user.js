@@ -742,11 +742,16 @@ var updateDropdown = function (num) {
 };
 
 var updateImgsAndCall = function(start, end, callback) {
+  if (end > start) {
+    console.log("error on updateImgsAndCall");
+    console.log("end is greater than start");
+    return;
+  }
+
   var update_entry = [];
   for (var idx = start; idx < end; idx++) {
-    var idx_temp = Number(curPanel) + idx;
-    if (!(idx_temp < 1) && !(idx_temp > number_of_images)) {
-      update_entry.push(idx_temp - 1);
+    if (!(idx < 1) && !(idx > number_of_images)) {
+      update_entry.push(idx - 1);
     }
   }
 
@@ -771,7 +776,8 @@ var drawPanel = function () {
   // set before call drawPanel_()
 
   // img urls have to be resolved before drawPanel_
-  updateImgAndCall(0, 2, drawPanel_);
+  n_curPanel = parseInt(curPanel);
+  updateImgsAndCall(n_curPanel, n_curPanel+2, drawPanel_);
 };
 
 var reloadImg = function () {
@@ -808,7 +814,8 @@ var updateImg = function (img, callback) {
 };
 
 var preloadImage = function(length) {
-  updateImgAndCall(-2, 5, function() {
+  n_curPanel = parseInt(curPanel);
+  updateImgsAndCall(n_curPanel-2, n_curPanel+5, function() {
     for (var idx = 0; idx < length; idx++) {
       if (parseInt(curPanel) + idx < number_of_images) {
         var image = $('<img />', {
