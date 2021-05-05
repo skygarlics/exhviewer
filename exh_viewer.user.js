@@ -877,16 +877,12 @@ var drawPanel_ = function () {
 };
 
 var hashChanged = function () {
-  // console.log('hashChanged called');
   if (goofy_enabled) return;
-  var hash = location.hash;
-  if (hash) {
-    hash = Number(hash.replace('#', ''));
-    if (display == 2 && !isNaN(hash) && hash <= number_of_images && hash > 0) {
-      curPanel = hash;
+
+  if (curPanel) {
+    if (display == 2 && curPanel <= number_of_images && curPanel > 0) {
       fullSpread();
-    } else if (display == 1 && !isNaN(hash) && hash <= number_of_images && hash > 0) {
-      curPanel = hash;
+    } else if (display == 1 && curPanel <= number_of_images && curPanel > 0) {
       singleSpread();
     } else {
       console.log('error');
@@ -896,12 +892,14 @@ var hashChanged = function () {
     //fullSpread();
     singleSpread();
   }
+
   if (Number(curPanel) == 1) {
     disable($('#prevPanel'));
   }
   if (Number(curPanel) >= number_of_images) {
     disable($('#nextPanel'));
   }
+
 };
 
 var filterInt = function (value) {
