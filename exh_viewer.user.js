@@ -741,18 +741,14 @@ var updateDropdown = function (num) {
   }
 };
 
-var drawPanel = function () {
-  // console.log('drawPanel() called curPanel: '+ curPanel);
-  // set before call drawPanel_()
-  // update_entry fills from idx-2 to idx+4
+var updateImgAndCall = function(start, end, callback) {
   var update_entry = [];
-  for (var idx = -2; idx < 5; idx++) {
+  for (var idx = start; idx < end; idx++) {
     var idx_temp = Number(curPanel) + idx;
     if (!(idx_temp < 1) && !(idx_temp > number_of_images)) {
       update_entry.push(idx_temp - 1);
     }
   }
-  //console.log(update_entry);
 
   var promise_entry = [];
   for (var idx = 0; idx < update_entry.length; idx++) {
@@ -767,9 +763,15 @@ var drawPanel = function () {
     }));
   }
 
-  Promise.all(promise_entry).then(function() {
-    drawPanel_();
-  });
+  Promise.all(promise_entry).then(callback);
+}
+
+var drawPanel = function () {
+  // console.log('drawPanel() called curPanel: '+ curPanel);
+  // set before call drawPanel_()
+
+  // img urls have to be resolved before drawPanel_
+  updateImgAndCall(0, 2, drawPanel_);
 };
 
 var reloadImg = function () {
@@ -805,6 +807,19 @@ var updateImg = function (img, callback) {
   });
 };
 
+var preloadImage = function(length) {
+  updateImgAndCall(-2, 5, function() {
+    for (var idx = 0; idx < length; idx++) {
+      if (parseInt(curPanel) + idx < number_of_images) {
+        var image = $('<img />', {
+          src: images[parseInt(curPanel) + idx].path
+        });
+        $('#preload').append(image);
+      }      
+    }
+  });
+}
+
 // original drawPanel()
 var drawPanel_ = function () {
   // console.log('drawPanel_ called display:' + display);
@@ -814,12 +829,10 @@ var drawPanel_ = function () {
   while (imgs.length > 0) {
     comicImages.removeChild(imgs[0]);
   }
-  // var img_len = imgs.length;
-  //for (var idx = 0; idx < img_len; idx++) {
-  //  comicImages.removeChild(imgs[0]);
-  //}
   $('body').removeClass();
   $('body').addClass('spread1');
+
+  // draw images
   if (display == 2) {
     if (curPanel > 1 && Number(curPanel) < Number(number_of_images) && images[curPanel].width <= images[curPanel].height && images[curPanel - 1].width <= images[curPanel - 1].height) {
       // display curPanel + curPanel - 1. except panel 1
@@ -833,18 +846,12 @@ var drawPanel_ = function () {
         //onclick: 'prevPanel()'
       });
       $('#comicImages').append(image);
+      
       $('body').removeClass();
       $('body').addClass('spread2');
       single_displayed = false;
-      
-      for (var idx = 0; idx < 3; idx++) {
-        if (parseInt(curPanel) + idx < number_of_images) {
-          var image = $('<img />', {
-            src: images[parseInt(curPanel) + idx].path
-          });
-          $('#preload').append(image);
-        }      
-      }
+
+      preloadImage(3);
       
     } else if (Number(curPanel) <= Number(number_of_images)) {
       image = $('<img />', {
@@ -855,18 +862,7 @@ var drawPanel_ = function () {
       single_displayed = true;
       
       // curPanel==1 or width > height. display one panel
-      if (Number(curPanel) < Number(number_of_images)) {
-        var image = $('<img />', {
-          src: images[curPanel].path
-        });
-        $('#preload').append(image);
-      }
-      if (Number(curPanel) + 1 < Number(number_of_images)) {
-        image = $('<img />', {
-          src: images[parseInt(curPanel) + 1].path
-        });
-        $('#preload').append(image);
-      }
+      preloadImage(2);
     } else {
       // console.log('ERROR');
     }
@@ -877,15 +873,7 @@ var drawPanel_ = function () {
     });
     
     $('#comicImages').append(image);
-    
-    for (var idx = 0; idx < 2; idx++) {
-      if (parseInt(curPanel) + idx < number_of_images) {
-        var image = $('<img />', {
-          src: images[parseInt(curPanel) + idx].path
-        });
-        $('#preload').append(image);
-      }      
-    }
+    preloadImage(2);
   }
   document.getElementById('leftBtn').addEventListener('click', nextPanel);
   document.getElementById('rightBtn').addEventListener('click', prevPanel);
