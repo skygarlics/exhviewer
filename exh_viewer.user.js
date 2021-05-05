@@ -509,6 +509,31 @@ var renderChange = function () {
   }
 };
 
+var hashChanged = function () {
+  if (goofy_enabled) return;
+
+  if (curPanel) {
+    if (display == 2 && curPanel <= number_of_images && curPanel > 0) {
+      fullSpread();
+    } else if (display == 1 && curPanel <= number_of_images && curPanel > 0) {
+      singleSpread();
+    } else {
+      console.log('error');
+      fullSpread();
+    }
+  } else {
+    //fullSpread();
+    singleSpread();
+  }
+
+  if (Number(curPanel) == 1) {
+    disable($('#prevPanel'));
+  }
+  if (Number(curPanel) >= number_of_images) {
+    disable($('#nextPanel'));
+  }
+};
+
 // original page changers
 var singlePageChange_ = function (sel) {
   // console.log('singlePageChange called');
@@ -876,32 +901,6 @@ var drawPanel_ = function () {
   // $('#comicImages').focusWithoutScrolling();
 };
 
-var hashChanged = function () {
-  if (goofy_enabled) return;
-
-  if (curPanel) {
-    if (display == 2 && curPanel <= number_of_images && curPanel > 0) {
-      fullSpread();
-    } else if (display == 1 && curPanel <= number_of_images && curPanel > 0) {
-      singleSpread();
-    } else {
-      console.log('error');
-      fullSpread();
-    }
-  } else {
-    //fullSpread();
-    singleSpread();
-  }
-
-  if (Number(curPanel) == 1) {
-    disable($('#prevPanel'));
-  }
-  if (Number(curPanel) >= number_of_images) {
-    disable($('#nextPanel'));
-  }
-
-};
-
 var filterInt = function (value) {
   if(/^(\-|\+)?([0-9]+)$/.test(value))
     return Number(value);
@@ -1142,7 +1141,6 @@ var init = function () {
       }
     );
     p1.then(function() {
-      window.location.hash = curPanel;
       hashChanged();
     });
 
