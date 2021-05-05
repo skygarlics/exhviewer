@@ -264,9 +264,11 @@ var addNavBar = function () {
 var addImgFrame = function () {
   html =
   '<div id="comicImages" class="fitVertical" tabindex="1">' +
-  '<a id="leftBtn" class="imageBtn">&#11164;</a>' +
+  // '<a id="leftBtn" class="imageBtn">&#11164;</a>' +
+  '<a id="leftBtn" class="imageBtn"></a>' +
   // '<a id="imageDragger"></a>'+
-  '<a id="rightBtn" class="imageBtn">&#11166;</a>' +
+  // '<a id="rightBtn" class="imageBtn">&#11166;</a>' +
+  '<a id="rightBtn" class="imageBtn"></a>' +
   '<div class="centerer"></div>'+
   '</div>' +
   '<div id="preload"></div>';
@@ -495,15 +497,15 @@ var renderChange = function () {
   // var renderStyle = document.getElementById('renderStyle');
   if (renderType === 0) {
       renderStyle.textContent = 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}';
-      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> optimized';
+      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> Render: optimized';
   }
   if (renderType === 1) {
       renderStyle.textContent = 'img {image-rendering: auto;}';
-      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> auto';
+      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> Render: auto';
   }
   if (renderType === 2) {
       renderStyle.textContent = 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}';
-      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> pixelated';
+      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> Render: pixelated';
   }
 };
 
@@ -724,9 +726,9 @@ var updateDropdown = function (num) {
 var drawPanel = function () {
   // console.log('drawPanel() called curPanel: '+ curPanel);
   // set before call drawPanel_()
-  // update_entry fills from idx-2 to idx+2
+  // update_entry fills from idx-2 to idx+4
   var update_entry = [];
-  for (var idx = -2; idx < 3; idx++) {
+  for (var idx = -2; idx < 5; idx++) {
     var idx_temp = Number(curPanel) + idx;
     if (!(idx_temp < 1) && !(idx_temp > number_of_images)) {
       update_entry.push(idx_temp - 1);
@@ -815,20 +817,25 @@ var drawPanel_ = function () {
       $('#comicImages').append(image);
       $('body').removeClass();
       $('body').addClass('spread2');
-      if (parseInt(curPanel) + 1 < number_of_images) {
-        var image = $('<img />', {
-          src: images[parseInt(curPanel) + 1].path
-        });
-        $('#preload').append(image);
-      }
-      if (parseInt(curPanel) + 2 < number_of_images) {
-        var image = $('<img />', {
-          src: images[parseInt(curPanel) + 2].path
-        });
-        $('#preload').append(image);
-      }
       single_displayed = false;
+      
+      for (var idx = 0; idx < 3; idx++) {
+        if (parseInt(curPanel) + idx < number_of_images) {
+          var image = $('<img />', {
+            src: images[parseInt(curPanel) + idx].path
+          });
+          $('#preload').append(image);
+        }      
+      }
+      
     } else if (Number(curPanel) <= Number(number_of_images)) {
+      image = $('<img />', {
+        src: images[Number(curPanel) - 1].path,
+        //onclick: 'nextPanel()'
+      });
+      $('#comicImages').append(image);
+      single_displayed = true;
+      
       // curPanel==1 or width > height. display one panel
       if (Number(curPanel) < Number(number_of_images)) {
         var image = $('<img />', {
@@ -842,33 +849,25 @@ var drawPanel_ = function () {
         });
         $('#preload').append(image);
       }
-      image = $('<img />', {
-        src: images[Number(curPanel) - 1].path,
-        //onclick: 'nextPanel()'
-      });
-      $('#comicImages').append(image);
-      single_displayed = true;
     } else {
       // console.log('ERROR');
     }
   } else {
   // display == 1
-    if (Number(curPanel) < Number(number_of_images)) {
-      image = $('<img />', {
-        src: images[curPanel].path
-      });
-      $('#preload').append(image);
-    }
-    if (parseInt(curPanel) + 1 < number_of_images) {
-      image = $('<img />', {
-        src: images[parseInt(curPanel) + 1].path
-      });
-      $('#preload').append(image);
-    }
     var image = $('<img />', {
       src: images[Number(curPanel) - 1].path,
     });
+    
     $('#comicImages').append(image);
+    
+    for (var idx = 0; idx < 2; idx++) {
+      if (parseInt(curPanel) + idx < number_of_images) {
+        var image = $('<img />', {
+          src: images[parseInt(curPanel) + idx].path
+        });
+        $('#preload').append(image);
+      }      
+    }
   }
   document.getElementById('leftBtn').addEventListener('click', nextPanel);
   document.getElementById('rightBtn').addEventListener('click', prevPanel);
