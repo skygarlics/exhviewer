@@ -29,7 +29,6 @@ var display = 1;
 var curPanel;
 var number_of_images;
 var comicImages;
-var goofy_enabled = false;
 var single_displayed = true;
 //var numThin = 0;
 //var portrait = false;
@@ -510,8 +509,6 @@ var renderChange = function () {
 };
 
 var hashChanged = function () {
-  if (goofy_enabled) return;
-
   var n_panel = Number(curPanel);
   if (n_panel) {
     if (display == 2 && n_panel <= number_of_images && n_panel > 0) {
