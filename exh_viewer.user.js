@@ -512,24 +512,30 @@ var renderChange = function () {
 var hashChanged = function () {
   if (goofy_enabled) return;
 
-  if (curPanel) {
-    if (display == 2 && curPanel <= number_of_images && curPanel > 0) {
+  var n_panel = Number(curPanel);
+  if (n_panel) {
+    if (display == 2 && n_panel <= number_of_images && n_panel > 0) {
       fullSpread();
-    } else if (display == 1 && curPanel <= number_of_images && curPanel > 0) {
+    } else if (display == 1 && n_panel <= number_of_images && n_panel > 0) {
       singleSpread();
     } else {
-      console.log('error');
-      fullSpread();
+      console.log('error on hashChanged');
+      console.log('all conditions down below have to be true');
+      console.log('display == 1', display == 1);
+      console.log('n_panel <= number_of_images', n_panel <= number_of_images);
+      console.log('n_panel > 0', n_panel > 0);
+      console.log('display: ', display, ', n_panel: ', n_panel, ',number_of_images: ', number_of_images);
     }
   } else {
     //fullSpread();
     singleSpread();
   }
 
-  if (Number(curPanel) == 1) {
+  if (n_panel == 1) {
     disable($('#prevPanel'));
   }
-  if (Number(curPanel) >= number_of_images) {
+
+  if (n_panel >= number_of_images) {
     disable($('#nextPanel'));
   }
 };
@@ -546,9 +552,7 @@ var singlePageChange_ = function (sel) {
     disable($('#nextPanel'));
   }
   curPanel = val;
-  goofy_enabled = true;
-  window.location.hash = val;
-  goofy_enabled = false;
+  hashChanged();
   //drawPanel();
   $('#single-page-select').trigger('blur');
 };
@@ -569,9 +573,7 @@ var twoPageChange_ = function (sel) {
     disable($('#nextPanel'));
   }
   curPanel = val;
-  goofy_enabled = true;
-  window.location.hash = val;
-  goofy_enabled = false;
+  hashChanged();
   $("#two-page-select").trigger("blur");
 };
 
@@ -727,9 +729,6 @@ var updateDropdown = function (num) {
     $("#single-page-select option").each(function() {
       if ($(this).val() == curPanel) {
         $(this).prop("selected", true);
-        goofy_enabled = true;
-        window.location.hash = curPanel;
-        goofy_enabled = false;
         //$(this).parent().trigger("change");
       }
     });
@@ -739,9 +738,6 @@ var updateDropdown = function (num) {
     $("#two-page-select option").each(function() {
       if ($(this).val() == curPanel) {
         $(this).prop("selected", true);
-        goofy_enabled = true;
-        window.location.hash = curPanel;
-        goofy_enabled = false;
         //$(this).parent().trigger("change");
       }
     });
@@ -1154,8 +1150,6 @@ var init = function () {
       }
     }
   };
-
-  window.onhashchange = hashChanged;
   document.addEventListener('keydown', doHotkey);
   // document.getElementById('galleryInfo').addEventListener('click', goGallery);
   getToken(function (response) {
