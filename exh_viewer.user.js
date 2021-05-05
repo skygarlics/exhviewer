@@ -742,9 +742,9 @@ var updateDropdown = function (num) {
 };
 
 var updateImgsAndCall = function(start, end, callback) {
-  if (end > start) {
+  if (end < start) {
     console.log("error on updateImgsAndCall");
-    console.log("end is greater than start");
+    console.log("start is greater than end");
     return;
   }
 
