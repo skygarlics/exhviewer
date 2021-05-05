@@ -741,7 +741,7 @@ var updateDropdown = function (num) {
   }
 };
 
-var updateImgAndCall = function(start, end, callback) {
+var updateImgsAndCall = function(start, end, callback) {
   var update_entry = [];
   for (var idx = start; idx < end; idx++) {
     var idx_temp = Number(curPanel) + idx;
@@ -846,7 +846,7 @@ var drawPanel_ = function () {
         //onclick: 'prevPanel()'
       });
       $('#comicImages').append(image);
-      
+
       $('body').removeClass();
       $('body').addClass('spread2');
       single_displayed = false;
