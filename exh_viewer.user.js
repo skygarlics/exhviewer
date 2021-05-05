@@ -139,6 +139,7 @@ var viewer_style =
   ".input-medium {margin: 15px 15px 15px 3px; height: 20px; width: 58px;}"+
   "#single-page-select {width: 60px}"+
   "#two-page-select {width: 60px}"+
+  "#preloadInput {color: black; margin: 0px 10px; width: 35px; height: 17px}"+
 
   "@media (min-width: 768px) {"+
     ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
@@ -251,6 +252,7 @@ var addNavBar = function () {
               '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
               '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
               '<li><a title="rendering" id="renderingChanger"><span>🖽</span> Rendering</a></li>' +
+              '<li><a title="p" id="preloader">Preload<input id="preloadInput" type="text" value="100"></a></li>' +
             '</ul>'+
           '</li>'+
         '</ul>'+
@@ -700,6 +702,10 @@ var doHotkey = function (e) {
       //alert('R pressed');
       reloadImg();
       break;
+    case 80:
+      //alert('P pressed');
+      preloader();
+      break;
     }
 };
 
@@ -813,9 +819,14 @@ var updateImg = function (img, callback) {
   });
 };
 
+var preloader = function() {
+  var len = document.getElementById('preloadInput').value;
+  preloadImage(len);
+}
+
 var preloadImage = function(length) {
   n_curPanel = parseInt(curPanel);
-  updateImgsAndCall(n_curPanel-2, n_curPanel+5, function() {
+  updateImgsAndCall(n_curPanel-2, n_curPanel+length+1, function() {
     for (var idx = 0; idx < length; idx++) {
       if (parseInt(curPanel) + idx < number_of_images) {
         var image = $('<img />', {
@@ -1159,6 +1170,7 @@ var init = function () {
   document.getElementById('singlePage').addEventListener('click', singleSpread);
   document.getElementById('renderingChanger').addEventListener('click', renderChange);
   document.getElementById('reload').addEventListener('click', reloadImg);
+  document.getElementById('preloader').addEventListener('click', preloader);
   document.getElementById('autoPager').addEventListener('click', toggleTimer);
   document.getElementById('pageChanger').addEventListener('click', goPanel);
   document.getElementById('single-page-select').addEventListener('change', singlePageChange);
