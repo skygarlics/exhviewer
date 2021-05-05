@@ -508,7 +508,7 @@ var renderChange = function () {
   }
 };
 
-var hashChanged = function () {
+var pageChanged = function () {
   var n_panel = Number(curPanel);
   if (n_panel) {
     if (display == 2 && n_panel <= number_of_images && n_panel > 0) {
@@ -516,7 +516,7 @@ var hashChanged = function () {
     } else if (display == 1 && n_panel <= number_of_images && n_panel > 0) {
       singleSpread();
     } else {
-      console.log('error on hashChanged');
+      console.log('error on pageChanged');
       console.log('all conditions down below have to be true');
       console.log('display == 1', display == 1);
       console.log('n_panel <= number_of_images', n_panel <= number_of_images);
@@ -549,7 +549,7 @@ var singlePageChange_ = function (sel) {
     disable($('#nextPanel'));
   }
   curPanel = val;
-  hashChanged();
+  pageChanged();
   //drawPanel();
   $('#single-page-select').trigger('blur');
 };
@@ -570,7 +570,7 @@ var twoPageChange_ = function (sel) {
     disable($('#nextPanel'));
   }
   curPanel = val;
-  hashChanged();
+  pageChanged();
   $("#two-page-select").trigger("blur");
 };
 
@@ -1134,7 +1134,7 @@ var init = function () {
       }
     );
     p1.then(function() {
-      hashChanged();
+      pageChanged();
     });
 
     // load rest of galleries
