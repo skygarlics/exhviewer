@@ -1188,4 +1188,5 @@ var init = function () {
   renderChange();
   fitBoth();
 };
-init();
+
+window.onload = init;
