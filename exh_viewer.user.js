@@ -27,7 +27,7 @@ var API_URL = null;
 var images = {};
 var display = 1;
 var curPanel;
-var number_of_images;
+var number_of_images; //placeholder
 var comicImages;
 var single_displayed = true;
 //var numThin = 0;
@@ -229,7 +229,7 @@ var addNavBar = function () {
     '<div class="container-fluid">'+
       '<div class="navbar-header">'+
         '<a class="navbar-brand" id="galleryInfo">Gallery</a>' +
-        '<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span> </button>'+
+        '<button type="button" id="navbar-button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span> </button>'+
       '</div>'+
       '<div class="collapse navbar-collapse" id="collapseNavbar">' +
         '<ul id="funcs" class="nav navbar-nav">' +
@@ -518,12 +518,7 @@ var pageChanged = function () {
     } else if (display == 1 && n_panel <= number_of_images && n_panel > 0) {
       singleSpread();
     } else {
-      console.log('error on pageChanged');
-      console.log('all conditions down below have to be true');
-      console.log('display == 1', display == 1);
-      console.log('n_panel <= number_of_images', n_panel <= number_of_images);
-      console.log('n_panel > 0', n_panel > 0);
-      console.log('display: ', display, ', n_panel: ', n_panel, ',number_of_images: ', number_of_images);
+      singleSpread();
     }
   } else {
     //fullSpread();
@@ -1077,12 +1072,19 @@ var init = function () {
   addImgFrame();
 
   clearStyle();
-  addStyleFromResource('bt');
+  // addStyleFromResource('bt');
+
+  var head = document.head;
+  var link = document.createElement("link");
+  link.type = "text/css";
+  link.rel = "stylesheet";
+  link.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
+  head.appendChild(link);
+
   addStyle('div#i1 {display:none;} p.ip {display:none;}');
   addStyle(viewer_style);
   addStyle(fullscreen_style);
   document.body.setAttribute('class', 'spread1');
-
   comicImages = document.getElementById("comicImages");
 
   // set cur panel
