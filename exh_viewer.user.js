@@ -100,7 +100,7 @@ var viewer_style =
   "#imageDragger {pointer-events: none; cursor: default; position: fixed; margin-bottom: 25px; z-index: 1; width: 30%; height: calc(100% - 50px - 25px); left: 35%; display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
 
   // fitStretch
-  ".fitStretch img {display: inline-block; vertical-align: middle; width: auto; height: 100%;}"+
+  ".fitStretch img {display: inline-block; vertical-align: middle; width: 100%; height: 100%; object-fit: contain;}"+
   // fitBoth
   ".fitBoth img {display: inline-block; vertical-align: middle; max-width: 100%; max-height:100%}"+
   //".spread1 .fitVeritcal img {max-width: 100%;}"+
