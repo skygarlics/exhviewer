@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       171117
+// @version       230604
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
 // @include       https://e-hentai.org/s/*
-// @version       1
 // @require       https://code.jquery.com/jquery-3.2.1.min.js
 // @require       https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js
 // @resource      bt https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css
@@ -100,6 +99,8 @@ var viewer_style =
   "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
   "#imageDragger {pointer-events: none; cursor: default; position: fixed; margin-bottom: 25px; z-index: 1; width: 30%; height: calc(100% - 50px - 25px); left: 35%; display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
 
+  // fitStretch
+  ".fitStretch img {display: inline-block; vertical-align: middle; width: auto; height: 100%;}"+
   // fitBoth
   ".fitBoth img {display: inline-block; vertical-align: middle; max-width: 100%; max-height:100%}"+
   //".spread1 .fitVeritcal img {max-width: 100%;}"+
@@ -164,7 +165,12 @@ var fullscreen_style = "div:-webkit-full-screen {background-color: black;}"+
   ".fitVertical:-webkit-full-screen img {max-height: 100% !important;}"+
   ".fitVertical:-moz-full-screen img {max-height: 100% !important;}"+
   ".fitVertical:-ms-fullscreen img {max-height: 100% !important;}"+
-  ".fitVertical:fullscreen img {max-height: 100% !important;}";
+  ".fitVertical:fullscreen img {max-height: 100% !important;}"+
+  ".fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}"+
+  ".fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}"+
+  ".fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}"+
+  ".fitStretch:fullscreen img {height: 100% !important; width: auto !important;}";
+
 
 // interface
 var cElement = function (tag, insert, property, func) {
@@ -246,6 +252,7 @@ var addNavBar = function () {
             '<ul class="inverse-dropdown dropdown-menu">'+
               '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
               // To button's text indicate current state, its text content is previous state
+              '<li><a title="b" class="fitBtn" id="fitStretch"><span>□</span> Fit Stretch</a></li>' +
               '<li><a title="b" class="fitBtn" id="fitBoth"><span>┃</span> Fit Vertical</a></li>' +
               '<li><a title="v" class="fitBtn" id="fitVertical"><span>━</span> Fit Horizontal</a></li>' +
               '<li><a title="h" class="fitBtn" id="fitHorizontal"><span>╋</span> Fit Both</a></li>' +
@@ -828,7 +835,7 @@ var preloadImage = function(length) {
           src: images[parseInt(curPanel) + idx].path
         });
         $('#preload').append(image);
-      }      
+      }
     }
   });
 }
@@ -865,7 +872,7 @@ var drawPanel_ = function () {
       single_displayed = false;
 
       preloadImage(3);
-      
+
     } else if (Number(curPanel) <= Number(number_of_images)) {
       image = $('<img />', {
         src: images[Number(curPanel) - 1].path,
@@ -873,7 +880,7 @@ var drawPanel_ = function () {
       });
       $('#comicImages').append(image);
       single_displayed = true;
-      
+
       // curPanel==1 or width > height. display one panel
       preloadImage(2);
     } else {
@@ -884,7 +891,7 @@ var drawPanel_ = function () {
     var image = $('<img />', {
       src: images[Number(curPanel) - 1].path,
     });
-    
+
     $('#comicImages').append(image);
     preloadImage(2);
   }
@@ -1006,6 +1013,15 @@ var resetFit = function () {
   $('.fitBtn').parent().hide();
 };
 
+var fitStretch = function () {
+  // console.log('fitStretch called');
+  resetFit();
+  $('#comicImages').addClass('fitStretch');
+  $('#fitBoth').parent().show();
+  $('body').scrollTop(0);
+};
+
+
 var fitBoth = function () {
   // console.log('fitboth called');
   resetFit();
@@ -1026,7 +1042,7 @@ var fitVertical = function () {
   // console.log('fitVertical called');
   resetFit();
   $('#comicImages').addClass('fitVertical');
-  $('#fitBoth').parent().show();
+  $('#fitStretch').parent().show();
   $('body').scrollTop(0);
 };
 
@@ -1164,6 +1180,7 @@ var init = function () {
   document.addEventListener('wheel', doWheel);
   document.getElementById('prevPanel').addEventListener('click', prevPanel);
   document.getElementById('nextPanel').addEventListener('click', nextPanel);
+  document.getElementById('fitStretch').addEventListener('click', fitStretch);
   document.getElementById('fitBoth').addEventListener('click', fitBoth);
   document.getElementById('fitVertical').addEventListener('click', fitVertical);
   document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
@@ -1188,7 +1205,7 @@ var init = function () {
     $('#fullscreen').parent().hide();
   }
   renderChange();
-  fitBoth();
+  fitStretch();
 };
 
 window.onload = pageChanged;
