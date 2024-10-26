@@ -456,6 +456,7 @@ function goGallery() {
     location.href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
   });
 }
+
 var getGdata = function (gid, token, callback) {
   var data = {
     'method': 'gdata',
@@ -763,18 +764,16 @@ var updateImgsAndCall = function(start, end, callback) {
     }
   }
 
-  var promise_entry = [];
-  for (var idx = 0; idx < update_entry.length; idx++) {
-    var img = images[update_entry[idx]];
-    promise_entry.push(new Promise(function(resolve, reject){
-      if (img['updated'] === true) {
-        resolve();
-      }
-      else {
-        updateImg(img, resolve);
-      }
-    }));
-  }
+  var promise_entry = update_entry.map(function(idx) {
+      return new Promise(function(resolve, reject) {
+          var img = images[idx];
+          if (img && img['updated'] === true) {
+              resolve();
+          } else {
+              updateImg(img, resolve);
+          }
+      });
+  });
 
   Promise.all(promise_entry).then(callback);
 }
@@ -1113,13 +1112,14 @@ var init = function () {
   });
 
   var setGallery = function (response) {
+
     var pushImgs = function (response) {
       var doc = parseHTML(response);
-      var imgs = doc.getElementsByClassName('gdtm');
+      var imgs = doc.querySelectorAll("#gdt > a");
       for (var idx = 0; idx < imgs.length; idx++) {
         var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
         var img = imgs[idx];
-        var url_temp = img.firstChild.firstChild.href;
+        var url_temp = img.href;
         var match_temp = regex_temp.exec(url_temp);
         images[match_temp[3] - 1] = {
           page: match_temp[3],
@@ -1142,7 +1142,8 @@ var init = function () {
     var current_gallery_page = Math.ceil(curPanel / 40);
     var page_img_len;
     if (current_gallery_page < gallery_page_len) {
-      page_img_len = 40;
+        // before last page of gallery images
+        page_img_len = 40;
     } else {
       page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
     }
@@ -1171,6 +1172,7 @@ var init = function () {
       }
     }
   };
+
   document.addEventListener('keydown', doHotkey);
   // document.getElementById('galleryInfo').addEventListener('click', goGallery);
   getToken(function (response) {
@@ -1205,7 +1207,7 @@ var init = function () {
     $('#fullscreen').parent().hide();
   }
   renderChange();
-  fitStretch();
+  fitVertical();
 };
 
 window.onload = pageChanged;
