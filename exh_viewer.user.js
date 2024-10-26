@@ -9,7 +9,6 @@
 // @require       https://code.jquery.com/jquery-3.2.1.min.js
 // @require       https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js
 // @resource      bt https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css
-// @grant         GM_xmlhttpRequest
 // @grant         GM_getValue
 // @grant         GM_setValue
 // @grant         GM_deleteValue
