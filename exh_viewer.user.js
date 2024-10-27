@@ -28,8 +28,8 @@ var curPanel;
 var number_of_images; //placeholder
 var comicImages;
 var single_displayed = true;
-//var numThin = 0;
-//var portrait = false;
+
+var GID_TOKEN = null;
 
 var host_regex = /^(.+)\/\/(.+?)\/(.+)/g;
 var host = host_regex.exec(document.location)[2];
@@ -404,6 +404,35 @@ var simpleRequest = function (url, callback, method, headers, data, error) {
   xmlhttpRequest(details);
 };
 
+var simpleRequestAsync = function (url, method = 'GET', headers = {}, data = null) {
+  return new Promise((resolve, reject) => {
+    var details = {
+      method,
+      url,
+      timeout: 10000,
+      ontimeout: (e) => reject(new Error("Request timed out")),
+      onload: (response) => resolve(response),
+      onerror: (error) => reject(new Error(error.statusText || "Request failed"))
+    };
+
+    // Add headers if any
+    if (headers) {
+      details.headers = headers;
+      if (headers['content-type'] && headers['content-type'].match(/multipart\/form-data/i)) {
+        details.binary = true;
+      }
+    }
+
+    // Set request data if provided
+    if (data) details.data = data;
+
+    xmlhttpRequest(details);
+  });
+};
+
+
+
+
 //////////////////////////////////////////////////////////////////
 
 var user_lang = function () {
@@ -431,29 +460,32 @@ var enable = function (elem) {
   elem.parent().removeClass('disabled');
   elem.children().addClass('icon_white');
 };
-var getToken = function (callback) {
-  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-  var match = page_regex.exec(document.location);
-  var data = {
-    'method': 'gtoken',
-    'pagelist': [
-      [
-      match[2],
-      match[1],
-      match[3]
-      ]
-    ]
-  };
-  simpleRequest(API_URL, callback, 'POST', {
-  }, JSON.stringify(data)
-  );
-};
 
-function goGallery() {
-  getToken(function (response) {
-    ids = JSON.parse(response.responseText).tokenlist[0];
-    location.href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
-  });
+async function getToken() {
+    // GID_TOKEN이 이미 존재하면 즉시 반환
+    if (GID_TOKEN) return GID_TOKEN;
+
+    // URL에서 필요한 정보를 추출
+    const page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
+    const match = page_regex.exec(document.location);
+    const data = {
+        method: 'gtoken',
+        pagelist: [[match[2], match[1], match[3]]]
+    };
+
+    try {
+        // simpleRequestAsync로 API 호출
+        const response = await simpleRequestAsync(API_URL, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify(data));
+
+        // 응답을 JSON으로 파싱 후 토큰 저장
+        const tokens = JSON.parse(response.responseText).tokenlist[0];
+        GID_TOKEN = { gid: tokens.gid, token: tokens.token };
+        return GID_TOKEN;
+
+    } catch (error) {
+        console.error("Error fetching token:", error);
+        throw error;  // 호출한 곳에서 에러를 처리할 수 있도록 다시 던짐
+    }
 }
 
 var getGdata = function (gid, token, callback) {
@@ -1054,13 +1086,11 @@ var init = async function () {
   comicImages = document.getElementById("comicImages");
 
   // set cur panel
-  var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-  var match = page_regex.exec(document.location);
-  curPanel = Number(match[3]);
-  getToken(function (response) {
-    var ids = JSON.parse(response.responseText).tokenlist[0];
-    getGdata(ids.gid, ids.token, setGallery);
-  });
+    var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
+    var match = page_regex.exec(document.location);
+    curPanel = Number(match[3]);
+    getToken()
+        .then(token => getGdata(token.gid, token.token, setGallery));
 
   var setGallery = function (response) {
 
@@ -1122,43 +1152,40 @@ var init = async function () {
         simpleRequest(gallery_url + i, pushImgs);
       }
     }
-  };
+    };
 
-  document.addEventListener('keydown', doHotkey);
-  // document.getElementById('galleryInfo').addEventListener('click', goGallery);
-  getToken(function (response) {
-    ids = JSON.parse(response.responseText).tokenlist[0];
-    document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + ids.gid + '/' + ids.token;
-  });
-  document.addEventListener('wheel', doWheel);
-  document.getElementById('prevPanel').addEventListener('click', prevPanel);
-  document.getElementById('nextPanel').addEventListener('click', nextPanel);
-  document.getElementById('fitStretch').addEventListener('click', fitStretch);
-  document.getElementById('fitBoth').addEventListener('click', fitBoth);
-  document.getElementById('fitVertical').addEventListener('click', fitVertical);
-  document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
-  document.getElementById('fullscreen').addEventListener('click', fullscreen);
-  document.getElementById('fullSpread').addEventListener('click', fullSpread);
-  document.getElementById('singlePage').addEventListener('click', singleSpread);
-  document.getElementById('renderingChanger').addEventListener('click', renderChange);
-  document.getElementById('reload').addEventListener('click', reloadImg);
-  document.getElementById('preloader').addEventListener('click', preloader);
-  document.getElementById('autoPager').addEventListener('click', toggleTimer);
-  document.getElementById('pageChanger').addEventListener('click', goPanel);
-  document.getElementById('single-page-select').addEventListener('change', singlePageChange);
-  document.getElementById('two-page-select').addEventListener('change', twoPageChange);
-  document.getElementById('comicImages').addEventListener('dragstart', imgDragStart);
-  document.getElementById('comicImages').addEventListener('drag', imgDrag);
-  document.getElementById('comicImages').addEventListener('dragend', imgDragEnd);
-  $('.navbar ul li').show();
-  $('#fullSpread').hide();
-  $('#singlePage').hide();
-  var docElm = document.documentElement;
-  if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
+    document.addEventListener('keydown', doHotkey);
+    getToken()
+        .then(token => {document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + token.gid + '/' + token.token;});
+    document.addEventListener('wheel', doWheel);
+    document.getElementById('prevPanel').addEventListener('click', prevPanel);
+    document.getElementById('nextPanel').addEventListener('click', nextPanel);
+    document.getElementById('fitStretch').addEventListener('click', fitStretch);
+    document.getElementById('fitBoth').addEventListener('click', fitBoth);
+    document.getElementById('fitVertical').addEventListener('click', fitVertical);
+    document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
+    document.getElementById('fullscreen').addEventListener('click', fullscreen);
+    document.getElementById('fullSpread').addEventListener('click', fullSpread);
+    document.getElementById('singlePage').addEventListener('click', singleSpread);
+    document.getElementById('renderingChanger').addEventListener('click', renderChange);
+    document.getElementById('reload').addEventListener('click', reloadImg);
+    document.getElementById('preloader').addEventListener('click', preloader);
+    document.getElementById('autoPager').addEventListener('click', toggleTimer);
+    document.getElementById('pageChanger').addEventListener('click', goPanel);
+    document.getElementById('single-page-select').addEventListener('change', singlePageChange);
+    document.getElementById('two-page-select').addEventListener('change', twoPageChange);
+    document.getElementById('comicImages').addEventListener('dragstart', imgDragStart);
+    document.getElementById('comicImages').addEventListener('drag', imgDrag);
+    document.getElementById('comicImages').addEventListener('dragend', imgDragEnd);
+    $('.navbar ul li').show();
+    $('#fullSpread').hide();
+    $('#singlePage').hide();
+    var docElm = document.documentElement;
+    if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
     $('#fullscreen').parent().hide();
-  }
-  renderChange();
-  fitVertical();
+    }
+    renderChange();
+    fitVertical();
 };
 
 window.onload = pageChanged;
