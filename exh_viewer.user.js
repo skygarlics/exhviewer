@@ -71,7 +71,7 @@ function (css) {
 };
 
 // GM_getResourceText is deprecated in Greasemonkey4
-var addStyleFromResource = async function asdf (res) {
+var addStyleFromResource = async function (res) {
   if (typeof GM_getResourceText !== 'undefined'){
     var bt_css = GM_getResourceText(res);
 		addStyle(bt_css);
@@ -642,74 +642,46 @@ var toggleTimer = function () {
 };
 
 var doHotkey = function (e) {
-  var key = e.keyCode;
-  switch (key) {
-    case 74:
-      //alert('J paressed');
+  switch (e.key.toLowerCase()) {
+    case 'j':
+    case 'arrowleft':
       nextPanel();
       break;
-    case 81:
-      //alert('Q pressed');
-      nextPanel();
-      break;
-    case 37:
-      //alert('LEFT pressed');
-      nextPanel();
-      break;
-    case 75:
-      //alert('K pressed');
+    case 'k':
+    case 'arrowright':
       prevPanel();
       break;
-    case 69:
-      //alert('E pressed');
-      prevPanel();
-      break;
-    case 39:
-      //alert('RIGHT pressed')
-      prevPanel();
-      break;
-    case 66:
-      //alert('B pressed')
+    case 'b':
       fitBoth();
       break;
-    case 86:
-      //alert('V pressed')
+    case 'v':
       fitVertical();
       break;
-    case 72:
-      //alert('H pressed')
+    case 'h':
       fitHorizontal();
       break;
-    case 70:
-      //alert('F pressed')
+    case 'f':
       fullSpread();
       break;
-    case 83:
-      //alert('S pressed')
+    case 's':
       singleSpread();
       break;
-    case 13:
-      //alert('ENTER pressed')
+    case 'enter':
+    case ' ':
       fullscreen();
       break;
-    case 32:
-      //alert('SPACE pressed')
-      fullscreen();
-      break;
-    case 84:
-      //alert('T pressed');
+    case 't':
       toggleTimer();
       break;
-    case 82:
-      //alert('R pressed');
+    case 'r':
       reloadImg();
       break;
-    case 80:
-      //alert('P pressed');
+    case 'p':
       preloader();
       break;
-    }
+  }
 };
+
 
 var createDropdown = function () {
   for (var i = 1; i <= number_of_images; i++) {
@@ -1045,36 +1017,16 @@ var fitVertical = function () {
 };
 
 var fullscreen = function () {
-  var isInFullScreen = (document.fullscreenElement && document.fullscreenElement !== null) ||
-    (document.webkitFullscreenElement && document.webkitFullscreenElement !== null) ||
-    (document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
-    (document.msFullscreenElement && document.msFullscreenElement !== null);
-  // console.log('fullscreen called');
   var elem = comicImages;
-  if (!isInFullScreen) {
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen();
-    } else if (elem.msRequestFullscreen) {
-      elem.msRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) {
-      elem.mozRequestFullScreen();
-    } else if (elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen();
-    }
+  if (!document.fullscreenElement) {
+    elem.requestFullscreen?.() || elem.msRequestFullscreen?.() || elem.mozRequestFullScreen?.() || elem.webkitRequestFullscreen?.();
   } else {
-    if (document.exitFullscreen) {
-        document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-    }
+    document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
   }
 };
 
-var init = function () {
+
+var init = async function () {
   if (update_check) {
     checkUpdate();
   }
