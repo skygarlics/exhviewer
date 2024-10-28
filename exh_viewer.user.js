@@ -23,11 +23,11 @@ var update_check = false;
 var API_URL = null;
 
 var images = {};
-var display = 1;
+var spread = 1;
+var is_single_displayed = true;
 var curPanel;
 var number_of_images; //placeholder
 var comicImages;
-var single_displayed = true;
 
 var GID_TOKEN = null;
 
@@ -549,15 +549,12 @@ var renderChange = function () {
 var pageChanged = function () {
   var n_panel = Number(curPanel);
   if (n_panel) {
-    if (display == 2 && n_panel <= number_of_images && n_panel > 0) {
+    if (spread == 2 && n_panel <= number_of_images && n_panel > 0) {
       fullSpread();
-    } else if (display == 1 && n_panel <= number_of_images && n_panel > 0) {
-      singleSpread();
     } else {
       singleSpread();
     }
   } else {
-    //fullSpread();
     singleSpread();
   }
 
@@ -822,11 +819,11 @@ var preloadImage = async function(length) {
     // 필요한 이미지를 미리 로드하고 src만 업데이트
     for (let idx = 0; idx < length; idx++) {
         const panelIndex = currentPanel + idx;
-        
+
         // 이미지가 존재하는 경우에만 로드
         if (panelIndex < number_of_images) {
             const imagePath = images[panelIndex].path;
-            
+
             if (idx < imgElements.length) {
                 // 이미 img 요소가 있으면 src만 변경
                 $(imgElements[idx]).attr('src', imagePath);
@@ -847,7 +844,7 @@ var preloadImage = async function(length) {
 function updateImageWithFadeIn(imgElement, newSrc) {
     // 임시 이미지 객체를 생성하여 새 이미지를 로드
     const tempImg = new Image();
-    
+
     // 새 이미지의 경로 설정 (로딩이 바로 시작됨)
     tempImg.src = newSrc;
 
@@ -867,7 +864,7 @@ function updateImageWithFadeIn(imgElement, newSrc) {
     if (!tempImg.complete) {
         // 이미지가 캐시되지 않은 경우 로드될 때까지 투명하게 설정
         imgElement.css('opacity', '0');
-        
+
         // 로드 완료 시 이미지의 src를 교체하고 표시
         tempImg.onload = function () {
             imgElement.attr('src', newSrc).css('opacity', '1');
@@ -880,14 +877,14 @@ var drawPanel_ = function () {
     const comicImagesContainer = $('#comicImages');
     const currentPanel = Number(curPanel);
     const totalImages = Number(number_of_images);
-    const singleDisplay = display === 1;
+    const singleSpread = spread === 1;
 
-    $('body').attr('class', singleDisplay ? 'spread1' : 'spread2');
-  
+    $('body').attr('class', singleSpread ? 'spread1' : 'spread2');
+
     // 기존 img 요소를 가져오거나 없는 경우 새로 추가
     let imgElements = comicImagesContainer.find('img');
-    if (imgElements.length < (singleDisplay ? 1 : 2)) {
-        if (singleDisplay) {
+    if (imgElements.length < (singleSpread ? 1 : 2)) {
+        if (singleSpread) {
             imgElements = $('<img />').appendTo(comicImagesContainer);
         } else {
             imgElements = $('<img />').appendTo(comicImagesContainer);
@@ -896,21 +893,25 @@ var drawPanel_ = function () {
         imgElements = comicImagesContainer.find('img');
     }
 
-    if (!singleDisplay && currentPanel > 1 && currentPanel < totalImages) {
+    imgElements = comicImagesContainer.find('img')
+    if (!singleSpread && currentPanel > 1 && currentPanel < totalImages) {
         const currentImage = images[currentPanel];
         const previousImage = images[currentPanel - 1];
-      
+
         if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
             updateImageWithFadeIn($(imgElements[1]), previousImage.path);
             updateImageWithFadeIn($(imgElements[0]), currentImage.path);
+            is_single_displayed = false;
             preloadImage(3);
         } else {
             updateImageWithFadeIn($(imgElements[0]), images[currentPanel - 1].path);
             $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+            is_single_displayed = true;
             preloadImage(2);
         }
     } else if (currentPanel <= totalImages) {
         updateImageWithFadeIn($(imgElements[0]), images[currentPanel - 1].path);
+        is_single_displayed = true;
         $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
         preloadImage(2);
     }
@@ -928,7 +929,7 @@ var drawPanel_ = function () {
 
 var goPanel = function () {
     const target = parseInt(prompt('target page'), 10);
-  
+
     // target이 NaN이 아니고, 지정된 범위 내에 있을 때만 패널을 변경
     if (Number.isInteger(target) && target >= 0 && target <= number_of_images) {
       panelChange(target);
@@ -936,7 +937,7 @@ var goPanel = function () {
 };
 
 var panelChange = function (target) {
-  if (display == 1) {
+  if (spread == 1) {
     $('#single-page-select').prop('selectedIndex', target - 1);
     singlePageChange();
   } else {
@@ -950,12 +951,12 @@ var prevPanel = function () {
 
     if (currentPanel <= 1) return;
 
-    if (display === 1) {
+    if (is_single_displayed) {
       panelChange(currentPanel - 1);
     } else {
       const prevImage = images[currentPanel - 2];
-      const newPanel = (currentPanel > 2 && prevImage.width <= prevImage.height) 
-                        ? currentPanel - 2 
+      const newPanel = (currentPanel > 2 && prevImage.width <= prevImage.height)
+                        ? currentPanel - 2
                         : currentPanel - 1;
       panelChange(newPanel);
     }
@@ -968,12 +969,12 @@ var nextPanel = function () {
 
     if (currentPanel >= number_of_images) return;
 
-    if (display === 1) {
+    if (is_single_displayed) {
       panelChange(currentPanel + 1);
     } else {
       const nextImage = images[currentPanel]; // 현재 패널의 다음 이미지 가져오기
-      const newPanel = (currentPanel + 1 < number_of_images && nextImage.width <= nextImage.height) 
-                       ? currentPanel + 2 
+      const newPanel = (currentPanel + 1 < number_of_images && nextImage.width <= nextImage.height)
+                       ? currentPanel + 2
                        : currentPanel + 1;
       panelChange(newPanel);
     }
@@ -990,7 +991,7 @@ var fullSpread = function () {
   $('#two-page-select').show();
   $('#singlePage').show();
   updateDropdown(2);
-  spread(2);
+  changeSpread(2);
 };
 
 var singleSpread = function () {
@@ -1001,13 +1002,13 @@ var singleSpread = function () {
   $('#single-page-select').show();
   $('#fullSpread').show();
   updateDropdown(1);
-  spread(1);
+  changeSpread(1);
 };
 
-var spread = function (num) {
-  $('body').removeClass('spread' + display);
-  display = num;
-  $('body').addClass('spread' + display);
+var changeSpread = function (num) {
+  $('body').removeClass('spread' + spread);
+  spread = num;
+  $('body').addClass('spread' + spread);
   drawPanel();
 };
 
