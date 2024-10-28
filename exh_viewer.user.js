@@ -573,46 +573,37 @@ var pageChanged = function () {
   }
 };
 
-// original page changers
-var singlePageChange_ = function (sel) {
-  // console.log('singlePageChange called');
-  var val = sel.value;
-  enable($('#prevPanel'));
-  enable($('#nextPanel'));
-  if (val == 1) {
-    disable($('#prevPanel'));
-  } else if (val == number_of_images) {
-    disable($('#nextPanel'));
-  }
-  curPanel = val;
-  pageChanged();
-  //drawPanel();
-  $('#single-page-select').trigger('blur');
-};
 
 var singlePageChange = function ( ){
-  //console.log('singlePageChange called');
-  singlePageChange_(document.getElementById('single-page-select'));
+    var val = document.getElementById('single-page-select').value;
+    enable($('#prevPanel'));
+    enable($('#nextPanel'));
+    if (val == 1) {
+      disable($('#prevPanel'));
+    } else if (val == number_of_images) {
+      disable($('#nextPanel'));
+    }
+    curPanel = val;
+    pageChanged();
+    //drawPanel();
+    $('#single-page-select').trigger('blur');
 };
 
-var twoPageChange_ = function (sel) {
-  //console.log('twoPageChange called');
-  var val = sel.value;
-  enable($("#prevPanel"));
-  enable($("#nextPanel"));
-  if (val == 1) {
-    disable($('#prevPanel'));
-  } else if (val == number_of_images) {
-    disable($('#nextPanel'));
-  }
-  curPanel = val;
-  pageChanged();
-  $("#two-page-select").trigger("blur");
-};
 
 var twoPageChange = function () {
   //consle.log('twoPageChange called');
-  twoPageChange_(document.getElementById('two-page-select'));
+    //console.log('twoPageChange called');
+    var val = document.getElementById('two-page-select').value;
+    enable($("#prevPanel"));
+    enable($("#nextPanel"));
+    if (val == 1) {
+      disable($('#prevPanel'));
+    } else if (val == number_of_images) {
+      disable($('#nextPanel'));
+    }
+    curPanel = val;
+    pageChanged();
+    $("#two-page-select").trigger("blur");
 };
 
 var curDown = false;
