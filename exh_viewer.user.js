@@ -719,11 +719,39 @@ var updateImgsAndCallAsync = async function(start, end) {
 
     const promise_entry = update_entry.map(async (idx) => {
         const img = images[idx];
-        if (img && img.updated === true) return;
-        await new Promise((resolve) => updateImg(img, resolve));
+        if (img && img.updated) return;  // 이미 업데이트된 경우 skip
+        await updateImg(img);  // async 함수 호출
     });
+    
 
     await Promise.all(promise_entry);
+};
+
+var updateImg = async function (img) {
+    try {
+        const response = await simpleRequestAsync(img.url);  // 비동기 요청 대기
+        const doc = parseHTML(response);
+
+        // 파일 정보에서 이미지 크기 추출
+        const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
+        const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
+        if (!fileInfoMatch) throw new Error("File info not found");
+
+        // 이미지 경로 및 크기 정보 업데이트
+        img.path = doc.getElementById('img').src;
+        img.width = Number(fileInfoMatch[1]);
+        img.height = Number(fileInfoMatch[2]);
+        img.updated = true;
+
+        // 'loadfail' 클릭 이벤트의 'nl' 값 추출
+        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
+        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
+        if (!nlMatch) throw new Error("NL value not found");
+        img.nl = nlMatch[1];
+    } catch (error) {
+        console.error("Error updating image:", error);
+        throw error;  // 오류가 발생한 경우 상위로 throw하여 처리
+    }
 };
 
 
@@ -747,25 +775,6 @@ var reloadImg = function () {
     drawPanel();
 };
 
-
-var updateImg = function (img, callback) {
-  //console.log('updateImg called. img_num : ' + img.page);
-    simpleRequest(img.url, function (response) {
-        var doc = parseHTML(response);
-        var file_info = doc.getElementById('i4').firstChild.firstChild.textContent;
-        
-        var match = file_info_regex.exec(file_info);
-        img['path'] = doc.getElementById('img').src;
-        img['width'] = Number(match[1]);
-        img['height'] = Number(match[2]);
-        img['updated'] = true;
-
-        var nl_regex = /^return nl\('(.*)'\)$/g;
-        var nl_match = nl_regex.exec(doc.getElementById("loadfail").attributes["onclick"].nodeValue);
-        img['nl'] = nl_match[1];
-        callback();
-    });
-};
 
 var preloader = function() {
     var len = document.getElementById('preloadInput').value;
