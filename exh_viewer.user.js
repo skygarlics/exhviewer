@@ -430,9 +430,6 @@ var simpleRequestAsync = function (url, method = 'GET', headers = {}, data = nul
   });
 };
 
-
-
-
 //////////////////////////////////////////////////////////////////
 
 var user_lang = function () {
@@ -632,37 +629,37 @@ var imgDragEnd = function (e) {
   curDown = false;
 };
 
+
 var doWheel = function (e) {
-  let prev_scrollTop = comicImages.scrollTop;
-  // let scrollTo = prev_scrollTop + e.deltaY;
-  // comicImages.scrollTop = scrollTo;
-  setTimeout(() => {
-    if (comicImages.scrollTop == prev_scrollTop){
-      if (e.deltaY > 0)
-        nextPanel();
-      else if (e.deltaY < 0)
-        prevPanel();
-    }
-  }, 50);
+    const prevScrollTop = comicImages.scrollTop;
+    comicImages.scrollTop += e.deltaY;
+  
+    requestAnimationFrame(() => {
+      if (comicImages.scrollTop === prevScrollTop) {
+        e.deltaY > 0 ? nextPanel() : prevPanel();
+      }
+    });
 };
 
 var toggleTimer = function () {
-  //console.log('toggleTimer called');
-  var second = document.getElementById('pageTimer').value;
-  if (second < 1 || isNaN(second)) {
-    return;
-  }
-  toggleTimer.flag = toggleTimer.flag ? 0 : 1;
-  if (toggleTimer.flag) {
+    //console.log('toggleTimer called');
+    var second = document.getElementById('pageTimer').value;
+    if (second < 1 || isNaN(second)) {
+        return;
+    }
+
+    toggleTimer.flag = !toggleTimer.flag
     var pagerButton = document.getElementById('autoPager');
-    pagerButton.firstChild.classList.add('icon_white');
-    toggleTimer.interval = setInterval(nextPanel, second * 1000);
-  } else {
-    var pagerButton = document.getElementById('autoPager');
-    pagerButton.firstChild.classList.remove('icon_white');
-    clearInterval(toggleTimer.interval);
-  }
+
+    if (toggleTimer.flag) {
+        pagerButton.firstChild.classList.add('icon_white');
+        toggleTimer.interval = setInterval(nextPanel, second * 1000);
+    } else {
+        pagerButton.firstChild.classList.remove('icon_white');
+        clearInterval(toggleTimer.interval);
+    }
 };
+toggleTimer.flag = false;
 
 var doHotkey = function (e) {
   switch (e.key.toLowerCase()) {
@@ -744,41 +741,34 @@ var updateDropdown = function (num) {
   }
 };
 
-var updateImgsAndCall = function(start, end, callback) {
-  if (end < start) {
-    console.log("error on updateImgsAndCall");
-    console.log("start is greater than end");
-    return;
-  }
-
-  var update_entry = [];
-  for (var idx = start; idx < end; idx++) {
-    if (!(idx < 1) && !(idx > number_of_images)) {
+var updateImgsAndCallAsync = async function(start, end) {
+    if (end < start) {
+      console.error("Error in updateImgsAndCall: start is greater than end");
+      return;
+    }
+  
+    // `start`와 `end`의 범위 내 유효한 이미지 인덱스를 계산합니다.
+    const update_entry = [];
+    for (let idx = Math.max(start, 1); idx < Math.min(end, number_of_images + 1); idx++) {
       update_entry.push(idx - 1);
     }
-  }
+  
+    // 비동기 이미지 업데이트 처리
+    const promise_entry = update_entry.map(async (idx) => {
+      const img = images[idx];
+      if (img && img.updated === true) return;
+      await new Promise((resolve) => updateImg(img, resolve));
+    });
+  
+    // 모든 이미지가 업데이트된 후 콜백 호출
+    await Promise.all(promise_entry);
+};
 
-  var promise_entry = update_entry.map(function(idx) {
-      return new Promise(function(resolve, reject) {
-          var img = images[idx];
-          if (img && img['updated'] === true) {
-              resolve();
-          } else {
-              updateImg(img, resolve);
-          }
-      });
-  });
-
-  Promise.all(promise_entry).then(callback);
-}
 
 var drawPanel = function () {
-  // console.log('drawPanel() called curPanel: '+ curPanel);
-  // set before call drawPanel_()
-
-  // img urls have to be resolved before drawPanel_
-  n_curPanel = parseInt(curPanel);
-  updateImgsAndCall(n_curPanel, n_curPanel+2, drawPanel_);
+    n_curPanel = parseInt(curPanel);
+    updateImgsAndCallAsync(n_curPanel, n_curPanel+2)
+        .then(drawPanel_);
 };
 
 var reloadImg = function () {
@@ -819,94 +809,86 @@ var preloader = function() {
   preloadImage(len);
 }
 
-var preloadImage = function(length) {
-  n_curPanel = parseInt(curPanel);
-  updateImgsAndCall(n_curPanel-2, n_curPanel+length+1, function() {
-    for (var idx = 0; idx < length; idx++) {
-      if (parseInt(curPanel) + idx < number_of_images) {
-        var image = $('<img />', {
-          src: images[parseInt(curPanel) + idx].path
-        });
-        $('#preload').append(image);
-      }
+var preloadImage = async function(length) {
+    const currentPanel = parseInt(curPanel);
+    n_curPanel = currentPanel;
+
+    // 이미지 업데이트 호출 및 완료 후 처리
+    await updateImgsAndCallAsync(n_curPanel - 2, n_curPanel + length + 1);
+
+    // 필요한 이미지를 미리 로드
+    const preloadContainer = $('#preload');
+    const imagesToPreload = [];
+    for (let idx = 0; idx < length; idx++) {
+        const panelIndex = currentPanel + idx;
+        if (panelIndex < number_of_images) {
+            const image = $('<img />', { src: images[panelIndex].path });
+            imagesToPreload.push(image);
+        }
     }
-  });
-}
+
+    // 한 번에 이미지 요소 추가
+    preloadContainer.append(imagesToPreload);
+};
+
 
 // original drawPanel()
 var drawPanel_ = function () {
-  // console.log('drawPanel_ called display:' + display);
-  $('#preload').empty();
-  // $('#comicImages').empty();
-  var imgs = comicImages.getElementsByTagName('img');
-  while (imgs.length > 0) {
-    comicImages.removeChild(imgs[0]);
-  }
-  $('body').removeClass();
-  $('body').addClass('spread1');
-
-  // draw images
-  if (display == 2) {
-    if (curPanel > 1 && Number(curPanel) < Number(number_of_images) && images[curPanel].width <= images[curPanel].height && images[curPanel - 1].width <= images[curPanel - 1].height) {
-      // display curPanel + curPanel - 1. except panel 1
-      var image = $('<img />', {
-        src: images[curPanel].path,
-        //onclick: 'nextPanel()'
-      });
-      $('#comicImages').append(image);
-      image = $('<img />', {
-        src: images[curPanel - 1].path,
-        //onclick: 'prevPanel()'
-      });
-      $('#comicImages').append(image);
-
-      $('body').removeClass();
-      $('body').addClass('spread2');
-      single_displayed = false;
-
-      preloadImage(3);
-
-    } else if (Number(curPanel) <= Number(number_of_images)) {
-      image = $('<img />', {
-        src: images[Number(curPanel) - 1].path,
-        //onclick: 'nextPanel()'
-      });
-      $('#comicImages').append(image);
-      single_displayed = true;
-
-      // curPanel==1 or width > height. display one panel
+    const preloadContainer = $('#preload').empty();
+    const comicImagesContainer = $('#comicImages').empty();
+    const currentPanel = Number(curPanel);
+    const totalImages = Number(number_of_images);
+    const singleDisplay = display === 1;
+    
+    $('body').attr('class', singleDisplay ? 'spread1' : 'spread2');
+  
+    if (!singleDisplay && currentPanel > 1 && currentPanel < totalImages) {
+      const currentImage = images[currentPanel];
+      const previousImage = images[currentPanel - 1];
+      
+      if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
+        // 두 이미지를 추가하여 spread2 모드로 표시
+        const imgElements = [
+          $('<img />', { src: currentImage.path }),
+          $('<img />', { src: previousImage.path })
+        ];
+        comicImagesContainer.append(imgElements);
+        preloadImage(3);
+      } else {
+        // 하나의 이미지만 추가하여 spread1 모드로 표시
+        comicImagesContainer.append(
+          $('<img />', { src: images[currentPanel - 1].path })
+        );
+        preloadImage(2);
+      }
+    } else if (currentPanel <= totalImages) {
+      // display == 1 또는 조건에 맞지 않는 경우 한 개의 이미지만 표시
+      comicImagesContainer.append(
+        $('<img />', { src: images[currentPanel - 1].path })
+      );
       preloadImage(2);
-    } else {
-      // console.log('ERROR');
     }
-  } else {
-  // display == 1
-    var image = $('<img />', {
-      src: images[Number(curPanel) - 1].path,
-    });
+  
+    // 버튼에 대한 이벤트 리스너가 이미 설정되어 있을 경우 중복 추가를 방지
+    if (!drawPanel_.listenersAdded) {
+      document.getElementById('leftBtn').addEventListener('click', prevPanel);
+      document.getElementById('rightBtn').addEventListener('click', nextPanel);
+      drawPanel_.listenersAdded = true;
+    }
+  
+    comicImagesContainer.scrollTop(0);
+    $('body').scrollTop(0);
+  };
+  
 
-    $('#comicImages').append(image);
-    preloadImage(2);
-  }
-  document.getElementById('leftBtn').addEventListener('click', nextPanel);
-  document.getElementById('rightBtn').addEventListener('click', prevPanel);
-  $('#comicImages').scrollTop(0);
-  $('body').scrollTop(0);
-  // $('#comicImages').focusWithoutScrolling();
-};
-
-var filterInt = function (value) {
-  if(/^(\-|\+)?([0-9]+)$/.test(value))
-    return Number(value);
-  return NaN;
-};
-
-var goPanel = function () {
-  let target = filterInt(prompt('target page'));
-  if (isNaN(target) || (target < 0)|| (target > number_of_images))
-    return;
-  panelChange(target);
-};
+  var goPanel = function () {
+    const target = parseInt(prompt('target page'), 10);
+  
+    // target이 NaN이 아니고, 지정된 범위 내에 있을 때만 패널을 변경
+    if (Number.isInteger(target) && target >= 0 && target <= number_of_images) {
+      panelChange(target);
+    }
+  };
 
 var panelChange = function (target) {
   if (display == 1) {
@@ -919,44 +901,34 @@ var panelChange = function (target) {
 };
 
 var prevPanel = function () {
-  // console.log('prevPanel called');
-  curPanel = parseInt(curPanel);
-  if (display == 1) {
-    if (curPanel > 1) {
-      panelChange(curPanel - 1);
+    const currentPanel = parseInt(curPanel, 10);
+  
+    if (currentPanel <= 1) return;
+  
+    if (display === 1) {
+      panelChange(currentPanel - 1);
+    } else {
+      const prevImage = images[currentPanel - 2];
+      const newPanel = (currentPanel > 2 && prevImage.width <= prevImage.height) ? currentPanel - 2 : currentPanel - 1;
+      panelChange(newPanel);
     }
-  } else {
-    if (curPanel > 1) {
-      if ((curPanel > 2) && (images[curPanel - 2].width <= images[curPanel - 2].height)) {
-        panelChange(curPanel - 2);
-      } else {
-        panelChange(curPanel - 1);
-      }
-    }
-  }
-  // $('#comicImages').focusWithoutScrolling();
-  $('body').scrollTop(0);
-};
 
-var nextPanel = function () {
-  // console.log('nextPanel called');
-  curPanel = parseInt(curPanel);
-  if (display == 1) {
-    if (curPanel < number_of_images) {
-      panelChange(curPanel + 1);
-    }
-  } else {
-    if (curPanel < number_of_images) {
-      if ((curPanel + 1 < number_of_images) && !(single_displayed)) {
-        panelChange(curPanel + 2);
-      } else {
-        panelChange(curPanel + 1);
-      }
-    }
-  }
-  // $('#comicImages').focusWithoutScrolling();
-  $('body').scrollTop(0);
+    $('body').scrollTop(0);
 };
+  
+var nextPanel = function () {
+    const currentPanel = parseInt(curPanel, 10);
+  
+    if (currentPanel >= number_of_images) return;
+  
+    if (display === 1) {
+      panelChange(currentPanel + 1);
+    } else {
+      const newPanel = (currentPanel + 1 < number_of_images && !single_displayed) ? currentPanel + 2 : currentPanel + 1;
+      panelChange(newPanel);
+    }
+    $('body').scrollTop(0);
+  };
 
 var fullSpread = function () {
   //console.log('fullSpread called');
@@ -984,20 +956,6 @@ var spread = function (num) {
   $('body').removeClass('spread' + display);
   display = num;
   $('body').addClass('spread' + display);
-  if (display == 2) {
-    /* original logic
-    var found = false;
-    var pattern = curPanel + '-';
-    var () = $('#two-page-select option').each(function  {
-      if ($(this).val().search(pattern) > - 1) {
-        found = true;
-      }
-    });
-    if (!found) {
-      --curPanel;
-    }
-    */
-  }
   drawPanel();
 };
 
@@ -1050,104 +1008,92 @@ var fullscreen = function () {
 
 
 var init = async function () {
-  if (update_check) {
-    checkUpdate();
-  }
+    if (update_check) {
+        checkUpdate();
+    }
 
-  // clear page
-  document.body.innerHTML = '';
+    // clear page
+    document.body.innerHTML = '';
+    addNavBar();
+    addImgFrame();
+    clearStyle();
 
-  addNavBar();
-  addImgFrame();
+    var head = document.head;
+    var link = document.createElement("link");
+    link.type = "text/css";
+    link.rel = "stylesheet";
+    link.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
+    head.appendChild(link);
 
-  clearStyle();
-  // addStyleFromResource('bt');
+    addStyle('div#i1 {display:none;} p.ip {display:none;}');
+    addStyle(viewer_style);
+    addStyle(fullscreen_style);
+    document.body.setAttribute('class', 'spread1');
+    comicImages = document.getElementById("comicImages");
 
-  var head = document.head;
-  var link = document.createElement("link");
-  link.type = "text/css";
-  link.rel = "stylesheet";
-  link.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
-  head.appendChild(link);
-
-  addStyle('div#i1 {display:none;} p.ip {display:none;}');
-  addStyle(viewer_style);
-  addStyle(fullscreen_style);
-  document.body.setAttribute('class', 'spread1');
-  comicImages = document.getElementById("comicImages");
-
-  // set cur panel
-    var page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-    var match = page_regex.exec(document.location);
-    curPanel = Number(match[3]);
+    // set cur panel
+    var url = document.location.href;
+    curPanel = Number(url.substring(url.lastIndexOf('-') + 1));
     getToken()
         .then(token => getGdata(token.gid, token.token, setGallery));
 
-  var setGallery = function (response) {
+    var setGallery = function (response) {
+        // make image list
+        var gmetadata = JSON.parse(response.responseText).gmetadata[0];
+        number_of_images = gmetadata.filecount;
+        createDropdown();
+        var gallery_url = 'https://' + host + '/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
 
-    var pushImgs = function (response) {
-      var doc = parseHTML(response);
-      var imgs = doc.querySelectorAll("#gdt > a");
-      for (var idx = 0; idx < imgs.length; idx++) {
-        var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-        var img = imgs[idx];
-        var url_temp = img.href;
-        var match_temp = regex_temp.exec(url_temp);
-        images[match_temp[3] - 1] = {
-          page: match_temp[3],
-          url: url_temp,
-          token: match_temp[1]
+        // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
+        var gallery_page_len = Math.ceil(number_of_images / 40);
+
+        // load current page. first things first
+        var current_gallery_page = Math.ceil(curPanel / 40);
+        var page_img_len;
+        if (current_gallery_page < gallery_page_len) {
+            // before last page of gallery images
+            page_img_len = 40;
+        } else {
+        page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
+        }
+        page_img_len = Number(page_img_len);
+
+        var pushImgs = function (response) {
+            var doc = parseHTML(response);
+            var imgs = doc.querySelectorAll("#gdt > a");
+            for (var idx = 0; idx < imgs.length; idx++) {
+                var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
+                var img = imgs[idx];
+                var url_temp = img.href;
+                var match_temp = regex_temp.exec(url_temp);
+                images[match_temp[3] - 1] = {
+                    page: match_temp[3],
+                    url: url_temp,
+                    token: match_temp[1]
+                };
+            }
         };
-      }
+
+        // promise pattern
+        new Promise(
+        function(resolve, reject) {
+            simpleRequest(gallery_url + (current_gallery_page - 1), function(resp){
+            pushImgs(resp);
+            resolve();
+            });
+        }).then(pageChanged);
+
+        // load rest of galleries
+        for (var i = 0; i < gallery_page_len; i++) {
+            if (i !== current_gallery_page-1) {
+                simpleRequest(gallery_url + i, pushImgs);
+            }
+        }
     };
 
-    // make image list
-    var gmetadata = JSON.parse(response.responseText).gmetadata[0];
-    number_of_images = gmetadata.filecount;
-    createDropdown();
-    var gallery_url = 'https://' + host + '/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
-
-    // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
-    var gallery_page_len = Math.ceil(number_of_images / 40);
-
-    // load current page. first things first
-    var current_gallery_page = Math.ceil(curPanel / 40);
-    var page_img_len;
-    if (current_gallery_page < gallery_page_len) {
-        // before last page of gallery images
-        page_img_len = 40;
-    } else {
-      page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
-    }
-    page_img_len = Number(page_img_len);
-
-    // promise pattern
-    var p1 = new Promise(
-      function(resolve, reject) {
-        simpleRequest(gallery_url + (current_gallery_page - 1), function(resp){
-          pushImgs(resp);
-          resolve();
-        });
-      }
-    );
-    p1.then(function() {
-      pageChanged();
-    });
-
-    // load rest of galleries
-    for (var i = 0; i < gallery_page_len; i++) {
-      if (i == current_gallery_page-1) {
-        //already loaded
-      }
-      else {
-        simpleRequest(gallery_url + i, pushImgs);
-      }
-    }
-    };
-
-    document.addEventListener('keydown', doHotkey);
     getToken()
-        .then(token => {document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + token.gid + '/' + token.token;});
+    .then(token => {document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + token.gid + '/' + token.token;});
+    document.addEventListener('keydown', doHotkey);
     document.addEventListener('wheel', doWheel);
     document.getElementById('prevPanel').addEventListener('click', prevPanel);
     document.getElementById('nextPanel').addEventListener('click', nextPanel);
@@ -1173,11 +1119,10 @@ var init = async function () {
     $('#singlePage').hide();
     var docElm = document.documentElement;
     if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
-    $('#fullscreen').parent().hide();
+        $('#fullscreen').parent().hide();
     }
     renderChange();
     fitVertical();
 };
 
-window.onload = pageChanged;
 init();
