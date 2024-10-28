@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       230604
+// @version       241029
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -514,8 +514,8 @@ var openInNewTab = function (url) {
 var checkUpdate = function () {
   var github_api = "https://api.github.com";
   var repo_path = "/repos/skygarlics/exhviewer";
-  // past version
-  var p_version = 171030;
+  // version_now
+  var p_version = GM_info.script.version;
   simpleRequest(github_api + repo_path + '/releases/latest', (response) => {
     resp_json = JSON.parse(response.responseText);
     var n_version = parseInt(resp_json["tag_name"]);
