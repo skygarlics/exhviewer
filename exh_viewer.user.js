@@ -258,7 +258,7 @@ var addNavBar = function () {
               '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
               '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
               '<li><a title="rendering" id="renderingChanger"><span>🖽</span> Rendering</a></li>' +
-              '<li><a title="p" id="preloader">Preload<input id="preloadInput" type="text" value="100"></a></li>' +
+              '<li><a title="p" id="preloader">Preload<input id="preloadInput" type="text" value="50"></a></li>' +
             '</ul>'+
           '</li>'+
         '</ul>'+
@@ -633,7 +633,7 @@ var imgDragEnd = function (e) {
 var doWheel = function (e) {
     const prevScrollTop = comicImages.scrollTop;
     comicImages.scrollTop += e.deltaY;
-  
+
     requestAnimationFrame(() => {
       if (comicImages.scrollTop === prevScrollTop) {
         e.deltaY > 0 ? nextPanel() : prevPanel();
@@ -746,21 +746,20 @@ var updateImgsAndCallAsync = async function(start, end) {
       console.error("Error in updateImgsAndCall: start is greater than end");
       return;
     }
-  
+
     // `start`와 `end`의 범위 내 유효한 이미지 인덱스를 계산합니다.
     const update_entry = [];
     for (let idx = Math.max(start, 1); idx < Math.min(end, number_of_images + 1); idx++) {
       update_entry.push(idx - 1);
     }
-  
+
     // 비동기 이미지 업데이트 처리
     const promise_entry = update_entry.map(async (idx) => {
       const img = images[idx];
       if (img && img.updated === true) return;
       await new Promise((resolve) => updateImg(img, resolve));
     });
-  
-    // 모든 이미지가 업데이트된 후 콜백 호출
+
     await Promise.all(promise_entry);
 };
 
@@ -806,89 +805,135 @@ var updateImg = function (img, callback) {
 
 var preloader = function() {
   var len = document.getElementById('preloadInput').value;
-  preloadImage(len);
+  preloadImage(parseInt(len));
 }
 
 var preloadImage = async function(length) {
+    const preloadContainer = $('#preload');
     const currentPanel = parseInt(curPanel);
     n_curPanel = currentPanel;
 
     // 이미지 업데이트 호출 및 완료 후 처리
     await updateImgsAndCallAsync(n_curPanel - 2, n_curPanel + length + 1);
 
-    // 필요한 이미지를 미리 로드
-    const preloadContainer = $('#preload');
-    const imagesToPreload = [];
+    // 현재 preloadContainer 내의 img 요소 선택
+    let imgElements = preloadContainer.find('img');
+
+    // 필요한 이미지를 미리 로드하고 src만 업데이트
     for (let idx = 0; idx < length; idx++) {
         const panelIndex = currentPanel + idx;
+        
+        // 이미지가 존재하는 경우에만 로드
         if (panelIndex < number_of_images) {
-            const image = $('<img />', { src: images[panelIndex].path });
-            imagesToPreload.push(image);
+            const imagePath = images[panelIndex].path;
+            
+            if (idx < imgElements.length) {
+                // 이미 img 요소가 있으면 src만 변경
+                $(imgElements[idx]).attr('src', imagePath);
+            } else {
+                // 부족한 경우 새 img 요소를 추가
+                const newImage = $('<img />', { src: imagePath });
+                preloadContainer.append(newImage);
+                imgElements = preloadContainer.find('img'); // imgElements 업데이트
+            }
         }
     }
-
-    // 한 번에 이미지 요소 추가
-    preloadContainer.append(imagesToPreload);
+    // 불필요한 추가 노드가 있으면 제거
+    if (imgElements.length > length) {
+        imgElements.slice(length).remove();
+    }
 };
 
+function updateImageWithFadeIn(imgElement, newSrc) {
+    // 임시 이미지 객체를 생성하여 새 이미지를 로드
+    const tempImg = new Image();
+    
+    // 새 이미지의 경로 설정 (로딩이 바로 시작됨)
+    tempImg.src = newSrc;
 
-// original drawPanel()
+    // 이미지가 캐시에 있는 경우: 즉시 로드 완료 이벤트가 발생
+    tempImg.onload = function () {
+        // 즉시 로드된 경우, src를 변경하고 바로 표시
+        imgElement.attr('src', newSrc).css('opacity', '1');
+    };
+
+    // 이미지가 캐시에 없는 경우: 로드가 완료될 때까지 투명하게 유지
+    tempImg.onerror = function () {
+        console.error("Image failed to load:", newSrc);
+        imgElement.css('opacity', '0'); // 에러일 경우 계속 숨김
+    };
+
+    // 캐시되지 않은 이미지는 로드 완료 후 표시
+    if (!tempImg.complete) {
+        // 이미지가 캐시되지 않은 경우 로드될 때까지 투명하게 설정
+        imgElement.css('opacity', '0');
+        
+        // 로드 완료 시 이미지의 src를 교체하고 표시
+        tempImg.onload = function () {
+            imgElement.attr('src', newSrc).css('opacity', '1');
+        };
+    }
+}
+
+
 var drawPanel_ = function () {
-    const preloadContainer = $('#preload').empty();
-    const comicImagesContainer = $('#comicImages').empty();
+    const comicImagesContainer = $('#comicImages');
     const currentPanel = Number(curPanel);
     const totalImages = Number(number_of_images);
     const singleDisplay = display === 1;
-    
+
     $('body').attr('class', singleDisplay ? 'spread1' : 'spread2');
   
+    // 기존 img 요소를 가져오거나 없는 경우 새로 추가
+    let imgElements = comicImagesContainer.find('img');
+    if (imgElements.length < (singleDisplay ? 1 : 2)) {
+        if (singleDisplay) {
+            imgElements = $('<img />').appendTo(comicImagesContainer);
+        } else {
+            imgElements = $('<img />').appendTo(comicImagesContainer);
+        }
+    } else {
+        imgElements = comicImagesContainer.find('img');
+    }
+
     if (!singleDisplay && currentPanel > 1 && currentPanel < totalImages) {
-      const currentImage = images[currentPanel];
-      const previousImage = images[currentPanel - 1];
+        const currentImage = images[currentPanel];
+        const previousImage = images[currentPanel - 1];
       
-      if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
-        // 두 이미지를 추가하여 spread2 모드로 표시
-        const imgElements = [
-          $('<img />', { src: currentImage.path }),
-          $('<img />', { src: previousImage.path })
-        ];
-        comicImagesContainer.append(imgElements);
-        preloadImage(3);
-      } else {
-        // 하나의 이미지만 추가하여 spread1 모드로 표시
-        comicImagesContainer.append(
-          $('<img />', { src: images[currentPanel - 1].path })
-        );
-        preloadImage(2);
-      }
+        if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
+            updateImageWithFadeIn($(imgElements[1]), previousImage.path);
+            updateImageWithFadeIn($(imgElements[0]), currentImage.path);
+            preloadImage(3);
+        } else {
+            updateImageWithFadeIn($(imgElements[0]), images[currentPanel - 1].path);
+            $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+            preloadImage(2);
+        }
     } else if (currentPanel <= totalImages) {
-      // display == 1 또는 조건에 맞지 않는 경우 한 개의 이미지만 표시
-      comicImagesContainer.append(
-        $('<img />', { src: images[currentPanel - 1].path })
-      );
-      preloadImage(2);
+        updateImageWithFadeIn($(imgElements[0]), images[currentPanel - 1].path);
+        $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+        preloadImage(2);
     }
-  
-    // 버튼에 대한 이벤트 리스너가 이미 설정되어 있을 경우 중복 추가를 방지
+
     if (!drawPanel_.listenersAdded) {
-      document.getElementById('leftBtn').addEventListener('click', prevPanel);
-      document.getElementById('rightBtn').addEventListener('click', nextPanel);
-      drawPanel_.listenersAdded = true;
+        document.getElementById('leftBtn').addEventListener('click', prevPanel);
+        document.getElementById('rightBtn').addEventListener('click', nextPanel);
+        drawPanel_.listenersAdded = true;
     }
-  
+
     comicImagesContainer.scrollTop(0);
     $('body').scrollTop(0);
-  };
-  
+};
 
-  var goPanel = function () {
+
+var goPanel = function () {
     const target = parseInt(prompt('target page'), 10);
   
     // target이 NaN이 아니고, 지정된 범위 내에 있을 때만 패널을 변경
     if (Number.isInteger(target) && target >= 0 && target <= number_of_images) {
       panelChange(target);
     }
-  };
+};
 
 var panelChange = function (target) {
   if (display == 1) {
@@ -902,33 +947,40 @@ var panelChange = function (target) {
 
 var prevPanel = function () {
     const currentPanel = parseInt(curPanel, 10);
-  
+
     if (currentPanel <= 1) return;
-  
+
     if (display === 1) {
       panelChange(currentPanel - 1);
     } else {
       const prevImage = images[currentPanel - 2];
-      const newPanel = (currentPanel > 2 && prevImage.width <= prevImage.height) ? currentPanel - 2 : currentPanel - 1;
+      const newPanel = (currentPanel > 2 && prevImage.width <= prevImage.height) 
+                        ? currentPanel - 2 
+                        : currentPanel - 1;
       panelChange(newPanel);
     }
 
     $('body').scrollTop(0);
 };
-  
+
 var nextPanel = function () {
     const currentPanel = parseInt(curPanel, 10);
-  
+
     if (currentPanel >= number_of_images) return;
-  
+
     if (display === 1) {
       panelChange(currentPanel + 1);
     } else {
-      const newPanel = (currentPanel + 1 < number_of_images && !single_displayed) ? currentPanel + 2 : currentPanel + 1;
+      const nextImage = images[currentPanel]; // 현재 패널의 다음 이미지 가져오기
+      const newPanel = (currentPanel + 1 < number_of_images && nextImage.width <= nextImage.height) 
+                       ? currentPanel + 2 
+                       : currentPanel + 1;
       panelChange(newPanel);
     }
+
     $('body').scrollTop(0);
-  };
+};
+
 
 var fullSpread = function () {
   //console.log('fullSpread called');
