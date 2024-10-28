@@ -88,63 +88,63 @@ var addStyleFromResource = async function (res) {
 
 // Viewer styles
 var viewer_style =
-  "html, body {height: 100%;}"+
-  "body {background: #171717; font-size: 15px; font-weight:bold; background-color: #171717 !important; color: #999; height: 100%; overflow: hidden;}"+
-  "h1 {color: #fff;}"+
-  "body .modal {color: #333;}"+
-  ".nav>li>a {padding: 15px 10px}"+
+    "html, body {height: 100%;}"+
+    "body {background: #171717; font-size: 15px; font-weight:bold; background-color: #171717 !important; color: #999; height: 100%; overflow: hidden;}"+
+    "h1 {color: #fff;}"+
+    "body .modal {color: #333;}"+
+    ".nav>li>a {padding: 15px 10px}"+
 
-  "#comicImages {height: calc(100% - 50px); overflow: auto; text-align: center; white-space:nowrap;}"+
-  "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
-  "#imageDragger {pointer-events: none; cursor: default; position: fixed; margin-bottom: 25px; z-index: 1; width: 30%; height: calc(100% - 50px - 25px); left: 35%; display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
+    "#comicImages {height: calc(100% - 50px); overflow: auto; text-align: center; white-space:nowrap;}"+
+    "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
+    "#imageDragger {pointer-events: none; cursor: default; position: fixed; margin-bottom: 25px; z-index: 1; width: 30%; height: calc(100% - 50px - 25px); left: 35%; display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
 
-  // fitStretch
-  ".fitStretch img {display: inline-block; vertical-align: middle; width: 100%; height: 100%; object-fit: contain;}"+
-  // fitBoth
-  ".fitBoth img {display: inline-block; vertical-align: middle; max-width: 100%; max-height:100%}"+
-  //".spread1 .fitVeritcal img {max-width: 100%;}"+
-  ".spread2 .fitBoth img {max-width: 50%;}"+
+    // fitStretch
+    ".fitStretch img {display: inline-block; vertical-align: middle; width: 100%; height: 100%; object-fit: contain;}"+
+    // fitBoth
+    ".fitBoth img {display: inline-block; vertical-align: middle; max-width: 100%; max-height:100%}"+
+    //".spread1 .fitVeritcal img {max-width: 100%;}"+
+    ".spread2 .fitBoth img {max-width: 50%;}"+
 
-  // fitVertical styles
-  ".fitVertical img {display: inline-block; vertical-align: middle; max-height:100%}"+
-  //".spread1 .fitVeritcal img {max-width: 100%;}"+
-  ".spread2 .fitVertical img {max-width: 50%;}"+
+    // fitVertical styles
+    ".fitVertical img {display: inline-block; vertical-align: middle; max-height:100%}"+
+    //".spread1 .fitVeritcal img {max-width: 100%;}"+
+    ".spread2 .fitVertical img {max-width: 50%;}"+
 
-  // fitHorizontal styles
-  ".fitHorizontal img {display: inline-block; vertical-align: middle; max-width:100%}"+
-  //".spread1 .fitHorizontal img {max-width: 100%;}"+
-  ".spread2 .fitHorizontal img {max-width:50%;}"+
+    // fitHorizontal styles
+    ".fitHorizontal img {display: inline-block; vertical-align: middle; max-width:100%}"+
+    //".spread1 .fitHorizontal img {max-width: 100%;}"+
+    ".spread2 .fitHorizontal img {max-width:50%;}"+
 
-  "#preload {display: none;}.img-url {display: none;}"+
-  "a:hover {cursor: pointer; text-decoration: none;}"+
-  "a:visited, a:active {color: inherit;}"+
-  ".disabled > a:hover { background-color: transpsrent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
-  ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
-  ".icon_white {color: white;}"+
-  ".imageBtn, .imageBtn:hover {position: fixed; margin-bottom: 25px; z-index: 1; width: calc(35% - 25px); height: calc(100% - 50px - 25px); font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
-  "#leftBtn {margin-left: 25px; left: 0px;}"+
-  "#rightBtn {margin-right: 25px; right: 0px;}"+
+    "#preload {display: none;}.img-url {display: none;}"+
+    "a:hover {cursor: pointer; text-decoration: none;}"+
+    "a:visited, a:active {color: inherit;}"+
+    ".disabled > a:hover { background-color: transpsrent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
+    ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
+    ".icon_white {color: white;}"+
+    ".imageBtn, .imageBtn:hover {position: fixed; margin-bottom: 25px; z-index: 1; width: calc(35% - 25px); height: calc(100% - 50px - 25px); font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
+    "#leftBtn {margin-left: 25px; left: 0px;}"+
+    "#rightBtn {margin-right: 25px; right: 0px;}"+
 
-  // dropdown styles
-  "#interfaceNav {margin: 0px; border: 0px;}"+
-  ".dropdown-menu {text-align: left;}"+
-  ".dropdown-menu span {text-align: center; display: inline-block; min-width: 18px}"+
-  ".inverse-dropdown {background-color: #222 !important; border-color: #080808 !important;}"+
-  ".inverse-dropdown > li > a {color: #999999 !important}"+
-  ".inverse-dropdown > li > a:hover {color: #fff !important; background-color: #000 !important;}"+
+    // dropdown styles
+    "#interfaceNav {margin: 0px; border: 0px;}"+
+    ".dropdown-menu {text-align: left;}"+
+    ".dropdown-menu span {text-align: center; display: inline-block; min-width: 18px}"+
+    ".inverse-dropdown {background-color: #222 !important; border-color: #080808 !important;}"+
+    ".inverse-dropdown > li > a {color: #999999 !important}"+
+    ".inverse-dropdown > li > a:hover {color: #fff !important; background-color: #000 !important;}"+
 
-  "#autoPager {display: inline}"+
-  "#pageTimer {margin: 15px 15px 15px 3px; border: 0px; height: 18px; width: 46px;}"+
-  "#pageChanger {display: inline}"+
-  ".input-medium {margin: 15px 15px 15px 3px; height: 20px; width: 58px;}"+
-  "#single-page-select {width: 60px}"+
-  "#two-page-select {width: 60px}"+
-  "#preloadInput {color: black; margin: 0px 10px; width: 35px; height: 17px}"+
+    "#autoPager {display: inline}"+
+    "#pageTimer {margin: 15px 15px 15px 3px; border: 0px; height: 18px; width: 46px;}"+
+    "#pageChanger {display: inline}"+
+    ".input-medium {margin: 15px 15px 15px 3px; height: 20px; width: 58px;}"+
+    "#single-page-select {width: 60px}"+
+    "#two-page-select {width: 60px}"+
+    "#preloadInput {color: black; margin: 0px 10px; width: 35px; height: 17px}"+
 
-  "@media (min-width: 768px) {"+
-    ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
-    ".navbar .navbar-collapse {text-align: center;}"+
-  "}";
+    "@media (min-width: 768px) {"+
+        ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
+        ".navbar .navbar-collapse {text-align: center;}"+
+    "}";
 
 // Image rendering option. needs ID to render swap
 var renderType = 0;
@@ -158,17 +158,17 @@ parent.appendChild(style);
 
 // imagehight styles when fullscreen
 var fullscreen_style = "div:-webkit-full-screen {background-color: black;}"+
-  "div:-moz-full-screen {background-color: black;}"+
-  "div:-ms-fullscreen {background-color: black;}"+
-  "div:fullscreen {background-color: black;}"+
-  ".fitVertical:-webkit-full-screen img {max-height: 100% !important;}"+
-  ".fitVertical:-moz-full-screen img {max-height: 100% !important;}"+
-  ".fitVertical:-ms-fullscreen img {max-height: 100% !important;}"+
-  ".fitVertical:fullscreen img {max-height: 100% !important;}"+
-  ".fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}"+
-  ".fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}"+
-  ".fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}"+
-  ".fitStretch:fullscreen img {height: 100% !important; width: auto !important;}";
+    "div:-moz-full-screen {background-color: black;}"+
+    "div:-ms-fullscreen {background-color: black;}"+
+    "div:fullscreen {background-color: black;}"+
+    ".fitVertical:-webkit-full-screen img {max-height: 100% !important;}"+
+    ".fitVertical:-moz-full-screen img {max-height: 100% !important;}"+
+    ".fitVertical:-ms-fullscreen img {max-height: 100% !important;}"+
+    ".fitVertical:fullscreen img {max-height: 100% !important;}"+
+    ".fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}"+
+    ".fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}"+
+    ".fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}"+
+    ".fitStretch:fullscreen img {height: 100% !important; width: auto !important;}";
 
 
 // interface
@@ -371,63 +371,30 @@ function (details) {
   history.pushState(bfloc, bfloc, bfloc);
 };
 
-var simpleRequest = function (url, callback, method, headers, data, error) {
-  var details = {
-    method: method ? method : 'GET',
-    url: url,
-    timeout: 10000,
-    ontimeout: function (e) {
-      error(e);
-    }
-  };
-  if (callback) {
-    details.onload = function (response) {
-      callback(response);
-    };
-  }
-  if (headers) {
-    details.headers = headers;
-    for (var prop in details.headers) {
-      if (details.headers.hasOwnProperty(prop)) {
-        if (prop.toLowerCase() == 'content-type' && details.headers[prop].match(/multipart\/form-data/)) {
-          details.binary = true;
-        }
-      }
-    }
-  }
-  if (data) {
-    details.data = data;
-  }
-  if (error) {
-    details.onerror = error;
-  }
-  xmlhttpRequest(details);
-};
-
 var simpleRequestAsync = function (url, method = 'GET', headers = {}, data = null) {
-  return new Promise((resolve, reject) => {
-    var details = {
-      method,
-      url,
-      timeout: 10000,
-      ontimeout: (e) => reject(new Error("Request timed out")),
-      onload: (response) => resolve(response),
-      onerror: (error) => reject(new Error(error.statusText || "Request failed"))
-    };
+    return new Promise((resolve, reject) => {
+        var details = {
+            method,
+            url,
+            timeout: 10000,
+            ontimeout: (e) => reject(new Error("Request timed out")),
+            onload: (response) => resolve(response),
+            onerror: (error) => reject(new Error(error.statusText || "Request failed"))
+        };
 
-    // Add headers if any
-    if (headers) {
-      details.headers = headers;
-      if (headers['content-type'] && headers['content-type'].match(/multipart\/form-data/i)) {
-        details.binary = true;
-      }
-    }
+        // Add headers if any
+        if (headers) {
+        details.headers = headers;
+        if (headers['content-type'] && headers['content-type'].match(/multipart\/form-data/i)) {
+            details.binary = true;
+        }
+        }
 
-    // Set request data if provided
-    if (data) details.data = data;
+        // Set request data if provided
+        if (data) details.data = data;
 
-    xmlhttpRequest(details);
-  });
+        xmlhttpRequest(details);
+    });
 };
 
 //////////////////////////////////////////////////////////////////
@@ -486,16 +453,11 @@ async function getToken() {
 }
 
 var getGdata = function (gid, token, callback) {
-  var data = {
-    'method': 'gdata',
-    'gidlist': [
-      [gid,
-      token]
-    ]
-  };
-  simpleRequest(API_URL, callback, 'POST', {
-  }, JSON.stringify(data)
-  );
+    var data = {
+        'method': 'gdata',
+        'gidlist': [[gid, token]]
+    };
+    simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data)).then(callback);
 };
 
 var parseHTML = function (response) {
@@ -512,19 +474,20 @@ var openInNewTab = function (url) {
 };
 
 var checkUpdate = function () {
-  var github_api = "https://api.github.com";
-  var repo_path = "/repos/skygarlics/exhviewer";
-  // version_now
-  var p_version = GM_info.script.version;
-  simpleRequest(github_api + repo_path + '/releases/latest', (response) => {
-    resp_json = JSON.parse(response.responseText);
-    var n_version = parseInt(resp_json["tag_name"]);
-    var url = resp_json["assets"][0]["browser_download_url"];
-    if ((p_version < n_version) && confirm("새 버전 : " + n_version + "\n업데이트 하시겠습니까?")) {
-        alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
-        openInNewTab(url);
-    }
-  });
+    var github_api = "https://api.github.com";
+    var repo_path = "/repos/skygarlics/exhviewer";
+    // version_now
+    var p_version = GM_info.script.version;
+    simpleRequestAsync(github_api + repo_path + '/releases/latest')
+    .then((response) => {
+        resp_json = JSON.parse(response.responseText);
+        var n_version = parseInt(resp_json["tag_name"]);
+        var url = resp_json["assets"][0]["browser_download_url"];
+        if ((p_version < n_version) && confirm("새 버전 : " + n_version + "\n업데이트 하시겠습니까?")) {
+            alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
+            openInNewTab(url);
+        }
+    }) ;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -859,17 +822,13 @@ var drawPanel_ = function () {
 
     // 기존 img 요소를 가져오거나 없는 경우 새로 추가
     let imgElements = comicImagesContainer.find('img');
-    if (imgElements.length < (singleSpread ? 1 : 2)) {
-        if (singleSpread) {
-            imgElements = $('<img />').appendTo(comicImagesContainer);
-        } else {
-            imgElements = $('<img />').appendTo(comicImagesContainer);
-        }
-    } else {
-        imgElements = comicImagesContainer.find('img');
+    const requiredImageCount = singleSpread ? 1 : 2;
+
+    while (imgElements.length < requiredImageCount) {
+        $('<img />').appendTo(comicImagesContainer);
+        imgElements = comicImagesContainer.find('img'); // 추가 후 업데이트
     }
 
-    imgElements = comicImagesContainer.find('img')
     if (!singleSpread && currentPanel > 1 && currentPanel < totalImages) {
         const currentImage = images[currentPanel];
         const previousImage = images[currentPanel - 1];
@@ -893,8 +852,8 @@ var drawPanel_ = function () {
     }
 
     if (!drawPanel_.listenersAdded) {
-        document.getElementById('leftBtn').addEventListener('click', prevPanel);
-        document.getElementById('rightBtn').addEventListener('click', nextPanel);
+        $('#leftBtn').on('click', prevPanel);
+        $('#rightBtn').on('click', nextPanel);
         drawPanel_.listenersAdded = true;
     }
 
@@ -908,18 +867,18 @@ var goPanel = function () {
 
     // target이 NaN이 아니고, 지정된 범위 내에 있을 때만 패널을 변경
     if (Number.isInteger(target) && target >= 0 && target <= number_of_images) {
-      panelChange(target);
+        panelChange(target);
     }
 };
 
 var panelChange = function (target) {
-  if (spread == 1) {
-    $('#single-page-select').prop('selectedIndex', target - 1);
-    selectorChanged(1);
-  } else {
-    $('#two-page-select').prop('selectedIndex', target - 1);
-    selectorChanged(2);
-  }
+    if (spread == 1) {
+        $('#single-page-select').prop('selectedIndex', target - 1);
+        selectorChanged(1);
+    } else {
+        $('#two-page-select').prop('selectedIndex', target - 1);
+        selectorChanged(2);
+    }
 };
 
 var prevPanel = function () {
@@ -960,81 +919,81 @@ var nextPanel = function () {
 
 
 var fullSpread = function () {
-  if (spread == 2) return;
+    if (spread == 2) return;
 
-  $('#singlePage').parent().show();
-  $('#fullSpread').parent().hide();
-  $('#single-page-select').hide();
-  $('#two-page-select').show();
-  $('#singlePage').show();
-  updateDropdown(2);
-  changeSpread(2);
+    $('#singlePage').parent().show();
+    $('#fullSpread').parent().hide();
+    $('#single-page-select').hide();
+    $('#two-page-select').show();
+    $('#singlePage').show();
+    updateDropdown(2);
+    changeSpread(2);
 };
 
 var singleSpread = function () {
-  if (spread == 1) return;
+    if (spread == 1) return;
 
-  $('#singlePage').parent().hide();
-  $('#fullSpread').parent().show();
-  $('#two-page-select').hide();
-  $('#single-page-select').show();
-  $('#fullSpread').show();
-  updateDropdown(1);
-  changeSpread(1);
+    $('#singlePage').parent().hide();
+    $('#fullSpread').parent().show();
+    $('#two-page-select').hide();
+    $('#single-page-select').show();
+    $('#fullSpread').show();
+    updateDropdown(1);
+    changeSpread(1);
 };
 
 var changeSpread = function (num) {
-  $('body').removeClass('spread' + spread);
-  spread = num;
-  $('body').addClass('spread' + spread);
-  drawPanel();
+    $('body').removeClass('spread' + spread);
+    spread = num;
+    $('body').addClass('spread' + spread);
+    drawPanel();
 };
 
 var resetFit = function () {
-  $('#comicImages').removeClass();
-  $('.fitBtn').parent().hide();
+    $('#comicImages').removeClass();
+    $('.fitBtn').parent().hide();
 };
 
 var fitStretch = function () {
-  // console.log('fitStretch called');
-  resetFit();
-  $('#comicImages').addClass('fitStretch');
-  $('#fitBoth').parent().show();
-  $('body').scrollTop(0);
+    // console.log('fitStretch called');
+    resetFit();
+    $('#comicImages').addClass('fitStretch');
+    $('#fitBoth').parent().show();
+    $('body').scrollTop(0);
 };
 
 
 var fitBoth = function () {
-  // console.log('fitboth called');
-  resetFit();
-  $('#comicImages').addClass('fitBoth');
-  $('#fitHorizontal').parent().show();
-  $('body').scrollTop(0);
+    // console.log('fitboth called');
+    resetFit();
+    $('#comicImages').addClass('fitBoth');
+    $('#fitHorizontal').parent().show();
+    $('body').scrollTop(0);
 };
 
 var fitHorizontal = function () {
-  // console.log('fitHorizontal called');
-  resetFit();
-  $('#comicImages').addClass('fitHorizontal');
-  $('#fitVertical').parent().show();
-  $('body').scrollTop(0);
+    // console.log('fitHorizontal called');
+    resetFit();
+    $('#comicImages').addClass('fitHorizontal');
+    $('#fitVertical').parent().show();
+    $('body').scrollTop(0);
 };
 
 var fitVertical = function () {
-  // console.log('fitVertical called');
-  resetFit();
-  $('#comicImages').addClass('fitVertical');
-  $('#fitStretch').parent().show();
-  $('body').scrollTop(0);
+    // console.log('fitVertical called');
+    resetFit();
+    $('#comicImages').addClass('fitVertical');
+    $('#fitStretch').parent().show();
+    $('body').scrollTop(0);
 };
 
 var fullscreen = function () {
-  var elem = comicImages;
-  if (!document.fullscreenElement) {
-    elem.requestFullscreen?.() || elem.msRequestFullscreen?.() || elem.mozRequestFullScreen?.() || elem.webkitRequestFullscreen?.();
-  } else {
-    document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
-  }
+    var elem = comicImages;
+    if (!document.fullscreenElement) {
+        elem.requestFullscreen?.() || elem.msRequestFullscreen?.() || elem.mozRequestFullScreen?.() || elem.webkitRequestFullscreen?.();
+    } else {
+        document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+    }
 };
 
 
@@ -1112,16 +1071,17 @@ var init = async function () {
         // promise pattern
         new Promise(
         function(resolve, reject) {
-            simpleRequest(gallery_url + (current_gallery_page - 1), function(resp){
-            pushImgs(resp);
-            resolve();
+            simpleRequestAsync(gallery_url + (current_gallery_page - 1))
+            .then((resp) => {
+                pushImgs(resp);
+                resolve();
             });
         }).then(pageChanged);
 
         // load rest of galleries
         for (var i = 0; i < gallery_page_len; i++) {
             if (i !== current_gallery_page-1) {
-                simpleRequest(gallery_url + i, pushImgs);
+                simpleRequestAsync(gallery_url + i).then(pushImgs);
             }
         }
     };
