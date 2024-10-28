@@ -618,95 +618,92 @@ var doWheel = function (e) {
 };
 
 var toggleTimer = function () {
-    //console.log('toggleTimer called');
-    var second = document.getElementById('pageTimer').value;
-    if (second < 1 || isNaN(second)) {
-        return;
-    }
+  var intervalSeconds = parseFloat(document.getElementById('pageTimer').value);
+  if (intervalSeconds < 1 || isNaN(intervalSeconds)) {
+      return;
+  }
 
-    toggleTimer.flag = !toggleTimer.flag
-    var pagerButton = document.getElementById('autoPager');
+  toggleTimer.flag = !toggleTimer.flag;
+  var pagerButton = document.getElementById('autoPager');
 
-    if (toggleTimer.flag) {
-        pagerButton.firstChild.classList.add('icon_white');
-        toggleTimer.interval = setInterval(nextPanel, second * 1000);
-    } else {
-        pagerButton.firstChild.classList.remove('icon_white');
-        clearInterval(toggleTimer.interval);
-    }
+  if (toggleTimer.flag) {
+      pagerButton.firstChild.classList.add('icon_white');
+      toggleTimer.interval = setInterval(nextPanel, intervalSeconds * 1000);
+  } else {
+      pagerButton.firstChild.classList.remove('icon_white');
+      clearInterval(toggleTimer.interval);
+  }
 };
 toggleTimer.flag = false;
 
+
 var doHotkey = function (e) {
-  switch (e.key.toLowerCase()) {
+    switch (e.key.toLowerCase()) {
     case 'j':
     case 'arrowleft':
-      nextPanel();
-      break;
+        nextPanel();
+        break;
     case 'k':
     case 'arrowright':
-      prevPanel();
-      break;
+        prevPanel();
+        break;
     case 'b':
-      fitBoth();
-      break;
+        fitBoth();
+        break;
     case 'v':
-      fitVertical();
-      break;
+        fitVertical();
+        break;
     case 'h':
-      fitHorizontal();
-      break;
+        fitHorizontal();
+        break;
     case 'f':
-      fullSpread();
-      break;
+        fullSpread();
+        break;
     case 's':
-      singleSpread();
-      break;
+        singleSpread();
+        break;
     case 'enter':
     case ' ':
-      fullscreen();
-      break;
+        fullscreen();
+        break;
     case 't':
-      toggleTimer();
-      break;
+        toggleTimer();
+        break;
     case 'r':
-      reloadImg();
-      break;
+        reloadImg();
+        break;
     case 'p':
-      preloader();
-      break;
-  }
+        preloader();
+        break;
+    }
 };
 
 
 var createDropdown = function () {
-  for (var i = 1; i <= number_of_images; i++) {
+    for (var i = 1; i <= number_of_images; i++) {
     var option = $('<option>', {
-      html: '' + i,
-      value: i
+        html: '' + i,
+        value: i
     });
     $('#single-page-select').append(option);
-  }
-  for (var i = 1; i <= number_of_images; i++) {
+    }
+    for (var i = 1; i <= number_of_images; i++) {
     var option = $('<option>', {
-      html: '' + i,
-      value: i
+        html: '' + i,
+        value: i
     });
     $('#two-page-select').append(option);
-  }
+    }
 };
 
 var updateDropdown = function (num) {
-  var selectElement = num === 1 ? "#single-page-select" : "#two-page-select";
+    var selectElement = num === 1 ? "#single-page-select" : "#two-page-select";
+    if ($(selectElement + " option:selected").val() === curPanel) {
+        return;
+    }
 
-  // 현재 선택된 옵션이 curPanel과 같다면 early return
-  if ($(selectElement + " option:selected").val() === curPanel) {
-    return;
-  }
-
-  // 그렇지 않으면 모든 옵션 선택 해제 후 curPanel에 맞는 값 선택
-  $(selectElement + " option").prop("selected", false);
-  $(selectElement + ` option[value="${curPanel}"]`).prop("selected", true);
+    $(selectElement + " option").prop("selected", false);
+    $(selectElement + ` option[value="${curPanel}"]`).prop("selected", true);
 };
 
 var updateImgsAndCallAsync = async function(start, end) {
@@ -715,17 +712,15 @@ var updateImgsAndCallAsync = async function(start, end) {
       return;
     }
 
-    // `start`와 `end`의 범위 내 유효한 이미지 인덱스를 계산합니다.
     const update_entry = [];
     for (let idx = Math.max(start, 1); idx < Math.min(end, number_of_images + 1); idx++) {
-      update_entry.push(idx - 1);
+        update_entry.push(idx - 1);
     }
 
-    // 비동기 이미지 업데이트 처리
     const promise_entry = update_entry.map(async (idx) => {
-      const img = images[idx];
-      if (img && img.updated === true) return;
-      await new Promise((resolve) => updateImg(img, resolve));
+        const img = images[idx];
+        if (img && img.updated === true) return;
+        await new Promise((resolve) => updateImg(img, resolve));
     });
 
     await Promise.all(promise_entry);
@@ -738,41 +733,43 @@ var drawPanel = function () {
         .then(drawPanel_);
 };
 
+
 var reloadImg = function () {
   //console.log('reloadImg called');
-  var entry = [Number(curPanel), Number(curPanel)-1];
-  for (var idx = 0; idx < entry.length; idx++) {
-    var img = images[entry[idx]];
-    img.url = img.url.replace(/\?.*/, '');
-    img.url += ((img.url + '').indexOf('?') > - 1 ? '&' : '?') + "nl=" + img.nl;
-    img['updated'] = false;
-    img.nl = null;
-  }
-  drawPanel();
+    var entry = [Number(curPanel), Number(curPanel)-1];
+    for (var idx = 0; idx < entry.length; idx++) {
+        var img = images[entry[idx]];
+        img.url = img.url.replace(/\?.*/, '');
+        img.url += ((img.url + '').indexOf('?') > - 1 ? '&' : '?') + "nl=" + img.nl;
+        img['updated'] = false;
+        img.nl = null;
+    }
+    drawPanel();
 };
+
 
 var updateImg = function (img, callback) {
   //console.log('updateImg called. img_num : ' + img.page);
-  simpleRequest(img.url, function (response) {
-    var doc = parseHTML(response);
-    var file_info = doc.getElementById('i4').firstChild.firstChild.textContent;
-    var file_info_regex = /^(?:.*?) :: (\d+) x (\d+).*$/g;
-    var match = file_info_regex.exec(file_info);
-    img['path'] = doc.getElementById('img').src;
-    img['width'] = Number(match[1]);
-    img['height'] = Number(match[2]);
-    img['updated'] = true;
+    simpleRequest(img.url, function (response) {
+        var doc = parseHTML(response);
+        var file_info = doc.getElementById('i4').firstChild.firstChild.textContent;
+        
+        var match = file_info_regex.exec(file_info);
+        img['path'] = doc.getElementById('img').src;
+        img['width'] = Number(match[1]);
+        img['height'] = Number(match[2]);
+        img['updated'] = true;
 
-    var nl_regex = /^return nl\('(.*)'\)$/g;
-    var nl_match = nl_regex.exec(doc.getElementById("loadfail").attributes["onclick"].nodeValue);
-    img['nl'] = nl_match[1];
-    callback();
-  });
+        var nl_regex = /^return nl\('(.*)'\)$/g;
+        var nl_match = nl_regex.exec(doc.getElementById("loadfail").attributes["onclick"].nodeValue);
+        img['nl'] = nl_match[1];
+        callback();
+    });
 };
 
 var preloader = function() {
-  var len = document.getElementById('preloadInput').value;
-  preloadImage(parseInt(len));
+    var len = document.getElementById('preloadInput').value;
+    preloadImage(parseInt(len));
 }
 
 var preloadImage = async function(length) {
