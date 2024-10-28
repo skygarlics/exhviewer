@@ -244,7 +244,7 @@ var addNavBar = function () {
           '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
           '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
             '<select class="input-medium" id="single-page-select"></select>'+
-            '<select class="input-medium" id="two-page-select"></select>'+
+            '<select class="input-medium" style="display: none;" id="two-page-select"></select>'+
           '</li>'+
           '<li class="dropdown">'+
             '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options<span class="caret"></span></a>'+
@@ -548,57 +548,36 @@ var renderChange = function () {
 
 var pageChanged = function () {
   var n_panel = Number(curPanel);
-  if (n_panel) {
-    if (spread == 2 && n_panel <= number_of_images && n_panel > 0) {
-      fullSpread();
-    } else {
-      singleSpread();
-    }
-  } else {
-    singleSpread();
-  }
+  drawPanel();
 
   if (n_panel == 1) {
     disable($('#prevPanel'));
   }
-
   if (n_panel >= number_of_images) {
     disable($('#nextPanel'));
   }
 };
 
 
-var singlePageChange = function ( ){
-    var val = document.getElementById('single-page-select').value;
-    enable($('#prevPanel'));
-    enable($('#nextPanel'));
-    if (val == 1) {
-      disable($('#prevPanel'));
-    } else if (val == number_of_images) {
-      disable($('#nextPanel'));
-    }
-    curPanel = val;
-    pageChanged();
-    //drawPanel();
-    $('#single-page-select').trigger('blur');
+var selectorChanged = function (selector_num) {
+  if (selector_num === 1) {
+    selector = $('#single-page-select');
+  } else if (selector_num === 2) {
+    selector = $('#two-page-select');
+  } else {
+    console.error("Invalid selector value:", selector_num);
+  }
+
+  var selectedValue = selector.val();
+  // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
+  selectedValue == 1 ? disable($('#prevPanel')) : enable($('#prevPanel'));
+  selectedValue == number_of_images ? disable($('#nextPanel')) : enable($('#nextPanel'));
+
+  curPanel = selectedValue;
+  pageChanged();
+  selector.trigger('blur');
 };
 
-
-var twoPageChange = function () {
-  //consle.log('twoPageChange called');
-    //console.log('twoPageChange called');
-    var val = document.getElementById('two-page-select').value;
-    enable($("#prevPanel"));
-    enable($("#nextPanel"));
-    if (val == 1) {
-      disable($('#prevPanel'));
-    } else if (val == number_of_images) {
-      disable($('#nextPanel'));
-    }
-    curPanel = val;
-    pageChanged();
-    $("#two-page-select").trigger("blur");
-};
 
 var curDown = false;
 var prevX, prevY;
@@ -718,24 +697,16 @@ var createDropdown = function () {
 };
 
 var updateDropdown = function (num) {
-  if (num == 1){
-    $("#single-page-select option:selected").prop("selected", false);
-    $("#single-page-select option").each(function() {
-      if ($(this).val() == curPanel) {
-        $(this).prop("selected", true);
-        //$(this).parent().trigger("change");
-      }
-    });
-  } else if (num == 2) {
-    //var re = /^(\d+)-(\d*)$/;
-    $("#two-page-select option:selected").prop("selected", false);
-    $("#two-page-select option").each(function() {
-      if ($(this).val() == curPanel) {
-        $(this).prop("selected", true);
-        //$(this).parent().trigger("change");
-      }
-    });
+  var selectElement = num === 1 ? "#single-page-select" : "#two-page-select";
+
+  // 현재 선택된 옵션이 curPanel과 같다면 early return
+  if ($(selectElement + " option:selected").val() === curPanel) {
+    return;
   }
+
+  // 그렇지 않으면 모든 옵션 선택 해제 후 curPanel에 맞는 값 선택
+  $(selectElement + " option").prop("selected", false);
+  $(selectElement + ` option[value="${curPanel}"]`).prop("selected", true);
 };
 
 var updateImgsAndCallAsync = async function(start, end) {
@@ -772,7 +743,6 @@ var reloadImg = function () {
   var entry = [Number(curPanel), Number(curPanel)-1];
   for (var idx = 0; idx < entry.length; idx++) {
     var img = images[entry[idx]];
-    //console.log('url :'+img.url);
     img.url = img.url.replace(/\?.*/, '');
     img.url += ((img.url + '').indexOf('?') > - 1 ? '&' : '?') + "nl=" + img.nl;
     img['updated'] = false;
@@ -939,10 +909,10 @@ var goPanel = function () {
 var panelChange = function (target) {
   if (spread == 1) {
     $('#single-page-select').prop('selectedIndex', target - 1);
-    singlePageChange();
+    selectorChanged(1);
   } else {
     $('#two-page-select').prop('selectedIndex', target - 1);
-    twoPageChange();
+    selectorChanged(2);
   }
 };
 
@@ -984,7 +954,8 @@ var nextPanel = function () {
 
 
 var fullSpread = function () {
-  //console.log('fullSpread called');
+  if (spread == 2) return;
+
   $('#singlePage').parent().show();
   $('#fullSpread').parent().hide();
   $('#single-page-select').hide();
@@ -995,7 +966,8 @@ var fullSpread = function () {
 };
 
 var singleSpread = function () {
-  //console.log('singleSpread called');
+  if (spread == 1) return;
+
   $('#singlePage').parent().hide();
   $('#fullSpread').parent().show();
   $('#two-page-select').hide();
@@ -1093,7 +1065,7 @@ var init = async function () {
     var setGallery = function (response) {
         // make image list
         var gmetadata = JSON.parse(response.responseText).gmetadata[0];
-        number_of_images = gmetadata.filecount;
+        number_of_images = Number(gmetadata.filecount);
         createDropdown();
         var gallery_url = 'https://' + host + '/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
 
@@ -1126,6 +1098,10 @@ var init = async function () {
                 };
             }
         };
+
+        // set selector
+        $('#single-page-select').prop('selectedIndex', curPanel - 1);
+        $('#two-page-select').prop('selectedIndex', curPanel - 1);
 
         // promise pattern
         new Promise(
@@ -1162,8 +1138,8 @@ var init = async function () {
     document.getElementById('preloader').addEventListener('click', preloader);
     document.getElementById('autoPager').addEventListener('click', toggleTimer);
     document.getElementById('pageChanger').addEventListener('click', goPanel);
-    document.getElementById('single-page-select').addEventListener('change', singlePageChange);
-    document.getElementById('two-page-select').addEventListener('change', twoPageChange);
+    document.getElementById('single-page-select').addEventListener('change', ()=>selectorChanged(1));
+    document.getElementById('two-page-select').addEventListener('change', ()=>selectorChanged(2));
     document.getElementById('comicImages').addEventListener('dragstart', imgDragStart);
     document.getElementById('comicImages').addEventListener('drag', imgDrag);
     document.getElementById('comicImages').addEventListener('dragend', imgDragEnd);
