@@ -452,13 +452,15 @@ async function getToken() {
     }
 }
 
-var getGdata = function (gid, token, callback) {
-    var data = {
-        'method': 'gdata',
-        'gidlist': [[gid, token]]
-    };
-    simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data)).then(callback);
+var getGdataAsync = async function (gid, token) {
+  var data = {
+      'method': 'gdata',
+      'gidlist': [[gid, token]]
+  };
+  const response = await simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data));
+  return response;
 };
+
 
 var parseHTML = function (response) {
   var doc = document.implementation.createHTMLDocument('temp');
@@ -949,6 +951,28 @@ var changeSpread = function (num) {
     drawPanel();
 };
 
+
+var setSpread = function (num) {
+    if (spread == num) return
+    
+    $('body').removeClass('spread' + spread);
+    spread = num;
+    $('body').addClass('spread' + spread);
+
+    const isSinglePage = spreadValue === 1;
+
+    $('#singlePage').parent().toggle(isSinglePage);
+    $('#single-page-select').toggle(isSinglePage);
+
+    $('#fullSpread').parent().toggle(!isSinglePage);
+    $('#two-page-select').toggle(!isSinglePage);
+
+    // $('#singlePage').toggle(isSinglePage);
+    // $('#fullSpread').toggle(!isSinglePage);
+}
+
+
+
 var resetFit = function () {
     $('#comicImages').removeClass();
     $('.fitBtn').parent().hide();
@@ -1024,10 +1048,10 @@ var init = async function () {
     // set cur panel
     var url = document.location.href;
     curPanel = Number(url.substring(url.lastIndexOf('-') + 1));
-    getToken()
-        .then(token => getGdata(token.gid, token.token, setGallery));
 
-    var setGallery = function (response) {
+    getToken()
+    .then(token => getGdataAsync(token.gid, token.token))
+    .then((response) => {
         // make image list
         var gmetadata = JSON.parse(response.responseText).gmetadata[0];
         number_of_images = Number(gmetadata.filecount);
@@ -1044,7 +1068,7 @@ var init = async function () {
             // before last page of gallery images
             page_img_len = 40;
         } else {
-        page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
+            page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
         }
         page_img_len = Number(page_img_len);
 
@@ -1070,21 +1094,23 @@ var init = async function () {
 
         // promise pattern
         new Promise(
-        function(resolve, reject) {
-            simpleRequestAsync(gallery_url + (current_gallery_page - 1))
-            .then((resp) => {
-                pushImgs(resp);
-                resolve();
-            });
-        }).then(pageChanged);
+            function (resolve, reject) {
+                simpleRequestAsync(gallery_url + (current_gallery_page - 1))
+                    .then((resp) => {
+                        pushImgs(resp);
+                        resolve();
+                    });
+            }).then(pageChanged);
 
         // load rest of galleries
         for (var i = 0; i < gallery_page_len; i++) {
-            if (i !== current_gallery_page-1) {
+            if (i !== current_gallery_page - 1) {
                 simpleRequestAsync(gallery_url + i).then(pushImgs);
             }
         }
-    };
+    })
+    .catch(error => console.error("Error initializing viewer:", error));
+
 
     getToken()
     .then(token => {document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + token.gid + '/' + token.token;});
