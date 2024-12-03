@@ -171,120 +171,60 @@ var fullscreen_style = "div:-webkit-full-screen {background-color: black;}"+
     ".fitStretch:fullscreen img {height: 100% !important; width: auto !important;}";
 
 
-// interface
-var cElement = function (tag, insert, property, func) {
-  var _DIRECT = [
-    'className',
-    'innerHTML',
-    'textContent'
-  ];
-  var element;
-  if (!tag)
-  element = document.createTextNode(property);
-   else
-  element = document.createElement(tag);
-  if (insert) {
-    var parent;
-    var before = null;
-    if (insert.constructor === Array) {
-      var target = insert[1];
-      if (typeof target === 'number') {
-        parent = insert[0];
-        before = parent.childNodes[target];
-      } else {
-        before = insert[0];
-        parent = before.parentNode;
-        if (target === 'next') {
-          before = before.nextSibling;
-        }
-        if (target === 'prev') {
-          before = before.previousSibling;
-        }
-      }
-    } else {
-      parent = insert;
-    }
-    parent.insertBefore(element, before);
-  }
-  if (!tag)
-    return element;
-  if (property) {
-    if (typeof property === 'object') {
-      for (var i in property) {
-        if (property.hasOwnProperty(i)) {
-          if (_DIRECT.contains(i))
-          element[i] = property[i];
-           else
-          element.setAttribute(i, property[i]);
-        }
-      }
-    } else {
-      element.textContent = property;
-    }
-  }
-  if (func) {
-    element.addEventListener('click', func, false);
-  }
-  return element;
-};
-
 var addNavBar = function () {
-  var html =
-  '<nav id="interfaceNav"class="navbar navbar-inverse navbar-static-top">'+
-    '<div class="container-fluid">'+
-      '<div class="navbar-header">'+
-        '<a class="navbar-brand" id="galleryInfo">Gallery</a>' +
-        '<button type="button" id="navbar-button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span> </button>'+
-      '</div>'+
-      '<div class="collapse navbar-collapse" id="collapseNavbar">' +
-        '<ul id="funcs" class="nav navbar-nav">' +
-          '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>'+
-          '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>'+
-          '<li><a title="Enter or Space" id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
-          '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
-          '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
-            '<select class="input-medium" id="single-page-select"></select>'+
-            '<select class="input-medium" style="display: none;" id="two-page-select"></select>'+
-          '</li>'+
-          '<li class="dropdown">'+
-            '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options<span class="caret"></span></a>'+
-            '<ul class="inverse-dropdown dropdown-menu">'+
-              '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
-              // To button's text indicate current state, its text content is previous state
-              '<li><a title="b" class="fitBtn" id="fitStretch"><span>□</span> Fit Stretch</a></li>' +
-              '<li><a title="b" class="fitBtn" id="fitBoth"><span>┃</span> Fit Vertical</a></li>' +
-              '<li><a title="v" class="fitBtn" id="fitVertical"><span>━</span> Fit Horizontal</a></li>' +
-              '<li><a title="h" class="fitBtn" id="fitHorizontal"><span>╋</span> Fit Both</a></li>' +
-              '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
-              '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
-              '<li><a title="rendering" id="renderingChanger"><span>🖽</span> Rendering</a></li>' +
-              '<li><a title="p" id="preloader">Preload<input id="preloadInput" type="text" value="50"></a></li>' +
+    var html =
+    '<nav id="interfaceNav"class="navbar navbar-inverse navbar-static-top">'+
+        '<div class="container-fluid">'+
+        '<div class="navbar-header">'+
+            '<a class="navbar-brand" id="galleryInfo">Gallery</a>' +
+            '<button type="button" id="navbar-button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span> </button>'+
+        '</div>'+
+        '<div class="collapse navbar-collapse" id="collapseNavbar">' +
+            '<ul id="funcs" class="nav navbar-nav">' +
+            '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>'+
+            '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>'+
+            '<li><a title="Enter or Space" id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
+            '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
+            '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
+                '<select class="input-medium" id="single-page-select"></select>'+
+                '<select class="input-medium" style="display: none;" id="two-page-select"></select>'+
+            '</li>'+
+            '<li class="dropdown">'+
+                '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options<span class="caret"></span></a>'+
+                '<ul class="inverse-dropdown dropdown-menu">'+
+                '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
+                // To button's text indicate current state, its text content is previous state
+                '<li><a title="b" class="fitBtn" id="fitStretch"><span>□</span> Fit Stretch</a></li>' +
+                '<li><a title="b" class="fitBtn" id="fitBoth"><span>┃</span> Fit Vertical</a></li>' +
+                '<li><a title="v" class="fitBtn" id="fitVertical"><span>━</span> Fit Horizontal</a></li>' +
+                '<li><a title="h" class="fitBtn" id="fitHorizontal"><span>╋</span> Fit Both</a></li>' +
+                '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
+                '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
+                '<li><a title="rendering" id="renderingChanger"><span>🖽</span> Rendering</a></li>' +
+                '<li><a title="p" id="preloader">Preload<input id="preloadInput" type="text" value="50"></a></li>' +
+                '</ul>'+
+            '</li>'+
             '</ul>'+
-          '</li>'+
-        '</ul>'+
-      '</div>'+
-    '</div>'+
-  '</nav>';
-  document.body.innerHTML += html;
+        '</div>'+
+        '</div>'+
+    '</nav>';
+    document.body.innerHTML += html;
 };
 
 var addImgFrame = function () {
-  html =
-  '<div id="comicImages" class="fitVertical" tabindex="1">' +
-  // '<a id="leftBtn" class="imageBtn">&#11164;</a>' +
-  '<a id="leftBtn" class="imageBtn"></a>' +
-  // '<a id="imageDragger"></a>'+
-  // '<a id="rightBtn" class="imageBtn">&#11166;</a>' +
-  '<a id="rightBtn" class="imageBtn"></a>' +
-  '<div class="centerer"></div>'+
-  '</div>' +
-  '<div id="preload"></div>';
-  document.body.innerHTML += html;
+    html =
+    '<div id="comicImages" class="fitVertical" tabindex="1">' +
+        '<a id="leftBtn" class="imageBtn"></a>' +
+        '<a id="rightBtn" class="imageBtn"></a>' +
+        '<div class="centerer"></div>'+
+    '</div>' +
+    '<div id="preload"></div>';
+    document.body.innerHTML += html;
 };
 
 // prevent dropdown from close
 $('.dropdown-menu').on('click', function(e) {
-  e.stopPropagation();
+    e.stopPropagation();
 });
 ///////////////////////////////////////////////////////////////////
 
@@ -399,23 +339,6 @@ var simpleRequestAsync = function (url, method = 'GET', headers = {}, data = nul
 
 //////////////////////////////////////////////////////////////////
 
-var user_lang = function () {
-  var userLang = navigator.language || navigator.userLanguage;
-  return userLang.toLowerCase();
-};
-var is_english = function () {
-  var userLang = user_lang();
-  return /^en/.test(userLang);
-};
-var is_japanese = function () {
-  var userLang = user_lang();
-  return /^ja/.test(userLang);
-};
-function eachWord(str) {
-  return str.replace(/\w\S*/g, function (txt) {
-    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-  });
-};
 var disable = function (elem) {
   elem.parent().addClass('disabled');
   elem.children().removeClass('icon_white');
@@ -453,19 +376,19 @@ async function getToken() {
 }
 
 var getGdataAsync = async function (gid, token) {
-  var data = {
-      'method': 'gdata',
-      'gidlist': [[gid, token]]
-  };
-  const response = await simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data));
-  return response;
+    var data = {
+        'method': 'gdata',
+        'gidlist': [[gid, token]]
+    };
+    const response = await simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data));
+    return response;
 };
 
 
 var parseHTML = function (response) {
-  var doc = document.implementation.createHTMLDocument('temp');
-  doc.documentElement.innerHTML = response.responseText;
-  return doc;
+    var doc = document.implementation.createHTMLDocument('temp');
+    doc.documentElement.innerHTML = response.responseText;
+    return doc;
 };
 
 ///////////////////////////////////////////////////////////////
@@ -495,21 +418,26 @@ var checkUpdate = function () {
 ////////////////////////////////////////////////////////////////
 
 var renderChange = function () {
-  renderType = (renderType + 1) % 3;
-  // var renderStyle = document.getElementById('renderStyle');
-  if (renderType === 0) {
-      renderStyle.textContent = 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}';
-      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> Render: optimized';
-  }
-  if (renderType === 1) {
-      renderStyle.textContent = 'img {image-rendering: auto;}';
-      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> Render: auto';
-  }
-  if (renderType === 2) {
-      renderStyle.textContent = 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}';
-      document.getElementById('renderingChanger').innerHTML = '<span>🖽</span> Render: pixelated';
-  }
+    const renderOptions = [
+        {
+            style: 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}',
+            text: '<span>🖽</span> Render: optimized'
+        },
+        {
+            style: 'img {image-rendering: auto;}',
+            text: '<span>🖽</span> Render: auto'
+        },
+        {
+            style: 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}',
+            text: '<span>🖽</span> Render: pixelated'
+        }
+    ];
+
+    renderType = (renderType + 1) % renderOptions.length;
+    renderStyle.textContent = renderOptions[renderType].style;
+    document.getElementById('renderingChanger').innerHTML = renderOptions[renderType].text;
 };
+
 
 var pageChanged = function () {
   var n_panel = Number(curPanel);
@@ -543,44 +471,46 @@ var selectorChanged = function (selector_num) {
   selector.trigger('blur');
 };
 
+const dragState = {
+    isDragging: false,
+    prevX: 0,
+    prevY: 0
+};
+  
+const imgDrag = (e) => {
+    if (!dragState.isDragging) return;
 
-var curDown = false;
-var prevX, prevY;
-
-var imgDrag = function (e) {
-  if (curDown) {
     if (e.pageX > 0) {
-      comicImages.scrollLeft += prevX - e.pageX;
-      prevX = e.pageX;
+    comicImages.scrollLeft += dragState.prevX - e.pageX;
+    dragState.prevX = e.pageX;
     }
     if (e.pageY > 0) {
-      comicImages.scrollTop += prevY - e.pageY;
-      prevY = e.pageY;
+    comicImages.scrollTop += dragState.prevY - e.pageY;
+    dragState.prevY = e.pageY;
     }
-  }
+};
+  
+const imgDragStart = (e) => {
+    dragState.prevX = e.pageX;
+    dragState.prevY = e.pageY;
+    dragState.isDragging = true;
 };
 
-var imgDragStart = function (e) {
-  prevX = e.pageX;
-  prevY = e.pageY;
-  curDown = true;
+const imgDragEnd = () => {
+    dragState.isDragging = false;
 };
 
-var imgDragEnd = function (e) {
-  curDown = false;
-};
-
-
-var doWheel = function (e) {
+const doWheel = (e) => {
     const prevScrollTop = comicImages.scrollTop;
     comicImages.scrollTop += e.deltaY;
 
     requestAnimationFrame(() => {
-      if (comicImages.scrollTop === prevScrollTop) {
+    if (comicImages.scrollTop === prevScrollTop) {
         e.deltaY > 0 ? nextPanel() : prevPanel();
-      }
+    }
     });
 };
+
 
 var toggleTimer = function () {
   var intervalSeconds = parseFloat(document.getElementById('pageTimer').value);
@@ -613,19 +543,19 @@ var doHotkey = function (e) {
         prevPanel();
         break;
     case 'b':
-        fitBoth();
+        applyFit('both');
         break;
     case 'v':
-        fitVertical();
+        applyFit('vertical');
         break;
     case 'h':
-        fitHorizontal();
+        applyFit('horizontal');
         break;
     case 'f':
-        fullSpread();
+        setSpread(2);
         break;
     case 's':
-        singleSpread();
+        setSpread(1);
         break;
     case 'enter':
     case ' ':
@@ -719,12 +649,6 @@ var updateImg = async function (img) {
     }
 };
 
-
-var drawPanel = function () {
-    n_curPanel = parseInt(curPanel);
-    updateImgsAndCallAsync(n_curPanel, n_curPanel+2)
-        .then(drawPanel_);
-};
 
 
 var reloadImg = function () {
@@ -841,7 +765,7 @@ var drawPanel_ = function () {
             is_single_displayed = false;
             preloadImage(3);
         } else {
-            updateImageWithFadeIn($(imgElements[0]), images[currentPanel - 1].path);
+            updateImageWithFadeIn($(imgElements[0]), previousImage.path);
             $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
             is_single_displayed = true;
             preloadImage(2);
@@ -863,6 +787,11 @@ var drawPanel_ = function () {
     $('body').scrollTop(0);
 };
 
+var drawPanel = function () {
+    n_curPanel = parseInt(curPanel);
+    updateImgsAndCallAsync(n_curPanel, n_curPanel+2)
+    .then(drawPanel_);
+};
 
 var goPanel = function () {
     const target = parseInt(prompt('target page'), 10);
@@ -920,38 +849,6 @@ var nextPanel = function () {
 };
 
 
-var fullSpread = function () {
-    if (spread == 2) return;
-
-    $('#singlePage').parent().show();
-    $('#fullSpread').parent().hide();
-    $('#single-page-select').hide();
-    $('#two-page-select').show();
-    $('#singlePage').show();
-    updateDropdown(2);
-    changeSpread(2);
-};
-
-var singleSpread = function () {
-    if (spread == 1) return;
-
-    $('#singlePage').parent().hide();
-    $('#fullSpread').parent().show();
-    $('#two-page-select').hide();
-    $('#single-page-select').show();
-    $('#fullSpread').show();
-    updateDropdown(1);
-    changeSpread(1);
-};
-
-var changeSpread = function (num) {
-    $('body').removeClass('spread' + spread);
-    spread = num;
-    $('body').addClass('spread' + spread);
-    drawPanel();
-};
-
-
 var setSpread = function (num) {
     if (spread == num) return
     
@@ -959,18 +856,16 @@ var setSpread = function (num) {
     spread = num;
     $('body').addClass('spread' + spread);
 
-    const isSinglePage = spreadValue === 1;
+    const isSinglePage = spread === 1;
 
-    $('#singlePage').parent().toggle(isSinglePage);
+    $('#singlePage').toggle(isSinglePage);
     $('#single-page-select').toggle(isSinglePage);
 
-    $('#fullSpread').parent().toggle(!isSinglePage);
+    $('#fullSpread').toggle(!isSinglePage);
     $('#two-page-select').toggle(!isSinglePage);
 
-    // $('#singlePage').toggle(isSinglePage);
-    // $('#fullSpread').toggle(!isSinglePage);
+    drawPanel();
 }
-
 
 
 var resetFit = function () {
@@ -978,36 +873,17 @@ var resetFit = function () {
     $('.fitBtn').parent().hide();
 };
 
-var fitStretch = function () {
-    // console.log('fitStretch called');
-    resetFit();
-    $('#comicImages').addClass('fitStretch');
-    $('#fitBoth').parent().show();
-    $('body').scrollTop(0);
+const fitOptions = {
+    stretch: { className: 'fitStretch', nextButton: '#fitBoth' },
+    both: { className: 'fitBoth', nextButton: '#fitHorizontal' },
+    horizontal: { className: 'fitHorizontal', nextButton: '#fitVertical' },
+    vertical: { className: 'fitVertical', nextButton: '#fitStretch' }
 };
 
-
-var fitBoth = function () {
-    // console.log('fitboth called');
+const applyFit = function (fitType) {
     resetFit();
-    $('#comicImages').addClass('fitBoth');
-    $('#fitHorizontal').parent().show();
-    $('body').scrollTop(0);
-};
-
-var fitHorizontal = function () {
-    // console.log('fitHorizontal called');
-    resetFit();
-    $('#comicImages').addClass('fitHorizontal');
-    $('#fitVertical').parent().show();
-    $('body').scrollTop(0);
-};
-
-var fitVertical = function () {
-    // console.log('fitVertical called');
-    resetFit();
-    $('#comicImages').addClass('fitVertical');
-    $('#fitStretch').parent().show();
+    $('#comicImages').addClass(fitOptions[fitType].className);
+    $(fitOptions[fitType].nextButton).parent().show();
     $('body').scrollTop(0);
 };
 
@@ -1092,15 +968,9 @@ var init = async function () {
         $('#single-page-select').prop('selectedIndex', curPanel - 1);
         $('#two-page-select').prop('selectedIndex', curPanel - 1);
 
-        // promise pattern
-        new Promise(
-            function (resolve, reject) {
-                simpleRequestAsync(gallery_url + (current_gallery_page - 1))
-                    .then((resp) => {
-                        pushImgs(resp);
-                        resolve();
-                    });
-            }).then(pageChanged);
+        simpleRequestAsync(gallery_url + (current_gallery_page-1))
+        .then(pushImgs)
+        .then(pageChanged)
 
         // load rest of galleries
         for (var i = 0; i < gallery_page_len; i++) {
@@ -1118,13 +988,13 @@ var init = async function () {
     document.addEventListener('wheel', doWheel);
     document.getElementById('prevPanel').addEventListener('click', prevPanel);
     document.getElementById('nextPanel').addEventListener('click', nextPanel);
-    document.getElementById('fitStretch').addEventListener('click', fitStretch);
-    document.getElementById('fitBoth').addEventListener('click', fitBoth);
-    document.getElementById('fitVertical').addEventListener('click', fitVertical);
-    document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
+    document.getElementById('fitStretch').addEventListener('click', ()=>applyFit('stretch'));
+    document.getElementById('fitBoth').addEventListener('click', ()=>applyFit('both'));
+    document.getElementById('fitVertical').addEventListener('click', ()=>applyFit('vertical'));
+    document.getElementById('fitHorizontal').addEventListener('click', ()=>applyFit('horizontal'));
     document.getElementById('fullscreen').addEventListener('click', fullscreen);
-    document.getElementById('fullSpread').addEventListener('click', fullSpread);
-    document.getElementById('singlePage').addEventListener('click', singleSpread);
+    document.getElementById('fullSpread').addEventListener('click', ()=>setSpread(2));
+    document.getElementById('singlePage').addEventListener('click', ()=>setSpread(1));
     document.getElementById('renderingChanger').addEventListener('click', renderChange);
     document.getElementById('reload').addEventListener('click', reloadImg);
     document.getElementById('preloader').addEventListener('click', preloader);
@@ -1137,13 +1007,12 @@ var init = async function () {
     document.getElementById('comicImages').addEventListener('dragend', imgDragEnd);
     $('.navbar ul li').show();
     $('#fullSpread').hide();
-    $('#singlePage').hide();
     var docElm = document.documentElement;
     if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
         $('#fullscreen').parent().hide();
     }
     renderChange();
-    fitVertical();
+    applyFit('vertical');
 };
 
 init();
