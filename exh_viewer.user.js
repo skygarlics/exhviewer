@@ -224,7 +224,7 @@ var addImgFrame = function () {
 
 // prevent dropdown from close
 $('.dropdown-menu').on('click', function(e) {
-    e.stopPropagation();
+  e.stopPropagation();
 });
 ///////////////////////////////////////////////////////////////////
 
@@ -476,7 +476,7 @@ const dragState = {
     prevX: 0,
     prevY: 0
 };
-  
+
 const imgDrag = (e) => {
     if (!dragState.isDragging) return;
 
@@ -489,7 +489,7 @@ const imgDrag = (e) => {
     dragState.prevY = e.pageY;
     }
 };
-  
+
 const imgDragStart = (e) => {
     dragState.prevX = e.pageX;
     dragState.prevY = e.pageY;
@@ -543,13 +543,13 @@ var doHotkey = function (e) {
         prevPanel();
         break;
     case 'b':
-        applyFit('both');
+        fitBoth();
         break;
     case 'v':
-        applyFit('vertical');
+        fitVertical();
         break;
     case 'h':
-        applyFit('horizontal');
+        fitHorizontal();
         break;
     case 'f':
         setSpread(2);
@@ -617,7 +617,7 @@ var updateImgsAndCallAsync = async function(start, end) {
         if (img && img.updated) return;  // 이미 업데이트된 경우 skip
         await updateImg(img);  // async 함수 호출
     });
-    
+
 
     await Promise.all(promise_entry);
 };
@@ -851,7 +851,7 @@ var nextPanel = function () {
 
 var setSpread = function (num) {
     if (spread == num) return
-    
+
     $('body').removeClass('spread' + spread);
     spread = num;
     $('body').addClass('spread' + spread);
@@ -886,6 +886,13 @@ const applyFit = function (fitType) {
     $(fitOptions[fitType].nextButton).parent().show();
     $('body').scrollTop(0);
 };
+
+// 사용 예시
+var fitStretch = () => applyFit('stretch');
+var fitBoth = () => applyFit('both');
+var fitHorizontal = () => applyFit('horizontal');
+var fitVertical = () => applyFit('vertical');
+
 
 var fullscreen = function () {
     var elem = comicImages;
@@ -988,10 +995,10 @@ var init = async function () {
     document.addEventListener('wheel', doWheel);
     document.getElementById('prevPanel').addEventListener('click', prevPanel);
     document.getElementById('nextPanel').addEventListener('click', nextPanel);
-    document.getElementById('fitStretch').addEventListener('click', ()=>applyFit('stretch'));
-    document.getElementById('fitBoth').addEventListener('click', ()=>applyFit('both'));
-    document.getElementById('fitVertical').addEventListener('click', ()=>applyFit('vertical'));
-    document.getElementById('fitHorizontal').addEventListener('click', ()=>applyFit('horizontal'));
+    document.getElementById('fitStretch').addEventListener('click', fitStretch);
+    document.getElementById('fitBoth').addEventListener('click', fitBoth);
+    document.getElementById('fitVertical').addEventListener('click', fitVertical);
+    document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
     document.getElementById('fullscreen').addEventListener('click', fullscreen);
     document.getElementById('fullSpread').addEventListener('click', ()=>setSpread(2));
     document.getElementById('singlePage').addEventListener('click', ()=>setSpread(1));
@@ -1012,7 +1019,7 @@ var init = async function () {
         $('#fullscreen').parent().hide();
     }
     renderChange();
-    applyFit('vertical');
+    fitVertical();
 };
 
 init();
