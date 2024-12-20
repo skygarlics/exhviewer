@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       241029
+// @version       241220
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -14,7 +14,7 @@
 // @grant         GM_deleteValue
 // @grant         GM_listValues
 // @grant         GM_getResourceText
-// @grant					GM.getResourceUrl
+// @grant		  GM.getResourceUrl
 // ==/UserScript==
 
 // update functions is currently disabled due to tampermonkey's cross origin warning
@@ -941,22 +941,7 @@ var init = async function () {
         createDropdown();
         var gallery_url = 'https://' + host + '/g/' + gmetadata.gid + '/' + gmetadata.token + '/?p=';
 
-        // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
-        var gallery_page_len = Math.ceil(number_of_images / 40);
-
-        // load current page. first things first
-        var current_gallery_page = Math.ceil(curPanel / 40);
-        var page_img_len;
-        if (current_gallery_page < gallery_page_len) {
-            // before last page of gallery images
-            page_img_len = 40;
-        } else {
-            page_img_len = number_of_images - ((gallery_page_len - 1) * 40);
-        }
-        page_img_len = Number(page_img_len);
-
-        var pushImgs = function (response) {
-            var doc = parseHTML(response);
+        var pushImgs = function (doc) {
             var imgs = doc.querySelectorAll("#gdt > a");
             for (var idx = 0; idx < imgs.length; idx++) {
                 var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
@@ -971,20 +956,65 @@ var init = async function () {
             }
         };
 
+        var gallery_page_len;
+        var current_gallery_page;
+
+        simpleRequestAsync(gallery_url + 0)
+        .then(parseHTML)
+        .then((doc) => {
+            // td count in table.ptt
+            var table = doc.querySelector('table.ptt');
+            gallery_page_len = table.querySelectorAll('td').length;
+            current_gallery_page = Number(table.querySelector('.ptds').textContent);
+
+            $('#single-page-select').prop('selectedIndex', curPanel - 1);
+            $('#two-page-select').prop('selectedIndex', curPanel - 1);
+
+            // push requestes page1 images
+            pushImgs(doc);
+        })
+        // push current page first
+        .then(() => {return simpleRequestAsync(gallery_url + (current_gallery_page-1));})
+        .then(parseHTML)
+        .then(pushImgs)
+        .then(pageChanged)
+        // load rest of galleries
+        .then(()=>{
+            for (var i = 1; i < gallery_page_len; i++) {
+                if (i !== current_gallery_page - 1) {
+                    simpleRequestAsync(gallery_url + i)
+                    .then(parseHTML)
+                    .then(pushImgs);
+                }
+            }
+        });
+
+        // TODO: find a way to determine pagelength before page load
+        /*
+        // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
+        var gallery_page_len = Math.ceil(number_of_images / 40);
+
+        // load current page. first things first
+        var current_gallery_page = Math.ceil(curPanel / 40);
+        
+
         // set selector
         $('#single-page-select').prop('selectedIndex', curPanel - 1);
         $('#two-page-select').prop('selectedIndex', curPanel - 1);
 
         simpleRequestAsync(gallery_url + (current_gallery_page-1))
+        .then(parseHTML)
         .then(pushImgs)
-        .then(pageChanged)
+        .then(pageChanged);
 
         // load rest of galleries
         for (var i = 0; i < gallery_page_len; i++) {
             if (i !== current_gallery_page - 1) {
-                simpleRequestAsync(gallery_url + i).then(pushImgs);
+                simpleRequestAsync(gallery_url + i)
+                .then(pushImgs);
             }
         }
+        */
     })
     .catch(error => console.error("Error initializing viewer:", error));
 
