@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       241220
+// @version       250217
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -958,13 +958,21 @@ var init = async function () {
 
         var gallery_page_len;
         var current_gallery_page;
+        var gallery_page_len;
 
         simpleRequestAsync(gallery_url + 0)
         .then(parseHTML)
         .then((doc) => {
-            // td count in table.ptt
+            // pages td count in table.ptt
             var table = doc.querySelector('table.ptt');
-            gallery_page_len = table.querySelectorAll('td').length;
+            if (table.querySelectorAll('td').length > 3) { // if there are more than 3 buttons, there are more than 1 page
+                // determine image per page
+                var cnt = doc.querySelectorAll("#gdt > a").length;
+                gallery_page_len = Math.ceil(number_of_images / cnt);
+            } else {
+                gallery_page_len = 1;
+            }
+
             current_gallery_page = Number(table.querySelector('.ptds').textContent);
 
             $('#single-page-select').prop('selectedIndex', curPanel - 1);
@@ -974,13 +982,17 @@ var init = async function () {
             pushImgs(doc);
         })
         // push current page first
-        .then(() => {return simpleRequestAsync(gallery_url + (current_gallery_page-1));})
-        .then(parseHTML)
-        .then(pushImgs)
+        .then(() => {
+            if (current_gallery_page !== 1) {
+                return simpleRequestAsync(gallery_url + (current_gallery_page - 1))
+                    .then(parseHTML)
+                    .then(pushImgs);
+            }
+        })
         .then(pageChanged)
         // load rest of galleries
         .then(()=>{
-            for (var i = 1; i < gallery_page_len; i++) {
+            for (var i = 2; i < gallery_page_len+1; i++) {
                 if (i !== current_gallery_page - 1) {
                     simpleRequestAsync(gallery_url + i)
                     .then(parseHTML)
@@ -988,33 +1000,8 @@ var init = async function () {
                 }
             }
         });
-
         // TODO: find a way to determine pagelength before page load
-        /*
-        // images[curPanel]={page:curPanel, width:unsafeWindow.x, height:unsafeWindow.y, path:document.getElementById("img").src, token:match[1], url:document.location};
-        var gallery_page_len = Math.ceil(number_of_images / 40);
 
-        // load current page. first things first
-        var current_gallery_page = Math.ceil(curPanel / 40);
-        
-
-        // set selector
-        $('#single-page-select').prop('selectedIndex', curPanel - 1);
-        $('#two-page-select').prop('selectedIndex', curPanel - 1);
-
-        simpleRequestAsync(gallery_url + (current_gallery_page-1))
-        .then(parseHTML)
-        .then(pushImgs)
-        .then(pageChanged);
-
-        // load rest of galleries
-        for (var i = 0; i < gallery_page_len; i++) {
-            if (i !== current_gallery_page - 1) {
-                simpleRequestAsync(gallery_url + i)
-                .then(pushImgs);
-            }
-        }
-        */
     })
     .catch(error => console.error("Error initializing viewer:", error));
 
