@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       250217
+// @version       250218
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -992,8 +992,8 @@ var init = async function () {
         .then(pageChanged)
         // load rest of galleries
         .then(()=>{
-            for (var i = 2; i < gallery_page_len+1; i++) {
-                if (i !== current_gallery_page - 1) {
+            for (var i = 1; i < gallery_page_len+1; i++) {
+                if (i+1 !== current_gallery_page) {
                     simpleRequestAsync(gallery_url + i)
                     .then(parseHTML)
                     .then(pushImgs);
