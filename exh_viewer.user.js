@@ -19,18 +19,19 @@
 
 // update functions is currently disabled due to tampermonkey's cross origin warning
 // if you want use update function, make update_check true
-var update_check = false;
-var API_URL = null;
 
-var images = {};
+// ============== Viewer global ==============
+var update_check = false;
+var images = {}; // image datas (url, width, height, path, nl, updated), 0-indexed
 var spread = 1;
 var is_single_displayed = true;
-var curPanel;
+var curPanel; // current panel number (1-indexed)
 var number_of_images; //placeholder
 var comicImages;
 
+// ============== Exh global ==============
+var API_URL = null;
 var GID_TOKEN = null;
-
 var host_regex = /^(.+)\/\/(.+?)\/(.+)/g;
 var host = host_regex.exec(document.location)[2];
 if (host === 'exhentai.org')
@@ -40,9 +41,8 @@ else if (host === 'e-hentai.org')
 else
     alert("Host unavailable!\nHOST: "+host);
 
-// remove original events.
-document.onkeydown = null;
-document.onkeyup = null;
+
+// ============== Viewer setup ==============
 
 //style
 var clearStyle = function () {
@@ -68,6 +68,16 @@ function (css) {
   var textNode = document.createTextNode(css);
   style.appendChild(textNode);
   parent.appendChild(style);
+};
+
+var disable = function (elem) {
+    elem.parent().addClass('disabled');
+    elem.children().removeClass('icon_white');
+};
+
+var enable = function (elem) {
+    elem.parent().removeClass('disabled');
+    elem.children().addClass('icon_white');
 };
 
 // GM_getResourceText is deprecated in Greasemonkey4
@@ -226,8 +236,30 @@ var addImgFrame = function () {
 $('.dropdown-menu').on('click', function(e) {
   e.stopPropagation();
 });
-///////////////////////////////////////////////////////////////////
 
+var renderChange = function () {
+    const renderOptions = [
+        {
+            style: 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}',
+            text: '<span>🖽</span> Render: optimized'
+        },
+        {
+            style: 'img {image-rendering: auto;}',
+            text: '<span>🖽</span> Render: auto'
+        },
+        {
+            style: 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}',
+            text: '<span>🖽</span> Render: pixelated'
+        }
+    ];
+
+    renderType = (renderType + 1) % renderOptions.length;
+    renderStyle.textContent = renderOptions[renderType].style;
+    document.getElementById('renderingChanger').innerHTML = renderOptions[renderType].text;
+};
+
+
+// ============== request/parsing functions
 // code from koreapyj/dcinside_lite
 Array.prototype.contains = function (needle) {
   for (var i = 0; i < this.length; i++) if (this[i] === needle) return true;
@@ -337,16 +369,37 @@ var simpleRequestAsync = function (url, method = 'GET', headers = {}, data = nul
     });
 };
 
-//////////////////////////////////////////////////////////////////
+var parseHTML = function (response) {
+    var doc = document.implementation.createHTMLDocument('temp');
+    doc.documentElement.innerHTML = response.responseText;
+    return doc;
+};
 
-var disable = function (elem) {
-  elem.parent().addClass('disabled');
-  elem.children().removeClass('icon_white');
-};
-var enable = function (elem) {
-  elem.parent().removeClass('disabled');
-  elem.children().addClass('icon_white');
-};
+// ==========  Update functions ==========
+var openInNewTab = function (url) {
+    var win = window.open(url, '_blank');
+    win.focus();
+  };
+  
+  var checkUpdate = function () {
+      var github_api = "https://api.github.com";
+      var repo_path = "/repos/skygarlics/exhviewer";
+      // version_now
+      var p_version = GM_info.script.version;
+      simpleRequestAsync(github_api + repo_path + '/releases/latest')
+      .then((response) => {
+          resp_json = JSON.parse(response.responseText);
+          var n_version = parseInt(resp_json["tag_name"]);
+          var url = resp_json["assets"][0]["browser_download_url"];
+          if ((p_version < n_version) && confirm("새 버전 : " + n_version + "\n업데이트 하시겠습니까?")) {
+              alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
+              openInNewTab(url);
+          }
+      }) ;
+  };
+  
+
+// ============== Exh functions ==============
 
 async function getToken() {
     // GID_TOKEN이 이미 존재하면 즉시 반환
@@ -384,59 +437,7 @@ var getGdataAsync = async function (gid, token) {
     return response;
 };
 
-
-var parseHTML = function (response) {
-    var doc = document.implementation.createHTMLDocument('temp');
-    doc.documentElement.innerHTML = response.responseText;
-    return doc;
-};
-
-///////////////////////////////////////////////////////////////
-
-var openInNewTab = function (url) {
-  var win = window.open(url, '_blank');
-  win.focus();
-};
-
-var checkUpdate = function () {
-    var github_api = "https://api.github.com";
-    var repo_path = "/repos/skygarlics/exhviewer";
-    // version_now
-    var p_version = GM_info.script.version;
-    simpleRequestAsync(github_api + repo_path + '/releases/latest')
-    .then((response) => {
-        resp_json = JSON.parse(response.responseText);
-        var n_version = parseInt(resp_json["tag_name"]);
-        var url = resp_json["assets"][0]["browser_download_url"];
-        if ((p_version < n_version) && confirm("새 버전 : " + n_version + "\n업데이트 하시겠습니까?")) {
-            alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
-            openInNewTab(url);
-        }
-    }) ;
-};
-
 ////////////////////////////////////////////////////////////////
-
-var renderChange = function () {
-    const renderOptions = [
-        {
-            style: 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}',
-            text: '<span>🖽</span> Render: optimized'
-        },
-        {
-            style: 'img {image-rendering: auto;}',
-            text: '<span>🖽</span> Render: auto'
-        },
-        {
-            style: 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}',
-            text: '<span>🖽</span> Render: pixelated'
-        }
-    ];
-
-    renderType = (renderType + 1) % renderOptions.length;
-    renderStyle.textContent = renderOptions[renderType].style;
-    document.getElementById('renderingChanger').innerHTML = renderOptions[renderType].text;
-};
 
 
 var pageChanged = function () {
@@ -618,11 +619,11 @@ var updateImgsAndCallAsync = async function(start, end) {
         await updateImg(img);  // async 함수 호출
     });
 
-
     await Promise.all(promise_entry);
 };
 
 var updateImg = async function (img) {
+    // exhbound
     try {
         const response = await simpleRequestAsync(img.url);  // 비동기 요청 대기
         const doc = parseHTML(response);
@@ -650,9 +651,9 @@ var updateImg = async function (img) {
 };
 
 
-
 var reloadImg = function () {
-  //console.log('reloadImg called');
+    //exhbound
+    //console.log('reloadImg called');
     var entry = [Number(curPanel), Number(curPanel)-1];
     for (var idx = 0; idx < entry.length; idx++) {
         var img = images[entry[idx]];
@@ -759,6 +760,8 @@ var drawPanel_ = function () {
         const currentImage = images[currentPanel];
         const previousImage = images[currentPanel - 1];
 
+        // 이미지의 가로 세로 비율에 따라 두 이미지를 표시할지 결정
+        // TODO : nextPanel, prevPanel에서도 계산되는거 제거하기?
         if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
             updateImageWithFadeIn($(imgElements[1]), previousImage.path);
             updateImageWithFadeIn($(imgElements[0]), currentImage.path);
@@ -838,7 +841,7 @@ var nextPanel = function () {
     if (is_single_displayed) {
       panelChange(currentPanel + 1);
     } else {
-      const nextImage = images[currentPanel]; // 현재 패널의 다음 이미지 가져오기
+      const nextImage = images[currentPanel]; // images is 0-based, and currentPanel is 1-based
       const newPanel = (currentPanel + 1 < number_of_images && nextImage.width <= nextImage.height)
                        ? currentPanel + 2
                        : currentPanel + 1;
@@ -910,11 +913,14 @@ var init = async function () {
     }
 
     // clear page
+    // todo : don't clear page already loaded
+    // overlap interface on top of page
     document.body.innerHTML = '';
+    clearStyle();
+    
+    // set interface
     addNavBar();
     addImgFrame();
-    clearStyle();
-
     var head = document.head;
     var link = document.createElement("link");
     link.type = "text/css";
@@ -930,6 +936,8 @@ var init = async function () {
 
     // set cur panel
     var url = document.location.href;
+
+    // exhbound -curpanel
     curPanel = Number(url.substring(url.lastIndexOf('-') + 1));
 
     getToken()
@@ -1000,11 +1008,12 @@ var init = async function () {
                 }
             }
         });
-        // TODO: find a way to determine pagelength before page load
-
     })
     .catch(error => console.error("Error initializing viewer:", error));
 
+    // remove original events.
+    document.onkeydown = null;
+    document.onkeyup = null;
 
     getToken()
     .then(token => {document.getElementById('galleryInfo').href = 'https://' + host + '/g/' + token.gid + '/' + token.token;});
