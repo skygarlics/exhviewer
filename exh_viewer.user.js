@@ -154,7 +154,11 @@ var viewer_style =
     "@media (min-width: 768px) {"+
         ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
         ".navbar .navbar-collapse {text-align: center;}"+
-    "}";
+    "}"+
+    
+    // exitfullscreen button
+    "#fullscreen {position: fixed; top: 0; right: 10px; z-index: 1000; margin: 10px; font-size: 20px; color: white;}"
+;
 
 // Image rendering option. needs ID to render swap
 var renderType = 0;
@@ -178,7 +182,8 @@ var fullscreen_style = "div:-webkit-full-screen {background-color: black;}"+
     ".fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}"+
     ".fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}"+
     ".fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}"+
-    ".fitStretch:fullscreen img {height: 100% !important; width: auto !important;}";
+    ".fitStretch:fullscreen img {height: 100% !important; width: auto !important;}"
+    ;
 
 
 var addNavBar = function () {
@@ -193,7 +198,6 @@ var addNavBar = function () {
             '<ul id="funcs" class="nav navbar-nav">' +
             '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>'+
             '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>'+
-            '<li><a title="Enter or Space" id="fullscreen"><span>&#9974;</span> Fullscreen</a></li>'+
             '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
             '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
                 '<select class="input-medium" id="single-page-select"></select>'+
@@ -224,6 +228,7 @@ var addNavBar = function () {
 var addImgFrame = function () {
     html =
     '<div id="comicImages" class="fitVertical" tabindex="1">' +
+        '<a id="fullscreen" title="Enter or Space">⛶</a>'+
         '<a id="leftBtn" class="imageBtn"></a>' +
         '<a id="rightBtn" class="imageBtn"></a>' +
         '<div class="centerer"></div>'+
@@ -897,6 +902,24 @@ var fitHorizontal = () => applyFit('horizontal');
 var fitVertical = () => applyFit('vertical');
 
 
+// Function to handle fullscreen change
+var handleFullscreenChange = function () {
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+        // Fullscreen mode is active
+        //fullscreenButton.style.display = 'block';
+    } else {
+        // Fullscreen mode is inactive
+        //fullscreenButton.style.display = 'none';
+    }
+};
+
+// Add event listener for fullscreen change
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+
 var fullscreen = function () {
     var elem = comicImages;
     if (!document.fullscreenElement) {
@@ -906,6 +929,8 @@ var fullscreen = function () {
     }
 };
 
+
+// ============== Initialization ==============
 
 var init = async function () {
     if (update_check) {
