@@ -965,9 +965,9 @@ var init = async function () {
         .then((doc) => {
             // pages td count in table.ptt
             var table = doc.querySelector('table.ptt');
+            var cnt = doc.querySelectorAll("#gdt > a").length;
             if (table.querySelectorAll('td').length > 3) { // if there are more than 3 buttons, there are more than 1 page
                 // determine image per page
-                var cnt = doc.querySelectorAll("#gdt > a").length;
                 gallery_page_len = Math.ceil(number_of_images / cnt);
             } else {
                 gallery_page_len = 1;
@@ -1017,8 +1017,8 @@ var init = async function () {
     document.getElementById('fitVertical').addEventListener('click', fitVertical);
     document.getElementById('fitHorizontal').addEventListener('click', fitHorizontal);
     document.getElementById('fullscreen').addEventListener('click', fullscreen);
-    document.getElementById('fullSpread').addEventListener('click', ()=>setSpread(2));
-    document.getElementById('singlePage').addEventListener('click', ()=>setSpread(1));
+    document.getElementById('fullSpread').addEventListener('click', ()=>setSpread(1));
+    document.getElementById('singlePage').addEventListener('click', ()=>setSpread(2));
     document.getElementById('renderingChanger').addEventListener('click', renderChange);
     document.getElementById('reload').addEventListener('click', reloadImg);
     document.getElementById('preloader').addEventListener('click', preloader);
