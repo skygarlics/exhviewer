@@ -42,6 +42,83 @@ else
     alert("Host unavailable!\nHOST: "+host);
 
 
+// ============== Exh specific functions ==============
+
+async function getToken() {
+    // GID_TOKEN이 이미 존재하면 즉시 반환
+    if (GID_TOKEN) return GID_TOKEN;
+
+    // URL에서 필요한 정보를 추출
+    const page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
+    const match = page_regex.exec(document.location);
+    const data = {
+        method: 'gtoken',
+        pagelist: [[match[2], match[1], match[3]]]
+    };
+
+    try {
+        // simpleRequestAsync로 API 호출
+        const response = await simpleRequestAsync(API_URL, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify(data));
+
+        // 응답을 JSON으로 파싱 후 토큰 저장
+        const tokens = JSON.parse(response.responseText).tokenlist[0];
+        GID_TOKEN = { gid: tokens.gid, token: tokens.token };
+        return GID_TOKEN;
+
+    } catch (error) {
+        console.error("Error fetching token:", error);
+        throw error;  // 호출한 곳에서 에러를 처리할 수 있도록 다시 던짐
+    }
+}
+
+
+var getGdataAsync = async function (gid, token) {
+    var data = {
+        'method': 'gdata',
+        'gidlist': [[gid, token]]
+    };
+    const response = await simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data));
+    return response;
+};
+
+
+var extractImageData = async function (url, idx) {
+    const response = await simpleRequestAsync(url);  // 비동기 요청 대기
+    const doc = parseHTML(response);
+
+    // 파일 정보에서 이미지 크기 추출
+    const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
+    const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
+    if (!fileInfoMatch) throw new Error("File info not found");
+    
+    return {
+        path: doc.getElementById('img').src,
+        width: Number(fileInfoMatch[1]),
+        height: Number(fileInfoMatch[2])
+    }
+}
+
+var getReloadInfo = async function (entry_idx, entry_url) {
+    var ret = [];
+    for (var idx = 0; idx < entry_url.length; idx++) {
+        var url = entry_url[idx];
+        var response = await simpleRequestAsync(url);
+        var doc = parseHTML(response);
+        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
+        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
+        if (!nlMatch) throw new Error("NL value not found");
+        
+        var nl =  nlMatch[1];
+        url = url.replace(/\?.*/, '') + '?nl=' + nl;
+        response = await simpleRequestAsync(url);
+        doc = parseHTML(response);
+        const imgSrc = doc.getElementById('img').src;
+        ret.push(imgSrc);
+    }
+    return ret;
+}
+
+
 // ============== Viewer setup ==============
 
 //style
@@ -372,7 +449,7 @@ var addNavBar = function () {
             </li>
             <li>
               <a title="t key" id="autoPager">
-                <span>▶</span>Slideshow
+                <span>▶</span>Auto
               </a>
               <input id="pageTimer" type="text" value="10">
             </li>
@@ -606,100 +683,23 @@ var openInNewTab = function (url) {
     win.focus();
   };
   
-  var checkUpdate = function () {
-      var github_api = "https://api.github.com";
-      var repo_path = "/repos/skygarlics/exhviewer";
-      // version_now
-      var p_version = GM_info.script.version;
-      simpleRequestAsync(github_api + repo_path + '/releases/latest')
-      .then((response) => {
-          resp_json = JSON.parse(response.responseText);
-          var n_version = parseInt(resp_json["tag_name"]);
-          var url = resp_json["assets"][0]["browser_download_url"];
-          if ((p_version < n_version) && confirm("새 버전 : " + n_version + "\n업데이트 하시겠습니까?")) {
-              alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
-              openInNewTab(url);
-          }
-      }) ;
-  };
-  
-
-// ============== Exh specific functions ==============
-
-async function getToken() {
-    // GID_TOKEN이 이미 존재하면 즉시 반환
-    if (GID_TOKEN) return GID_TOKEN;
-
-    // URL에서 필요한 정보를 추출
-    const page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-    const match = page_regex.exec(document.location);
-    const data = {
-        method: 'gtoken',
-        pagelist: [[match[2], match[1], match[3]]]
-    };
-
-    try {
-        // simpleRequestAsync로 API 호출
-        const response = await simpleRequestAsync(API_URL, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify(data));
-
-        // 응답을 JSON으로 파싱 후 토큰 저장
-        const tokens = JSON.parse(response.responseText).tokenlist[0];
-        GID_TOKEN = { gid: tokens.gid, token: tokens.token };
-        return GID_TOKEN;
-
-    } catch (error) {
-        console.error("Error fetching token:", error);
-        throw error;  // 호출한 곳에서 에러를 처리할 수 있도록 다시 던짐
-    }
-}
-
-
-var getGdataAsync = async function (gid, token) {
-    var data = {
-        'method': 'gdata',
-        'gidlist': [[gid, token]]
-    };
-    const response = await simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data));
-    return response;
+var checkUpdate = function () {
+    var github_api = "https://api.github.com";
+    var repo_path = "/repos/skygarlics/exhviewer";
+    // version_now
+    var p_version = GM_info.script.version;
+    simpleRequestAsync(github_api + repo_path + '/releases/latest')
+    .then((response) => {
+        resp_json = JSON.parse(response.responseText);
+        var n_version = parseInt(resp_json["tag_name"]);
+        var url = resp_json["assets"][0]["browser_download_url"];
+        if ((p_version < n_version) && confirm("새 버전 : " + n_version + "\n업데이트 하시겠습니까?")) {
+            alert("설치 후 새로고침하면 새 버전이 적용됩니다.");
+            openInNewTab(url);
+        }
+    }) ;
 };
-
-
-var extractImageData = async function (url, idx) {
-    const response = await simpleRequestAsync(url);  // 비동기 요청 대기
-    const doc = parseHTML(response);
-
-    // 파일 정보에서 이미지 크기 추출
-    const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
-    const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
-    if (!fileInfoMatch) throw new Error("File info not found");
-    
-    return {
-        path: doc.getElementById('img').src,
-        width: Number(fileInfoMatch[1]),
-        height: Number(fileInfoMatch[2])
-    }
-}
-
-var getReloadInfo = async function (entry_idx, entry_url) {
-    var ret = [];
-    for (var idx = 0; idx < entry_url.length; idx++) {
-        var url = entry_url[idx];
-        var response = await simpleRequestAsync(url);
-        var doc = parseHTML(response);
-        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
-        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
-        if (!nlMatch) throw new Error("NL value not found");
-        
-        var nl =  nlMatch[1];
-        url = url.replace(/\?.*/, '') + '?nl=' + nl;
-        response = await simpleRequestAsync(url);
-        doc = parseHTML(response);
-        const imgSrc = doc.getElementById('img').src;
-        ret.push(imgSrc);
-    }
-    return ret;
-}
-
+  
 
 ////////////////////////////////////////////////////////////////
 
@@ -783,13 +783,13 @@ var toggleTimer = function () {
   }
 
   toggleTimer.flag = !toggleTimer.flag;
-  var pagerButton = document.getElementById('autoPager');
+  var pagerButton = document.getElementById('autoPager').getElementsByTagName('span')[0];
 
   if (toggleTimer.flag) {
-      pagerButton.firstChild.classList.add('icon_white');
+      pagerButton.classList.add('icon_white');
       toggleTimer.interval = setInterval(nextPanel, intervalSeconds * 1000);
   } else {
-      pagerButton.firstChild.classList.remove('icon_white');
+      pagerButton.classList.remove('icon_white');
       clearInterval(toggleTimer.interval);
   }
 };
