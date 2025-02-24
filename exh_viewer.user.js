@@ -621,13 +621,13 @@ var updateImgsAndCallAsync = async function(start, end) {
     const promise_entry = update_entry.map(async (idx) => {
         const img = images[idx];
         if (img && img.updated) return;  // 이미 업데이트된 경우 skip
-        await updateImg(img);  // async 함수 호출
+        await updateImgData(img);  // async 함수 호출
     });
 
     await Promise.all(promise_entry);
 };
 
-var updateImg = async function (img) {
+var updateImgData = async function (img, callback) {
     // exhbound
     try {
         const response = await simpleRequestAsync(img.url);  // 비동기 요청 대기
@@ -643,12 +643,6 @@ var updateImg = async function (img) {
         img.width = Number(fileInfoMatch[1]);
         img.height = Number(fileInfoMatch[2]);
         img.updated = true;
-
-        // 'loadfail' 클릭 이벤트의 'nl' 값 추출
-        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
-        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
-        if (!nlMatch) throw new Error("NL value not found");
-        img.nl = nlMatch[1];
     } catch (error) {
         console.error("Error updating image:", error);
         throw error;  // 오류가 발생한 경우 상위로 throw하여 처리
@@ -656,16 +650,23 @@ var updateImg = async function (img) {
 };
 
 
-var reloadImg = function () {
+var reloadImg = async function () {
     //exhbound
     //console.log('reloadImg called');
+
     var entry = [Number(curPanel), Number(curPanel)-1];
     for (var idx = 0; idx < entry.length; idx++) {
         var img = images[entry[idx]];
-        img.url = img.url.replace(/\?.*/, '');
-        img.url += ((img.url + '').indexOf('?') > - 1 ? '&' : '?') + "nl=" + img.nl;
+
+        const response = await simpleRequestAsync(img.url);
+        const doc = parseHTML(response);
+        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
+        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
+        if (!nlMatch) throw new Error("NL value not found");
+        
+        var nl =  nlMatch[1];
+        img.url = img.url.replace(/\?.*/, '') + '?nl=' + nl;
         img['updated'] = false;
-        img.nl = null;
     }
     drawPanel();
 };
