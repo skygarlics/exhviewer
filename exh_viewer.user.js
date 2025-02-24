@@ -662,34 +662,50 @@ var extractImageData = async function (url, idx) {
     }
 }
 
-
 var reloadImg = async function () {
     //exhbound
     //console.log('reloadImg called');
-    
     var n_curPanel = Number(curPanel);
-    var entry_idx = [n_curPanel-1, n_curPanel];
-    var entry_url = [images[n_curPanel-1].url, images[n_curPanel].url];
 
+    // images[n_curPanel] = next page
+    // if current page is last, entry current page only
+
+    var entry_idx;
+    var entry_url;
+
+    if (n_curPanel == number_of_images) {
+        entry_idx = [n_curPanel];
+        entry_url = [images[n_curPanel].url];
+    } else {
+        entry_idx = [n_curPanel-1, n_curPanel];
+        entry_url = [images[n_curPanel-1].url, images[n_curPanel].url];
+    }
+
+    var reloadinfo = await getReloadInfo(entry_idx, entry_url);
+    for (var idx = 0; idx < reloadinfo.length; idx++) {
+        images[entry_idx[idx]].path = reloadinfo[idx];
+    }
     drawPanel();
 };
 
-var getReloadInfo = async function (entry) {
-    for (var idx = 0; idx < entry.length; idx++) {
-        var img = images[entry[idx]];
-
-        const response = await simpleRequestAsync(img.url);
-        const doc = parseHTML(response);
+var getReloadInfo = async function (entry_idx, entry_url) {
+    var ret = [];
+    for (var idx = 0; idx < entry_url.length; idx++) {
+        var url = entry_url[idx];
+        var response = await simpleRequestAsync(url);
+        var doc = parseHTML(response);
         const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
         const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
         if (!nlMatch) throw new Error("NL value not found");
         
         var nl =  nlMatch[1];
-        img.url = img.url.replace(/\?.*/, '') + '?nl=' + nl;
-        img['updated'] = false;
+        url = url.replace(/\?.*/, '') + '?nl=' + nl;
+        response = await simpleRequestAsync(url);
+        doc = parseHTML(response);
+        const imgSrc = doc.getElementById('img').src;
+        ret.push(imgSrc);
     }
-
-    return 
+    return ret;
 }
 
 
