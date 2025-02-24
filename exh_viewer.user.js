@@ -621,27 +621,22 @@ var updateImgsAndCallAsync = async function(start, end) {
     const promise_entry = update_entry.map(async (idx) => {
         const img = images[idx];
         if (img && img.updated) return;  // 이미 업데이트된 경우 skip
-        await updateImgData(img);  // async 함수 호출
+        await updateImgData(img, idx, extractImageData);  // async 함수 호출
     });
 
     await Promise.all(promise_entry);
 };
 
-var updateImgData = async function (img, callback) {
-    // exhbound
+var updateImgData = async function (img, idx, callback) {
     try {
-        const response = await simpleRequestAsync(img.url);  // 비동기 요청 대기
-        const doc = parseHTML(response);
-
-        // 파일 정보에서 이미지 크기 추출
-        const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
-        const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
-        if (!fileInfoMatch) throw new Error("File info not found");
+        // imgData structure
+        // {url: string, width: number, height: number, path: string, updated: boolean}
+        var imgData = await callback(img.url, idx)
 
         // 이미지 경로 및 크기 정보 업데이트
-        img.path = doc.getElementById('img').src;
-        img.width = Number(fileInfoMatch[1]);
-        img.height = Number(fileInfoMatch[2]);
+        img.path = imgData.path;
+        img.width = imgData.width;
+        img.height = imgData.height;
         img.updated = true;
     } catch (error) {
         console.error("Error updating image:", error);
@@ -649,12 +644,37 @@ var updateImgData = async function (img, callback) {
     }
 };
 
+var extractImageData = async function (url, idx) {
+    // exhbound, it needs to external function
+    // i.e, object img it self can't be used in it
+    const response = await simpleRequestAsync(url);  // 비동기 요청 대기
+    const doc = parseHTML(response);
+
+    // 파일 정보에서 이미지 크기 추출
+    const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
+    const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
+    if (!fileInfoMatch) throw new Error("File info not found");
+    
+    return {
+        path: doc.getElementById('img').src,
+        width: Number(fileInfoMatch[1]),
+        height: Number(fileInfoMatch[2])
+    }
+}
+
 
 var reloadImg = async function () {
     //exhbound
     //console.log('reloadImg called');
+    
+    var n_curPanel = Number(curPanel);
+    var entry_idx = [n_curPanel-1, n_curPanel];
+    var entry_url = [images[n_curPanel-1].url, images[n_curPanel].url];
 
-    var entry = [Number(curPanel), Number(curPanel)-1];
+    drawPanel();
+};
+
+var getReloadInfo = async function (entry) {
     for (var idx = 0; idx < entry.length; idx++) {
         var img = images[entry[idx]];
 
@@ -668,8 +688,9 @@ var reloadImg = async function () {
         img.url = img.url.replace(/\?.*/, '') + '?nl=' + nl;
         img['updated'] = false;
     }
-    drawPanel();
-};
+
+    return 
+}
 
 
 var preloader = function() {
@@ -984,7 +1005,7 @@ var init = async function () {
                 var match_temp = regex_temp.exec(url_temp);
                 images[match_temp[3] - 1] = {
                     page: match_temp[3],
-                    url: url_temp,
+                    url: url_temp,  // url is page that contains image, not path of image
                     token: match_temp[1]
                 };
             }
