@@ -97,68 +97,226 @@ var addStyleFromResource = async function (res) {
 }
 
 // Viewer styles
-var viewer_style =
-    "html, body {height: 100%;}"+
-    "body {background: #171717; font-size: 15px; font-weight:bold; background-color: #171717 !important; color: #999; height: 100%; overflow: hidden;}"+
-    "h1 {color: #fff;}"+
-    "body .modal {color: #333;}"+
-    ".nav>li>a {padding: 15px 10px}"+
+var viewer_style = `
+html {
+  height: 100%;
+}
+body {
+  background: #171717;
+  font-size: 15px;
+  font-weight: bold;
+  background-color: #171717 !important;
+  color: #999;
+  height: 100%;
+  overflow: hidden;
+}
+h1 {
+  color: #fff;
+}
+body .modal {
+  color: #333;
+}
+.nav>li>a {
+  padding: 15px 10px;
+}
 
-    "#comicImages {height: calc(100% - 50px); overflow: auto; text-align: center; white-space:nowrap;}"+
-    "#comicImages .centerer {display: inline-block; vertical-align: middle; height: 100%;}"+
-    "#imageDragger {pointer-events: none; cursor: default; position: fixed; margin-bottom: 25px; z-index: 1; width: 30%; height: calc(100% - 50px - 25px); left: 35%; display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
+#comicImages {
+  height: calc(100% - 50px);
+  overflow: auto;
+  text-align: center;
+  white-space: nowrap;
+}
+#comicImages .centerer {
+  display: inline-block;
+  vertical-align: middle;
+  height: 100%;
+}
+#imageDragger {
+  pointer-events: none;
+  cursor: default;
+  position: fixed;
+  margin-bottom: 25px;
+  z-index: 1;
+  width: 30%;
+  height: calc(100% - 50px - 25px);
+  left: 35%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
 
-    // fitStretch
-    ".fitStretch img {display: inline-block; vertical-align: middle; width: 100%; height: 100%; object-fit: contain;}"+
-    // fitBoth
-    ".fitBoth img {display: inline-block; vertical-align: middle; max-width: 100%; max-height:100%}"+
-    //".spread1 .fitVeritcal img {max-width: 100%;}"+
-    ".spread2 .fitBoth img {max-width: 50%;}"+
+/* fitStretch */
+.fitStretch img {
+  display: inline-block;
+  vertical-align: middle;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
-    // fitVertical styles
-    ".fitVertical img {display: inline-block; vertical-align: middle; max-height:100%}"+
-    //".spread1 .fitVeritcal img {max-width: 100%;}"+
-    ".spread2 .fitVertical img {max-width: 50%;}"+
+/* fitBoth */
+.fitBoth img {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+  max-height: 100%;
+}
+.spread2 .fitBoth img {
+  max-width: 50%;
+}
 
-    // fitHorizontal styles
-    ".fitHorizontal img {display: inline-block; vertical-align: middle; max-width:100%}"+
-    //".spread1 .fitHorizontal img {max-width: 100%;}"+
-    ".spread2 .fitHorizontal img {max-width:50%;}"+
+/* fitVertical styles */
+.fitVertical img {
+  display: inline-block;
+  vertical-align: middle;
+  max-height: 100%;
+}
+.spread2 .fitVertical img {
+  max-width: 50%;
+}
 
-    "#preload {display: none;}.img-url {display: none;}"+
-    "a:hover {cursor: pointer; text-decoration: none;}"+
-    "a:visited, a:active {color: inherit;}"+
-    ".disabled > a:hover { background-color: transpsrent; background-image: none; color: #333333 !important; cursor: default; text-decoration: none;}"+
-    ".disabled > a {color: #333333 !important;}:-moz-full-screen {background: #000 none repeat scroll 0 0;}"+
-    ".icon_white {color: white;}"+
-    ".imageBtn, .imageBtn:hover {position: fixed; margin-bottom: 25px; z-index: 1; width: calc(35% - 25px); height: calc(100% - 50px - 25px); font-size: 30px; color: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; text-decoration:none;}"+
-    "#leftBtn {margin-left: 25px; left: 0px;}"+
-    "#rightBtn {margin-right: 25px; right: 0px;}"+
+/* fitHorizontal styles */
+.fitHorizontal img {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+}
+.spread2 .fitHorizontal img {
+  max-width: 50%;
+}
 
-    // dropdown styles
-    "#interfaceNav {margin: 0px; border: 0px;}"+
-    ".dropdown-menu {text-align: left;}"+
-    ".dropdown-menu span {text-align: center; display: inline-block; min-width: 18px}"+
-    ".inverse-dropdown {background-color: #222 !important; border-color: #080808 !important;}"+
-    ".inverse-dropdown > li > a {color: #999999 !important}"+
-    ".inverse-dropdown > li > a:hover {color: #fff !important; background-color: #000 !important;}"+
+#preload {
+  display: none;
+}
+.img-url {
+  display: none;
+}
+a:hover {
+  cursor: pointer;
+  text-decoration: none;
+}
+a:visited,
+a:active {
+  color: inherit;
+}
+.disabled > a:hover {
+  background-color: transparent;
+  background-image: none;
+  color: #333333 !important;
+  cursor: default;
+  text-decoration: none;
+}
+.disabled > a {
+  color: #333333 !important;
+}
+:-moz-full-screen {
+  background: #000 none repeat scroll 0 0;
+}
+.icon_white {
+  color: white;
+}
+.imageBtn,
+.imageBtn:hover {
+  position: fixed;
+  margin-bottom: 25px;
+  z-index: 1;
+  width: calc(35% - 25px);
+  height: calc(100% - 50px - 25px);
+  font-size: 30px;
+  color: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+#leftBtn {
+  margin-left: 25px;
+  left: 0px;
+}
+#rightBtn {
+  margin-right: 25px;
+  right: 0px;
+}
 
-    "#autoPager {display: inline}"+
-    "#pageTimer {margin: 15px 15px 15px 3px; border: 0px; height: 18px; width: 46px;}"+
-    "#pageChanger {display: inline}"+
-    ".input-medium {margin: 15px 15px 15px 3px; height: 20px; width: 58px;}"+
-    "#single-page-select {width: 60px}"+
-    "#two-page-select {width: 60px}"+
-    "#preloadInput {color: black; margin: 0px 10px; width: 35px; height: 17px}"+
+/* dropdown styles */
+#interfaceNav {
+  margin: 0px;
+  border: 0px;
+}
+.dropdown-menu {
+  text-align: left;
+}
+.dropdown-menu span {
+  text-align: center;
+  display: inline-block;
+  min-width: 18px;
+}
+.inverse-dropdown {
+  background-color: #222 !important;
+  border-color: #080808 !important;
+}
+.inverse-dropdown > li > a {
+  color: #999999 !important;
+}
+.inverse-dropdown > li > a:hover {
+  color: #fff !important;
+  background-color: #000 !important;
+}
 
-    "@media (min-width: 768px) {"+
-        ".navbar .navbar-nav {display: inline-block; float: none; vertical-align: top;}"+
-        ".navbar .navbar-collapse {text-align: center;}"+
-    "}"+
-    
-    // exitfullscreen button
-    "#fullscreen {position: fixed; top: 0; right: 10px; z-index: 1000; margin: 10px; font-size: 20px; color: white;}"
-;
+#autoPager {
+  display: inline;
+}
+#pageTimer {
+  margin: 15px 15px 15px 3px;
+  border: 0px;
+  height: 18px;
+  width: 46px;
+}
+#pageChanger {
+  display: inline;
+}
+.input-medium {
+  margin: 15px 15px 15px 3px;
+  height: 20px;
+  width: 58px;
+}
+#single-page-select {
+  width: 60px;
+}
+#two-page-select {
+  width: 60px;
+}
+#preloadInput {
+  color: black;
+  margin: 0px 10px;
+  width: 35px;
+  height: 17px;
+}
+
+@media (min-width: 768px) {
+  .navbar .navbar-nav {
+    display: inline-block;
+    float: none;
+    vertical-align: top;
+  }
+  .navbar .navbar-collapse {
+    text-align: center;
+  }
+}
+
+/* exitfullscreen button */
+#fullscreen {
+  position: fixed;
+  top: 0;
+  right: 10px;
+  z-index: 1000;
+  margin: 10px;
+  font-size: 20px;
+  color: white;
+}
+`;
+
 
 // Image rendering option. needs ID to render swap
 var renderType = 0;
@@ -171,70 +329,132 @@ style.appendChild(renderStyle);
 parent.appendChild(style);
 
 // imagehight styles when fullscreen
-var fullscreen_style = "div:-webkit-full-screen {background-color: black;}"+
-    "div:-moz-full-screen {background-color: black;}"+
-    "div:-ms-fullscreen {background-color: black;}"+
-    "div:fullscreen {background-color: black;}"+
-    ".fitVertical:-webkit-full-screen img {max-height: 100% !important;}"+
-    ".fitVertical:-moz-full-screen img {max-height: 100% !important;}"+
-    ".fitVertical:-ms-fullscreen img {max-height: 100% !important;}"+
-    ".fitVertical:fullscreen img {max-height: 100% !important;}"+
-    ".fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}"+
-    ".fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}"+
-    ".fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}"+
-    ".fitStretch:fullscreen img {height: 100% !important; width: auto !important;}"
-    ;
+var fullscreen_style = `
+div:-webkit-full-screen {background-color: black;}
+div:-moz-full-screen {background-color: black;}
+div:-ms-fullscreen {background-color: black;}
+div:fullscreen {background-color: black;}
+.fitVertical:-webkit-full-screen img {max-height: 100% !important;}
+.fitVertical:-moz-full-screen img {max-height: 100% !important;}
+.fitVertical:-ms-fullscreen img {max-height: 100% !important;}
+.fitVertical:fullscreen img {max-height: 100% !important;}
+.fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}
+.fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}
+.fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}
+.fitStretch:fullscreen img {height: 100% !important; width: auto !important;}
+`;
+
 
 
 var addNavBar = function () {
-    var html =
-    '<nav id="interfaceNav"class="navbar navbar-inverse navbar-static-top">'+
-        '<div class="container-fluid">'+
-        '<div class="navbar-header">'+
-            '<a class="navbar-brand" id="galleryInfo">Gallery</a>' +
-            '<button type="button" id="navbar-button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span> </button>'+
-        '</div>'+
-        '<div class="collapse navbar-collapse" id="collapseNavbar">' +
-            '<ul id="funcs" class="nav navbar-nav">' +
-            '<li><a title="Left arrow or j" id="nextPanel"><span class="icon_white">&#11164;</span> Next</a></li>'+
-            '<li><a title="Right arrow or k" id="prevPanel"><span class="icon_white">&#11166;</span> Prev</a></li>'+
-            '<li><a title="t key" id="autoPager"><span>▶</span>Slideshow</a><input id="pageTimer" type="text" value="10"></li>'+
-            '<li><a title="g key" id="pageChanger"<span>#</span>  Page</a>'+
-                '<select class="input-medium" id="single-page-select"></select>'+
-                '<select class="input-medium" style="display: none;" id="two-page-select"></select>'+
-            '</li>'+
-            '<li class="dropdown">'+
-                '<a class="dropdown-toggle" data-toggle="dropdown" href="#">Options<span class="caret"></span></a>'+
-                '<ul class="inverse-dropdown dropdown-menu">'+
-                '<li><a title="r" id="reload"><span>&#10227;</span> Reload</a></li>'+
-                // To button's text indicate current state, its text content is previous state
-                '<li><a title="b" class="fitBtn" id="fitStretch"><span>□</span> Fit Stretch</a></li>' +
-                '<li><a title="b" class="fitBtn" id="fitBoth"><span>┃</span> Fit Vertical</a></li>' +
-                '<li><a title="v" class="fitBtn" id="fitVertical"><span>━</span> Fit Horizontal</a></li>' +
-                '<li><a title="h" class="fitBtn" id="fitHorizontal"><span>╋</span> Fit Both</a></li>' +
-                '<li><a title="f" id="fullSpread"><span>🕮</span> Full Spread</a></li>' +
-                '<li><a title="s" id="singlePage"><span>🗍</span> Single Page</a></li>' +
-                '<li><a title="rendering" id="renderingChanger"><span>🖽</span> Rendering</a></li>' +
-                '<li><a title="p" id="preloader">Preload<input id="preloadInput" type="text" value="50"></a></li>' +
-                '</ul>'+
-            '</li>'+
-            '</ul>'+
-        '</div>'+
-        '</div>'+
-    '</nav>';
-    document.body.innerHTML += html;
+    var overlay = `
+    <nav id="interfaceNav" class="navbar navbar-inverse navbar-static-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" id="galleryInfo">Gallery</a>
+          <button type="button" id="navbar-button" class="navbar-toggle" data-toggle="collapse" data-target="#collapseNavbar">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+        <div class="collapse navbar-collapse" id="collapseNavbar">
+          <ul id="funcs" class="nav navbar-nav">
+            <li>
+              <a title="Left arrow or j" id="nextPanel">
+                <span class="icon_white">&#11164;</span> Next
+              </a>
+            </li>
+            <li>
+              <a title="Right arrow or k" id="prevPanel">
+                <span class="icon_white">&#11166;</span> Prev
+              </a>
+            </li>
+            <li>
+              <a title="t key" id="autoPager">
+                <span>▶</span>Slideshow
+              </a>
+              <input id="pageTimer" type="text" value="10">
+            </li>
+            <li>
+              <a title="g key" id="pageChanger">
+                <span>#</span> Page
+              </a>
+              <select class="input-medium" id="single-page-select"></select>
+              <select class="input-medium" style="display: none;" id="two-page-select"></select>
+            </li>
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                Options<span class="caret"></span>
+              </a>
+              <ul class="inverse-dropdown dropdown-menu">
+                <li>
+                  <a title="r" id="reload">
+                    <span>&#10227;</span> Reload
+                  </a>
+                </li>
+                <!-- To button's text indicate current state, its text content is previous state -->
+                <li>
+                  <a title="b" class="fitBtn" id="fitStretch">
+                    <span>□</span> Fit Stretch
+                  </a>
+                </li>
+                <li>
+                  <a title="b" class="fitBtn" id="fitBoth">
+                    <span>┃</span> Fit Vertical
+                  </a>
+                </li>
+                <li>
+                  <a title="v" class="fitBtn" id="fitVertical">
+                    <span>━</span> Fit Horizontal
+                  </a>
+                </li>
+                <li>
+                  <a title="h" class="fitBtn" id="fitHorizontal">
+                    <span>╋</span> Fit Both
+                  </a>
+                </li>
+                <li>
+                  <a title="f" id="fullSpread">
+                    <span>🕮</span> Full Spread
+                  </a>
+                </li>
+                <li>
+                  <a title="s" id="singlePage">
+                    <span>🗍</span> Single Page
+                  </a>
+                </li>
+                <li>
+                  <a title="rendering" id="renderingChanger">
+                    <span>🖽</span> Rendering
+                  </a>
+                </li>
+                <li>
+                  <a title="p" id="preloader">
+                    Preload<input id="preloadInput" type="text" value="50">
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    `;
+    document.body.innerHTML += overlay;
 };
 
 var addImgFrame = function () {
-    html =
-    '<div id="comicImages" class="fitVertical" tabindex="1">' +
-        '<a id="fullscreen" title="Enter or Space">⛶</a>'+
-        '<a id="leftBtn" class="imageBtn"></a>' +
-        '<a id="rightBtn" class="imageBtn"></a>' +
-        '<div class="centerer"></div>'+
-    '</div>' +
-    '<div id="preload"></div>';
-    document.body.innerHTML += html;
+    imgFrame = `
+    <div id="comicImages" class="fitVertical" tabindex="1">
+        <a id="fullscreen" title="Enter or Space">⛶</a>
+        <a id="leftBtn" class="imageBtn"></a>
+        <a id="rightBtn" class="imageBtn"></a>
+        <div class="centerer"></div>
+    </div>
+    <div id="preload"></div>
+    `;
+    document.body.innerHTML += imgFrame;
 };
 
 // prevent dropdown from close
@@ -404,7 +624,7 @@ var openInNewTab = function (url) {
   };
   
 
-// ============== Exh functions ==============
+// ============== Exh specific functions ==============
 
 async function getToken() {
     // GID_TOKEN이 이미 존재하면 즉시 반환
@@ -433,6 +653,7 @@ async function getToken() {
     }
 }
 
+
 var getGdataAsync = async function (gid, token) {
     var data = {
         'method': 'gdata',
@@ -442,8 +663,45 @@ var getGdataAsync = async function (gid, token) {
     return response;
 };
 
-////////////////////////////////////////////////////////////////
 
+var extractImageData = async function (url, idx) {
+    const response = await simpleRequestAsync(url);  // 비동기 요청 대기
+    const doc = parseHTML(response);
+
+    // 파일 정보에서 이미지 크기 추출
+    const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
+    const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
+    if (!fileInfoMatch) throw new Error("File info not found");
+    
+    return {
+        path: doc.getElementById('img').src,
+        width: Number(fileInfoMatch[1]),
+        height: Number(fileInfoMatch[2])
+    }
+}
+
+var getReloadInfo = async function (entry_idx, entry_url) {
+    var ret = [];
+    for (var idx = 0; idx < entry_url.length; idx++) {
+        var url = entry_url[idx];
+        var response = await simpleRequestAsync(url);
+        var doc = parseHTML(response);
+        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
+        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
+        if (!nlMatch) throw new Error("NL value not found");
+        
+        var nl =  nlMatch[1];
+        url = url.replace(/\?.*/, '') + '?nl=' + nl;
+        response = await simpleRequestAsync(url);
+        doc = parseHTML(response);
+        const imgSrc = doc.getElementById('img').src;
+        ret.push(imgSrc);
+    }
+    return ret;
+}
+
+
+////////////////////////////////////////////////////////////////
 
 var pageChanged = function () {
   var n_panel = Number(curPanel);
@@ -644,26 +902,7 @@ var updateImgData = async function (img, idx, callback) {
     }
 };
 
-var extractImageData = async function (url, idx) {
-    // exhbound, it needs to external function
-    // i.e, object img it self can't be used in it
-    const response = await simpleRequestAsync(url);  // 비동기 요청 대기
-    const doc = parseHTML(response);
-
-    // 파일 정보에서 이미지 크기 추출
-    const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
-    const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
-    if (!fileInfoMatch) throw new Error("File info not found");
-    
-    return {
-        path: doc.getElementById('img').src,
-        width: Number(fileInfoMatch[1]),
-        height: Number(fileInfoMatch[2])
-    }
-}
-
 var reloadImg = async function () {
-    //exhbound
     //console.log('reloadImg called');
     var n_curPanel = Number(curPanel);
 
@@ -687,27 +926,6 @@ var reloadImg = async function () {
     }
     drawPanel();
 };
-
-var getReloadInfo = async function (entry_idx, entry_url) {
-    var ret = [];
-    for (var idx = 0; idx < entry_url.length; idx++) {
-        var url = entry_url[idx];
-        var response = await simpleRequestAsync(url);
-        var doc = parseHTML(response);
-        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
-        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
-        if (!nlMatch) throw new Error("NL value not found");
-        
-        var nl =  nlMatch[1];
-        url = url.replace(/\?.*/, '') + '?nl=' + nl;
-        response = await simpleRequestAsync(url);
-        doc = parseHTML(response);
-        const imgSrc = doc.getElementById('img').src;
-        ret.push(imgSrc);
-    }
-    return ret;
-}
-
 
 var preloader = function() {
     var len = document.getElementById('preloadInput').value;
@@ -980,6 +1198,7 @@ var init = async function () {
     // overlap interface on top of page
     document.body.innerHTML = '';
     clearStyle();
+    addStyle('div#i1 {display:none;} p.ip {display:none;}');
     
     // set interface
     addNavBar();
@@ -991,7 +1210,6 @@ var init = async function () {
     link.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
     head.appendChild(link);
 
-    addStyle('div#i1 {display:none;} p.ip {display:none;}');
     addStyle(viewer_style);
     addStyle(fullscreen_style);
     document.body.setAttribute('class', 'spread1');
