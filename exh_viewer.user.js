@@ -19,7 +19,7 @@
 
 // ============== Viewer ==============
 
-class ExhaustViewer {
+class EXHaustViewer {
     update_check = false;
     PanelListenerAdded = false;
     spread = 1;
@@ -82,6 +82,7 @@ class ExhaustViewer {
         this.addStyle(this.fullscreen_style);
 
         this.addEventListeners();
+        this.addFullscreenHandler();
         $('.navbar ul li').show();
         $('#fullSpread').hide();
 
@@ -98,6 +99,19 @@ class ExhaustViewer {
     }
 
     finally = this.pageChanged;
+
+    // ==============  functions ==============
+    // functions can be overridden if nenecessary
+    getReloadInfo = async (entry_idx, entry_url) => {
+        // in default, it just returns original path
+        return images[entry_idx].path;
+    };
+
+    extractImageData = async (url, idx) => {
+        // TODO : ganerally usable function
+        error = new Error("Not implemented");
+        throw error;
+    }
 
     // ============== setup functions ==============
     addRenderStyle() {
@@ -165,6 +179,7 @@ class ExhaustViewer {
         document.getElementById('fitVertical').addEventListener('click', ()=>this.fitVertical());
         document.getElementById('fitHorizontal').addEventListener('click', ()=>this.fitHorizontal());
         document.getElementById('fullscreen').addEventListener('click', ()=>this.fullscreen());
+        document.getElementById('fullscreener').addEventListener('click', ()=>this.fullscreen());
         document.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
         document.getElementById('singlePage').addEventListener('click', ()=>this.setSpread(2));
         document.getElementById('renderingChanger').addEventListener('click', () => this.renderChange());
@@ -338,6 +353,7 @@ class ExhaustViewer {
     };
 
     async updateImgsAndCallAsync(start, end) {
+        // TODO ; detach exhbound functions
         if (end < start) {
           console.error("Error in updateImgsAndCall: start is greater than end");
           return;
@@ -351,7 +367,7 @@ class ExhaustViewer {
         const promise_entry = update_entry.map(async (idx) => {
             const img = this.images[idx];
             if (img && img.updated) return;  // 이미 업데이트된 경우 skip
-            await this.updateImgData(img, idx, extractImageData);  // async 함수 호출
+            await this.updateImgData(img, idx, this.extractImageData);  // async 함수 호출
         });
     
         await Promise.all(promise_entry);
@@ -375,7 +391,7 @@ class ExhaustViewer {
             entry_url = [this.images[n_curPanel-1].url, this.images[n_curPanel].url];
         }
     
-        var reloadinfo = await getReloadInfo(entry_idx, entry_url);
+        var reloadinfo = await this.getReloadInfo(entry_idx, entry_url);
         for (var idx = 0; idx < reloadinfo.length; idx++) {
             this.images[entry_idx[idx]].path = reloadinfo[idx];
         }
@@ -603,12 +619,13 @@ class ExhaustViewer {
     }
 
     handleFullscreenChange () {
+        var fullscreenButton = document.getElementById('fullscreen');
         if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
             // Fullscreen mode is active
-            //fullscreenButton.style.display = 'block';
+            fullscreenButton.style.display = 'block';
         } else {
             // Fullscreen mode is inactive
-            //fullscreenButton.style.display = 'none';
+            fullscreenButton.style.display = 'none';
         }
     }
 
@@ -855,12 +872,6 @@ class ExhaustViewer {
     .nav>li>a {
         padding: 15px 10px;
     }
-    #funcs {
-        position: fixed;
-        transform: translate(-50%, 0);
-        left: 50%;
-        top: 0;
-    }
 
 
     #comicImages {
@@ -1019,6 +1030,9 @@ class ExhaustViewer {
     #pageChanger {
         display: inline;
     }
+    #fullscreen {
+        display: none;
+    }
     .input-medium {
         margin: 15px 15px 15px 3px;
         height: 20px;
@@ -1107,10 +1121,15 @@ class ExhaustViewer {
             </li>
             <li>
               <a title="g key" id="pageChanger">
-                <span>#</span> Page
+                <span>#</span>
               </a>
               <select class="input-medium" id="single-page-select"></select>
               <select class="input-medium" style="display: none;" id="two-page-select"></select>
+            </li>
+            <li>
+                <a id="fullscreener" title="Enter or Space">
+                    <span>⛶</span>
+                </a>
             </li>
             <li class="dropdown">
               <a class="dropdown-toggle" data-toggle="dropdown" href="#">
@@ -1181,8 +1200,6 @@ class ExhaustViewer {
     <div id="preload"></div>
     `
 }
-
-// ============== Initialization ==============
 
 // ============== Exh global ==============
 var API_URL = null;
@@ -1281,7 +1298,9 @@ var init = async function () {
     var url = document.location.href;
     var curPanel = Number(url.substring(url.lastIndexOf('-') + 1));
     
-    exhaust = new ExhaustViewer(curPanel);
+    exhaust = new EXHaustViewer(curPanel);
+    exhaust.getReloadInfo = getReloadInfo;
+    exhaust.extractImageData = extractImageData;
 
     // clear page
     // todo : don't clear page already loaded
