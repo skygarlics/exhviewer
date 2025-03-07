@@ -353,7 +353,7 @@ class EXHaustViewer {
     };
 
     async updateImgsAndCallAsync(start, end) {
-        // TODO ; detach exhbound functions
+
         if (end < start) {
           console.error("Error in updateImgsAndCall: start is greater than end");
           return;
@@ -469,7 +469,7 @@ class EXHaustViewer {
       
         if (this.timerflag) {
             pagerButton.classList.add('icon_white');
-            this.timerInterval = setInterval(this.nextPanel, intervalSeconds * 1000);
+            this.timerInterval = setInterval(()=>this.nextPanel(), intervalSeconds * 1000);
         } else {
             pagerButton.classList.remove('icon_white');
             clearInterval(this.timerInterval);
