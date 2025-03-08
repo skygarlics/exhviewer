@@ -513,13 +513,12 @@ class EXHaustViewer {
     };
 
     pageChanged() {
+        // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
+        
+
         this.drawPanel();
-        if (this.curPanel == 1) {
-            this.disable($('#prevPanel'));
-        }
-        if (this.curPanel >= this.number_of_images) {
-            this.disable($('#nextPanel'));
-        }
+        this.curPanel == 1 ? this.disable($('#prevPanel', this.iframe_jq.contents())) : this.enable($('#prevPanel', this.iframe_jq.contents()));
+        this.curPanel == this.number_of_images ? this.disable($('#nextPanel', this.iframe_jq.contents())) : this.enable($('#nextPanel', this.iframe_jq.contents()));
     };
 
     toggleTimer () {
@@ -551,10 +550,6 @@ class EXHaustViewer {
         }
     
         var selectedValue = selector.val();
-        // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
-        selectedValue == 1 ? this.disable($('#prevPanel')) : this.enable($('#prevPanel'));
-        selectedValue == this.number_of_images ? this.disable($('#nextPanel')) : this.enable($('#nextPanel'));
-    
         this.curPanel = Number(selectedValue);
         this.pageChanged();
         selector.trigger('blur');
@@ -1451,7 +1446,6 @@ var init = async function () {
         })
         .then(()=>{
             exhaust.finally()
-            // remove later
             // load rest of galleries
             for (var i = 1; i < gallery_page_len+1; i++) {
                 if (i+1 !== current_gallery_page) {
