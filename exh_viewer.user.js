@@ -77,7 +77,6 @@ class EXHaustViewer {
         this.curPanel = curPanel;
 
         this.addIframe();
-        // wait till iframe is loaded
         this.iframe.onload = () => {
             this.init()
         };
@@ -115,7 +114,7 @@ class EXHaustViewer {
 
     finally = this.pageChanged;
 
-    // ==============  functions ==============
+    // ==============  ==============
     // functions can be overridden if nenecessary
     getReloadInfo = async (entry_idx, entry_url) => {
         // in default, it just returns original path
@@ -143,6 +142,8 @@ class EXHaustViewer {
         iframe.style.height = '50%';
         iframe.style.border = 'none';
         iframe.style.zIndex = '9999';
+
+        //iframe.style.display = 'none';
 
         // inje iframe html
         iframe.srcdoc = '<!DOCTYPE html><html>' +
@@ -226,8 +227,8 @@ class EXHaustViewer {
             e.stopPropagation();
             e.preventDefault();
         }, { passive: false });
-        docu.getElementById('prevPanel').addEventListener('click', ()=>this.prevPanel);
-        docu.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel);
+        docu.getElementById('prevPanel').addEventListener('click', ()=>this.prevPanel());
+        docu.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel());
         docu.getElementById('fitStretch').addEventListener('click', ()=>this.fitStretch());
         docu.getElementById('fitBoth').addEventListener('click', ()=>this.fitBoth());
         docu.getElementById('fitVertical').addEventListener('click', ()=>this.fitVertical());
@@ -240,12 +241,13 @@ class EXHaustViewer {
         docu.getElementById('reload').addEventListener('click', ()=>this.reloadImg());
         docu.getElementById('preloader').addEventListener('click', ()=>this.preloader());
         docu.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
-        docu.getElementById('pageChanger').addEventListener('click', this.goPanel);
+        docu.getElementById('pageChanger').addEventListener('click', () => this.goPanel());
         docu.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged(1));
         docu.getElementById('two-page-select').addEventListener('change', ()=>this.selectorChanged(2));
         docu.getElementById('comicImages').addEventListener('dragstart', (e) => this.imgDragStart(e));
         docu.getElementById('comicImages').addEventListener('drag', (e) => this.imgDrag(e));
         docu.getElementById('comicImages').addEventListener('dragend', () => this.imgDragEnd());
+        docu.getElementById('viewerCloser').addEventListener('click', () => this.closeViewer());
     }
 
     // ============== Dangerous functions ==============
@@ -334,8 +336,8 @@ class EXHaustViewer {
         }
 
         if (!this.PanelListenerAdded) {
-            $('#leftBtn', this.iframe_jq.contents()).on('click', this.nextPanel);
-            $('#rightBtn', this.iframe_jq.contents()).on('click', this.prevPanel);
+            $('#leftBtn', this.iframe_jq.contents()).on('click', ()=>this.nextPanel());
+            $('#rightBtn', this.iframe_jq.contents()).on('click', ()=>this.prevPanel());
             this.PanelListenerAdded = true;
         }
     
@@ -698,7 +700,12 @@ class EXHaustViewer {
         docu.addEventListener('MSFullscreenChange', (() => this.handleFullscreenChange()));
     }
 
-    // ============== input functions ==============
+    // ============== Viewer functions ==============
+    // functions called by user input
+    closeViewer() {
+        this.iframe.style.display = 'none';
+    }
+
     imgDrag(e) {
         if (!this.dragState.isDragging) return;
     
@@ -1239,6 +1246,11 @@ class EXHaustViewer {
                 </li>
               </ul>
             </li>
+            <li>
+              <a title="Close viewer" id="viewerCloser">
+                <span>❌</span>
+              </a>
+            </li>
           </ul>
         </div>
       </div>
@@ -1348,6 +1360,11 @@ var make_gallery_url = function(gid, token) {
     return 'https://' + host + '/g/' + gid + '/' + token;
 }
 
+var enable_viewer = function () {
+    var iframe = document.querySelector('iframe');
+    iframe.style.display = 'block';
+}
+
 
 var init = async function () {
     var url = document.location.href;
@@ -1357,12 +1374,16 @@ var init = async function () {
     exhaust.getReloadInfo = getReloadInfo;
     exhaust.extractImageData = extractImageData;
 
-    // clear page
-    // todo : don't clear page already loaded
-    // overlap interface on top of page
-    //document.body.innerHTML = '';
-    //exhaust.clearStyle();
     exhaust.clearHotkeys();
+
+    // add button to iframe visible
+    var btn = document.createElement('a');
+    btn.id = 'enableViewer';
+    btn.innerHTML = 'Viewer';
+    btn.onclick = enable_viewer;
+
+    var original_btn_div = document.querySelector('.sn');
+    original_btn_div.appendChild(btn);
 
     // gallery title is document's title
     getToken()
