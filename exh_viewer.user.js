@@ -20,6 +20,12 @@
 // ============== Viewer ==============
 
 class EXHaustViewer {
+
+    // Viewer elements
+    iframe = null;
+    iframe_jq = null;
+    comicImages;
+
     update_check = false;
     PanelListenerAdded = false;
     spread = 1;
@@ -27,7 +33,7 @@ class EXHaustViewer {
     timerflag = false;
     timerInterval = null;
     renderType = 0;
-    renderStyle = this.addRenderStyle();
+    renderStyle;
 
     dragState = {
         isDragging: false,
@@ -35,10 +41,8 @@ class EXHaustViewer {
         prevY: 0
     };
 
-
     images = {}; // image datas (url, width, height, path, nl, updated), 0-indexed
     curPanel; // current panel number (1-indexed, always has to be integer)
-    comicImages;
 
     #number_of_images;
     get number_of_images() {
@@ -56,46 +60,57 @@ class EXHaustViewer {
     set gallery_url(value) {
         this.#gallery_url = value;
 
-        var gallery_info = document.getElementById('galleryInfo');
+        var gallery_info = this.iframe.contentDocument.getElementById('galleryInfo');
+        if (!gallery_info) {
+            return;
+        }
+
         if (this.#gallery_url) {
             gallery_info.href = this.#gallery_url
         }
     }
 
     constructor(curPanel) {
-        this.curPanel = curPanel; 
+        if (!curPanel) {
+            curPanel = 1;
+        }
+        this.curPanel = curPanel;
+
+        this.addIframe();
+        // wait till iframe is loaded
+        this.iframe.onload = () => {
+            this.init()
+        };
     }
 
-    init() {
-        this.addNavBar();
-        this.addImgFrame();
-
-        this.comicImages = document.getElementById('comicImages');
+    async init() {
+        this.body = this.iframe.contentDocument.body;
+        this.renderStyle = this.addRenderStyle(this.iframe.contentDocument);
+        this.comicImages = this.iframe.contentDocument.getElementById('comicImages');
         // prevent dropdown from close
-        $('.dropdown-menu').on('click', function(e) {
+        $('.dropdown-menu', this.iframe_jq.contents()).on('click', function(e) {
             e.stopPropagation();
         });
 
-        document.body.setAttribute('class', 'spread1');
-        this.addStyle('div#i1 {display:none;} p.ip {display:none;}');
-        this.addStyle(this.viewer_style);
-        this.addStyle(this.fullscreen_style);
+        this.iframe.contentDocument.body.setAttribute('class', 'spread1');
+        //this.addStyle('div#i1 {display:none;} p.ip {display:none;}');
 
-        this.addEventListeners();
-        this.addFullscreenHandler();
-        $('.navbar ul li').show();
-        $('#fullSpread').hide();
+        this.addEventListeners(this.iframe.contentDocument);
+        this.addFullscreenHandler(this.iframe.contentDocument);
 
-        this.renderChange();
+        $('.navbar ul li', this.iframe_jq.contents()).show();
+        $('#fullSpread', this.iframe_jq.contents()).hide();
+
+        this.renderChange(this.iframe.contentDocument);
         this.fitVertical();
 
-        var docElm = document.documentElement;
+        var docElm = this.iframe.contentDocument.documentElement;
         if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
-            $('#fullscreen').parent().hide();
+            $('#fullscreen', this.iframe_jq.contents()).parent().hide();
         }
 
-        $('#single-page-select').prop('selectedIndex', this.curPanel - 1);
-        $('#two-page-select').prop('selectedIndex', this.curPanel - 1);
+        $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', this.curPanel - 1);
+        $('#two-page-select', this.iframe_jq.contents()).prop('selectedIndex', this.curPanel - 1);
     }
 
     finally = this.pageChanged;
@@ -114,51 +129,85 @@ class EXHaustViewer {
     }
 
     // ============== setup functions ==============
-    addRenderStyle() {
+    // Viewer iframe
+    async addIframe() {
+        var iframe = document.createElement('iframe');
+        iframe.id = 'exhaustviewer';
+        var src = document.location.href
+        //iframe.src = src;
+
+        iframe.style.position = 'fixed';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '80%';
+        iframe.style.height = '50%';
+        iframe.style.border = 'none';
+        iframe.style.zIndex = '9999';
+
+        // inje iframe html
+        iframe.srcdoc = '<!DOCTYPE html><html>' +
+            '<head>' +
+                '<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>' +
+                '<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>' +
+                '<link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">' +
+                // custom css
+                '<style>' +
+                    this.viewer_style +
+                    this.fullscreen_style +
+                '</style>' +
+            '</head>' +
+            '<body>' +
+                this.navbarHTML +
+                this.imgFrameHTML +
+            '</body></html>';
+        document.body.appendChild(iframe);
+        this.iframe = iframe;
+        this.iframe_jq = $(iframe);
+
+        return iframe;
+    }
+
+    addRenderStyle(docu) {
         // Image rendering option. needs ID to render swap
-        var parent = document.head || document.documentElement;
-        var style = document.createElement('style');
+        var parent = docu.head || docu.documentElement;
+        var style = docu.createElement('style');
         style.type = 'text/css';
-        var renderStyle = document.createTextNode('');
+        var renderStyle = docu.createTextNode('');
         renderStyle.id = 'renderStyle';
         style.appendChild(renderStyle);
         parent.appendChild(style);
         return renderStyle;
     }
 
-    addNavBar() {
-        var nav = this.navbarHTML;
-        document.body.innerHTML += nav;
-    };
-    
-    addImgFrame() {
-        var imgFrame = this.imgFrameHTML;
-        document.body.innerHTML += imgFrame;
-    };
+    addHTML(code) {
+        // add navbar
+        var body = this.iframe.contentDocument.body;
+        body.innerHTML += code;
+    }
 
     createPageDropdown() {
         // clear previous dropdown
-        $('#single-page-select').empty();
-        $('#two-page-select').empty();
+        $('#single-page-select', this.iframe_jq.contents()).empty();
+        $('#two-page-select', this.iframe_jq.contents()).empty();
 
         for (var i = 1; i <= this.number_of_images; i++) {
             var option = $('<option>', {
                 html: '' + i,
                 value: i
             });
-            $('#single-page-select').append(option);
+            $('#single-page-select', this.iframe_jq.contents()).append(option);
         }
         for (var i = 1; i <= this.number_of_images; i++) {
             var option = $('<option>', {
                 html: '' + i,
                 value: i
             });
-            $('#two-page-select').append(option);
+            $('#two-page-select', this.iframe_jq.contents()).append(option);
         }
     }
 
     setGalleryTitle(text, title) {
-        var gallery_info = document.getElementById('galleryInfo');
+        var gallery_info = this.iframe.contentDocument.getElementById('galleryInfo');
 
         if (text) {
             gallery_info.textContent = text;
@@ -169,29 +218,29 @@ class EXHaustViewer {
         }
     }
 
-    addEventListeners() {
-        document.addEventListener('keydown', (e) => this.doHotkey(e));
-        document.addEventListener('wheel', (e) => this.doWheel(e));
-        document.getElementById('prevPanel').addEventListener('click', ()=>this.prevPanel);
-        document.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel);
-        document.getElementById('fitStretch').addEventListener('click', ()=>this.fitStretch());
-        document.getElementById('fitBoth').addEventListener('click', ()=>this.fitBoth());
-        document.getElementById('fitVertical').addEventListener('click', ()=>this.fitVertical());
-        document.getElementById('fitHorizontal').addEventListener('click', ()=>this.fitHorizontal());
-        document.getElementById('fullscreen').addEventListener('click', ()=>this.fullscreen());
-        document.getElementById('fullscreener').addEventListener('click', ()=>this.fullscreen());
-        document.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
-        document.getElementById('singlePage').addEventListener('click', ()=>this.setSpread(2));
-        document.getElementById('renderingChanger').addEventListener('click', () => this.renderChange());
-        document.getElementById('reload').addEventListener('click', ()=>this.reloadImg());
-        document.getElementById('preloader').addEventListener('click', ()=>this.preloader());
-        document.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
-        document.getElementById('pageChanger').addEventListener('click', this.goPanel);
-        document.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged(1));
-        document.getElementById('two-page-select').addEventListener('change', ()=>this.selectorChanged(2));
-        document.getElementById('comicImages').addEventListener('dragstart', (e) => this.imgDragStart(e));
-        document.getElementById('comicImages').addEventListener('drag', (e) => this.imgDrag(e));
-        document.getElementById('comicImages').addEventListener('dragend', () => this.imgDragEnd());
+    addEventListeners(docu) {
+        docu.addEventListener('keydown', (e) => this.doHotkey(e));
+        docu.addEventListener('wheel', (e) => this.doWheel(e));
+        docu.getElementById('prevPanel').addEventListener('click', ()=>this.prevPanel);
+        docu.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel);
+        docu.getElementById('fitStretch').addEventListener('click', ()=>this.fitStretch());
+        docu.getElementById('fitBoth').addEventListener('click', ()=>this.fitBoth());
+        docu.getElementById('fitVertical').addEventListener('click', ()=>this.fitVertical());
+        docu.getElementById('fitHorizontal').addEventListener('click', ()=>this.fitHorizontal());
+        docu.getElementById('fullscreen').addEventListener('click', ()=>this.fullscreen());
+        docu.getElementById('fullscreener').addEventListener('click', ()=>this.fullscreen());
+        docu.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
+        docu.getElementById('singlePage').addEventListener('click', ()=>this.setSpread(2));
+        docu.getElementById('renderingChanger').addEventListener('click', () => this.renderChange());
+        docu.getElementById('reload').addEventListener('click', ()=>this.reloadImg());
+        docu.getElementById('preloader').addEventListener('click', ()=>this.preloader());
+        docu.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
+        docu.getElementById('pageChanger').addEventListener('click', this.goPanel);
+        docu.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged(1));
+        docu.getElementById('two-page-select').addEventListener('change', ()=>this.selectorChanged(2));
+        docu.getElementById('comicImages').addEventListener('dragstart', (e) => this.imgDragStart(e));
+        docu.getElementById('comicImages').addEventListener('drag', (e) => this.imgDrag(e));
+        docu.getElementById('comicImages').addEventListener('dragend', () => this.imgDragEnd());
     }
 
     // ============== Dangerous functions ==============
@@ -211,11 +260,18 @@ class EXHaustViewer {
         }
     }
 
+    clearHotkeys() {
+        // remove original events.
+        document.onkeydown = null;
+        document.onkeyup = null;
+    }
+
     addStyle(css) {
-        var parent = document.head || document.documentElement;
-        var style = document.createElement('style');
+        var doc = this.iframe.contentDocument;
+        var parent = doc.head || doc.documentElement;
+        var style = doc.createElement('style');
         style.type = 'text/css';
-        var textNode = document.createTextNode(css);
+        var textNode = doc.createTextNode(css);
         style.appendChild(textNode);
         parent.appendChild(style);
     }
@@ -232,19 +288,19 @@ class EXHaustViewer {
 
     // ============== Draw functions ==============
     drawPanel_() {
-        const comicImagesContainer = $('#comicImages');
+        const comicImagesContainer = $('#comicImages', this.iframe.contentDocument);
         const currentPanel = this.curPanel;
         const totalImages = this.number_of_images;
         const singleSpread = this.spread === 1;
     
-        $('body').attr('class', singleSpread ? 'spread1' : 'spread2');
+        $('body', this.iframe_jq.contents()).attr('class', singleSpread ? 'spread1' : 'spread2');
     
         // 기존 img 요소를 가져오거나 없는 경우 새로 추가
         let imgElements = comicImagesContainer.find('img');
         const requiredImageCount = singleSpread ? 1 : 2;
     
         while (imgElements.length < requiredImageCount) {
-            $('<img />').appendTo(comicImagesContainer);
+            $('<img />', this.iframe_jq.contents()).appendTo(comicImagesContainer);
             imgElements = comicImagesContainer.find('img'); // 추가 후 업데이트
         }
     
@@ -255,31 +311,31 @@ class EXHaustViewer {
             // 이미지의 가로 세로 비율에 따라 두 이미지를 표시할지 결정
             // TODO : nextPanel, prevPanel에서도 계산되는거 제거하기?
             if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
-                this.updateImageWithFadeIn($(imgElements[1]), previousImage.path);
+                this.updateImageWithFadeIn($(imgElements[1], this.iframe_jq.contents()), previousImage.path);
                 this.updateImageWithFadeIn($(imgElements[0]), currentImage.path);
                 this.is_single_displayed = false;
                 this.preloadImage(3);
             } else {
-                this.updateImageWithFadeIn($(imgElements[0]), previousImage.path);
-                $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+                this.updateImageWithFadeIn($(imgElements[0], this.iframe_jq.contents()), previousImage.path);
+                $(imgElements[1], this.iframe_jq.contents()).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
                 this.is_single_displayed = true;
                 this.preloadImage(2);
             }
         } else if (currentPanel <= totalImages) {
-            this.updateImageWithFadeIn($(imgElements[0]), this.images[currentPanel - 1].path);
+            this.updateImageWithFadeIn($(imgElements[0], this.iframe_jq.contents()), this.images[currentPanel - 1].path);
             this.is_single_displayed = true;
-            $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+            $(imgElements[1], this.iframe_jq.contents()).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
             this.preloadImage(2);
         }
 
         if (!this.PanelListenerAdded) {
-            $('#leftBtn').on('click', this.nextPanel);
-            $('#rightBtn').on('click', this.prevPanel);
+            $('#leftBtn', this.iframe_jq.contents()).on('click', this.nextPanel);
+            $('#rightBtn', this.iframe_jq.contents()).on('click', this.prevPanel);
             this.PanelListenerAdded = true;
         }
     
         comicImagesContainer.scrollTop(0);
-        $('body').scrollTop(0);
+        $('body', this.iframe_jq.contents()).scrollTop(0);
     };
 
     drawPanel() {
@@ -399,12 +455,12 @@ class EXHaustViewer {
     };
 
     preloader() {
-        var len = document.getElementById('preloadInput').value;
+        var len = this.iframe.contentDocument.getElementById('preloadInput').value;
         this.preloadImage(parseInt(len));
     }
     
     async preloadImage(length) {
-        const preloadContainer = $('#preload');
+        const preloadContainer = $('#preload', this.iframe_jq.contents());
         const currentPanel = this.curPanel;
     
         // 이미지 업데이트 호출 및 완료 후 처리
@@ -423,7 +479,7 @@ class EXHaustViewer {
     
                 if (idx < imgElements.length) {
                     // 이미 img 요소가 있으면 src만 변경
-                    $(imgElements[idx]).attr('src', imagePath);
+                    $(imgElements[idx], this.iframe_jq.contents()).attr('src', imagePath);
                 } else {
                     // 부족한 경우 새 img 요소를 추가
                     const newImage = $('<img />', { src: imagePath });
@@ -459,13 +515,13 @@ class EXHaustViewer {
     };
 
     toggleTimer () {
-        var intervalSeconds = parseFloat(document.getElementById('pageTimer').value);
+        var intervalSeconds = parseFloat(this.iframe.contentDocument.getElementById('pageTimer').value);
         if (intervalSeconds < 1 || isNaN(intervalSeconds)) {
             return;
         }
       
         this.timerflag = !this.timerflag;
-        var pagerButton = document.getElementById('autoPager').getElementsByTagName('span')[0];
+        var pagerButton = this.iframe.contentDocument.getElementById('autoPager').getElementsByTagName('span')[0];
       
         if (this.timerflag) {
             pagerButton.classList.add('icon_white');
@@ -479,9 +535,9 @@ class EXHaustViewer {
     selectorChanged(selector_num) {
         var selector;
         if (selector_num === 1) {
-            selector = $('#single-page-select');
+            selector = $('#single-page-select', this.iframe_jq.contents());
         } else if (selector_num === 2) {
-            selector = $('#two-page-select');
+            selector = $('#two-page-select', this.iframe_jq.contents());
         } else {
             console.error("Invalid selector value:", selector_num);
         }
@@ -498,10 +554,10 @@ class EXHaustViewer {
 
     panelChange(target) {
         if (this.spread == 1) {
-            $('#single-page-select').prop('selectedIndex', target - 1);
+            $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
             this.selectorChanged(1);
         } else {
-            $('#two-page-select').prop('selectedIndex', target - 1);
+            $('#two-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
             this.selectorChanged(2);
         }
     };
@@ -539,11 +595,11 @@ class EXHaustViewer {
           this.panelChange(newPanel);
         }
     
-        $('body').scrollTop(0);
+        $('body', this.iframe_jq.contents()).scrollTop(0);
     };
 
     // ============== Viewer options ==============
-    renderChange(){
+    renderChange(docu){
         const renderOptions = [
             {
                 style: 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}',
@@ -560,7 +616,7 @@ class EXHaustViewer {
         ];
         this.renderType = (this.renderType + 1) % renderOptions.length;
         this.renderStyle.textContent = renderOptions[this.renderType].style;
-        document.getElementById('renderingChanger').innerHTML = renderOptions[this.renderType].text;
+        docu.getElementById('renderingChanger').innerHTML = renderOptions[this.renderType].text;
     }
 
     fitOptions = {
@@ -571,31 +627,31 @@ class EXHaustViewer {
     };
     
     resetFit() {
-        $('#comicImages').removeClass();
-        $('.fitBtn').parent().hide();
+        $('#comicImages', this.iframe_jq.contents()).removeClass();
+        $('.fitBtn', this.iframe_jq.contents()).parent().hide();
     };
     
     applyFit(fitType) {
         this.resetFit();
-        $('#comicImages').addClass(this.fitOptions[fitType].className);
+        $('#comicImages', this.iframe_jq.contents()).addClass(this.fitOptions[fitType].className);
         $(this.fitOptions[fitType].nextButton).parent().show();
-        $('body').scrollTop(0);
+        $('body', this.iframe_jq.contents()).scrollTop(0);
     };
 
     setSpread(num) {
         if (this.spread == num) return
     
-        $('body').removeClass('spread' + this.spread);
+        $('body', this.iframe_jq.contents()).removeClass('spread' + this.spread);
         this.spread = num;
-        $('body').addClass('spread' + this.spread);
+        $('body', this.iframe_jq.contents()).addClass('spread' + this.spread);
     
         const isSinglePage = this.spread === 1;
     
-        $('#singlePage').toggle(isSinglePage);
-        $('#single-page-select').toggle(isSinglePage);
+        $('#singlePage', this.iframe_jq.contents()).toggle(isSinglePage);
+        $('#single-page-select', this.iframe_jq.contents()).toggle(isSinglePage);
     
-        $('#fullSpread').toggle(!isSinglePage);
-        $('#two-page-select').toggle(!isSinglePage);
+        $('#fullSpread', this.iframe_jq.contents()).toggle(!isSinglePage);
+        $('#two-page-select', this.iframe_jq.contents()).toggle(!isSinglePage);
     
         this.drawPanel();
     }
@@ -619,7 +675,7 @@ class EXHaustViewer {
     }
 
     handleFullscreenChange () {
-        var fullscreenButton = document.getElementById('fullscreen');
+        var fullscreenButton = this.iframe.contentDocument.getElementById('fullscreen');
         if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
             // Fullscreen mode is active
             fullscreenButton.style.display = 'block';
@@ -629,12 +685,12 @@ class EXHaustViewer {
         }
     }
 
-    addFullscreenHandler() {
+    addFullscreenHandler(docu) {
         // Full screen handler
-        document.addEventListener('fullscreenchange', (() => this.handleFullscreenChange()));
-        document.addEventListener('webkitfullscreenchange', (() => this.handleFullscreenChange()));
-        document.addEventListener('mozfullscreenchange', (() => this.handleFullscreenChange()));
-        document.addEventListener('MSFullscreenChange', (() => this.handleFullscreenChange()));
+        docu.addEventListener('fullscreenchange', (() => this.handleFullscreenChange()));
+        docu.addEventListener('webkitfullscreenchange', (() => this.handleFullscreenChange()));
+        docu.addEventListener('mozfullscreenchange', (() => this.handleFullscreenChange()));
+        docu.addEventListener('MSFullscreenChange', (() => this.handleFullscreenChange()));
     }
 
     // ============== input functions ==============
@@ -672,12 +728,6 @@ class EXHaustViewer {
         }
         });
     };
-
-    clearHotkeys() {
-        // remove original events.
-        document.onkeydown = null;
-        document.onkeyup = null;
-    }
 
     doHotkey(e) {
         switch (e.key.toLowerCase()) {
@@ -1305,23 +1355,11 @@ var init = async function () {
     // clear page
     // todo : don't clear page already loaded
     // overlap interface on top of page
-    document.body.innerHTML = '';
-    exhaust.clearStyle();
-
-    var head = document.head;
-    var link = document.createElement("link");
-    link.type = "text/css";
-    link.rel = "stylesheet";
-    link.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
-    head.appendChild(link);
-
-    exhaust.init();
+    //document.body.innerHTML = '';
+    //exhaust.clearStyle();
     exhaust.clearHotkeys();
 
     // gallery title is document's title
-    var gallery_title = document.title;
-    exhaust.setGalleryTitle(null, gallery_title);
-    
     getToken()
     .then(token => {
         exhaust.gallery_url = make_gallery_url(token.gid, token.token);
@@ -1380,6 +1418,7 @@ var init = async function () {
         })
         .then(()=>{
             exhaust.finally()
+            // remove later
             // load rest of galleries
             for (var i = 1; i < gallery_page_len+1; i++) {
                 if (i+1 !== current_gallery_page) {
