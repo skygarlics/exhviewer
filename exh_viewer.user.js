@@ -248,6 +248,7 @@ class EXHaustViewer {
         docu.getElementById('comicImages').addEventListener('drag', (e) => this.imgDrag(e));
         docu.getElementById('comicImages').addEventListener('dragend', () => this.imgDragEnd());
         docu.getElementById('viewerCloser').addEventListener('click', () => this.closeViewer());
+        docu.getElementById('galleryInfo').addEventListener('click', () => this.goGallery());
     }
 
     // ============== Dangerous functions ==============
@@ -704,6 +705,11 @@ class EXHaustViewer {
     // functions called by user input
     closeViewer() {
         this.iframe.style.display = 'none';
+    }
+
+    goGallery() {
+        // by clicking galleryInfo, go to gallery page by brower, not iframe
+        document.location = this.gallery_url;
     }
 
     imgDrag(e) {
@@ -1385,10 +1391,11 @@ var init = async function () {
     var original_btn_div = document.querySelector('.sn');
     original_btn_div.appendChild(btn);
 
-    // gallery title is document's title
     getToken()
     .then(token => {
         exhaust.gallery_url = make_gallery_url(token.gid, token.token);
+        var title = document.querySelector('h1').textContent;
+        exhaust.setGalleryTitle(null, title);
         return getGdataAsync(token.gid, token.token)
     })
     .then((response) => {
