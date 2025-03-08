@@ -138,8 +138,8 @@ class EXHaustViewer {
         iframe.style.position = 'fixed';
         iframe.style.top = '0';
         iframe.style.left = '0';
-        iframe.style.width = '80%';
-        iframe.style.height = '50%';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
         iframe.style.border = 'none';
         iframe.style.zIndex = '9999';
 
