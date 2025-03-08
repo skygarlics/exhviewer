@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       250218
+// @version       250308
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
