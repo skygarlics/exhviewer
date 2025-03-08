@@ -97,7 +97,7 @@ class EXHaustViewer {
 
         this.addEventListeners(this.iframe.contentDocument);
         this.addFullscreenHandler(this.iframe.contentDocument);
-
+        
         $('.navbar ul li', this.iframe_jq.contents()).show();
         $('#fullSpread', this.iframe_jq.contents()).hide();
 
@@ -220,7 +220,12 @@ class EXHaustViewer {
 
     addEventListeners(docu) {
         docu.addEventListener('keydown', (e) => this.doHotkey(e));
-        docu.addEventListener('wheel', (e) => this.doWheel(e));
+        docu.addEventListener('wheel', (e) => {
+            this.doWheel(e)
+            // ensure wheel don't propagae to parent
+            e.stopPropagation();
+            e.preventDefault();
+        }, { passive: false });
         docu.getElementById('prevPanel').addEventListener('click', ()=>this.prevPanel);
         docu.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel);
         docu.getElementById('fitStretch').addEventListener('click', ()=>this.fitStretch());
