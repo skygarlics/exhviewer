@@ -20,7 +20,6 @@
 // ============== Viewer ==============
 
 class EXHaustViewer {
-
     // Viewer elements
     iframe = null;
     iframe_jq = null;
@@ -602,7 +601,8 @@ class EXHaustViewer {
     };
 
     // ============== Viewer options ==============
-    renderChange(docu){
+    renderChange(){
+        var docu = this.iframe.contentDocument;
         const renderOptions = [
             {
                 style: 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}',
@@ -637,7 +637,7 @@ class EXHaustViewer {
     applyFit(fitType) {
         this.resetFit();
         $('#comicImages', this.iframe_jq.contents()).addClass(this.fitOptions[fitType].className);
-        $(this.fitOptions[fitType].nextButton).parent().show();
+        $(this.fitOptions[fitType].nextButton, this.iframe_jq.contents()).parent().show();
         $('body', this.iframe_jq.contents()).scrollTop(0);
     };
 
