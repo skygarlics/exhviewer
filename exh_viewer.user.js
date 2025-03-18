@@ -102,7 +102,6 @@ class EXHaustViewer {
         }
 
         $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', this.curPanel - 1);
-        $('#two-page-select', this.iframe_jq.contents()).prop('selectedIndex', this.curPanel - 1);
     }
 
     finally = this.pageChanged;
@@ -156,6 +155,7 @@ class EXHaustViewer {
         iframe.srcdoc = '<!DOCTYPE html><html>' +
             '<head>' +
                 '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">' +
+                '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">' +
                 '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>' +
                 // custom css
                 '<style>' +
@@ -194,20 +194,12 @@ class EXHaustViewer {
     createPageDropdown() {
         // clear previous dropdown
         $('#single-page-select', this.iframe_jq.contents()).empty();
-        $('#two-page-select', this.iframe_jq.contents()).empty();
         for (var i = 1; i <= this.number_of_images; i++) {
             var option = $('<option>', {
                 html: '' + i,
                 value: i
             });
             $('#single-page-select', this.iframe_jq.contents()).append(option);
-        }
-        for (var i = 1; i <= this.number_of_images; i++) {
-            var option = $('<option>', {
-                html: '' + i,
-                value: i
-            });
-            $('#two-page-select', this.iframe_jq.contents()).append(option);
         }
     }
 
@@ -250,8 +242,7 @@ class EXHaustViewer {
         docu.getElementById('preloader').addEventListener('click', ()=>this.preloader());
         docu.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
         docu.getElementById('pageChanger').addEventListener('click', () => this.goPanel());
-        docu.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged(1));
-        docu.getElementById('two-page-select').addEventListener('change', ()=>this.selectorChanged(2));
+        docu.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged());
         docu.getElementById('comicImages').addEventListener('dragstart', (e) => this.imgDragStart(e));
         docu.getElementById('comicImages').addEventListener('drag', (e) => this.imgDrag(e));
         docu.getElementById('comicImages').addEventListener('dragend', () => this.imgDragEnd());
@@ -546,15 +537,8 @@ class EXHaustViewer {
         }
     };
 
-    selectorChanged(selector_num) {
-        var selector;
-        if (selector_num === 1) {
-            selector = $('#single-page-select', this.iframe_jq.contents());
-        } else if (selector_num === 2) {
-            selector = $('#two-page-select', this.iframe_jq.contents());
-        } else {
-            console.error("Invalid selector value:", selector_num);
-        }
+    selectorChanged() {
+        var selector = $('#single-page-select', this.iframe_jq.contents());
 
         var selectedValue = selector.val();
         this.curPanel = Number(selectedValue);
@@ -563,13 +547,8 @@ class EXHaustViewer {
     };
 
     panelChange(target) {
-        if (this.spread == 1) {
-            $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
-            this.selectorChanged(1);
-        } else {
-            $('#two-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
-            this.selectorChanged(2);
-        }
+        $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
+        this.selectorChanged();
     };
 
     prevPanel() {
@@ -659,11 +638,7 @@ class EXHaustViewer {
         const isSinglePage = this.spread === 1;
 
         $('#singlePage', this.iframe_jq.contents()).toggle(isSinglePage);
-        $('#single-page-select', this.iframe_jq.contents()).toggle(isSinglePage);
-
         $('#fullSpread', this.iframe_jq.contents()).toggle(!isSinglePage);
-        $('#two-page-select', this.iframe_jq.contents()).toggle(!isSinglePage);
-
         this.drawPanel();
     }
 
@@ -1126,18 +1101,20 @@ class EXHaustViewer {
         height: 20px;
         width: 58px;
     }
-    #single-page-select {
-        width: 60px;
-    }
-    #two-page-select {
-        width: 60px;
-    }
     #preloadInput {
         color: black;
         margin: 0px 10px;
         width: 35px;
         height: 17px;
     }
+
+    #pageTimer,
+    #single-page-select {
+        margin-left: 0.5rem;
+        height: 2rem;
+        width: 3rem;
+    }
+    
 
     /* exitfullscreen button */
     #fullscreen {
@@ -1148,6 +1125,16 @@ class EXHaustViewer {
         margin: 10px;
         font-size: 20px;
         color: white;
+    }
+
+    #interfaceNav {
+        padding: 0.2rem;
+    }
+
+    #interfaceNav .navbar-nav .nav-item:not(:first-child)  {
+        border-left: 1px solid #4b4b4b; /* 원하는 색상으로 변경 가능 */
+        padding-left: 0.5rem;
+        margin-left: 0.5rem;
     }
     `
 
@@ -1178,30 +1165,29 @@ class EXHaustViewer {
       <ul id="funcs" class="navbar-nav text-end">
         <li class="nav-item">
           <a class="nav-link" title="Left arrow or j" id="nextPanel">
-            <span class="icon_white">&#11164;</span> Next
+            <i class="bi bi-chevron-left"></i> Next
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" title="Right arrow or k" id="prevPanel">
-            <span class="icon_white">&#11166;</span> Prev
+            <i class="bi bi-chevron-right"></i> Prev
           </a>
         </li>
         <li class="nav-item">
-          <div class="input-group">
-            <button class="btn btn-outline-secondary" type="button" id="autoPager">▶Auto</button>
-            <input id="pageTimer" class="form-control" type="text" value="10">
+          <div class="d-flex align-items-center">
+            <a id="autoPager" title="t">▶Auto</a>
+            <input id="pageTimer" class="form-control-sm" type="text" value="10">
           </div>
         </li>
         <li class="nav-item">
-          <div class="input-group">
-            <button class="btn btn-outline-secondary" type="button" id="pageChanger">#</button>
-            <select class="form-select" id="single-page-select"></select>
-            <select class="form-select" id="two-page-select" style="display: none;"></select>
+          <div class="d-flex align-items-center">
+            <a id="pageChanger">#</a>
+            <select class="form-select-sm" id="single-page-select"></select>
           </div>
         </li>
         <li class="nav-item">
           <a class="nav-link" id="fullscreener" title="Enter or Space">
-            <span>⛶</span>
+            <i class="bi bi-arrows-fullscreen"></i>
           </a>
         </li>
         <li class="nav-item dropdown">
@@ -1258,7 +1244,7 @@ class EXHaustViewer {
         </li>
         <li class="nav-item">
           <a class="nav-link" title="Close viewer" id="viewerCloser">
-            <span>❌</span>
+            <i class="bi bi-x-lg"></i>
           </a>
         </li>
       </ul>
@@ -1384,7 +1370,6 @@ var init = async function () {
     exhaust = new EXHaustViewer(curPanel);
     exhaust.getReloadInfo = getReloadInfo;
     exhaust.extractImageData = extractImageData;
-    exhaust.openViewer();
 
     exhaust.clearHotkeys();
 
@@ -1396,7 +1381,7 @@ var init = async function () {
 
     var original_btn_div = document.querySelector('.sn');
     original_btn_div.appendChild(btn);
-    
+    exhaust.openViewer();
     getToken()
     .then(token => {
         exhaust.gallery_url = make_gallery_url(token.gid, token.token);
