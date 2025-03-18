@@ -1154,103 +1154,102 @@ class EXHaustViewer {
 
     // ============== HTML ==============
     navbarHTML = `
-<nav id="interfaceNav" class="navbar navbar-dark bg-dark navbar-expand-lg">
-  <div class="container-fluid">
-    <a class="navbar-brand" id="galleryInfo">Gallery</a>
-    <button id="navbar-button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse d-flex justify-content-center" id="collapseNavbar">
-      <ul id="funcs" class="navbar-nav text-end">
-        <li class="nav-item">
-          <a class="nav-link" title="Left arrow or j" id="nextPanel">
-            <i class="bi bi-chevron-left"></i> Next
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" title="Right arrow or k" id="prevPanel">
-            <i class="bi bi-chevron-right"></i> Prev
-          </a>
-        </li>
-        <li class="nav-item">
-          <div class="d-flex align-items-center">
-            <a id="autoPager" title="t">▶Auto</a>
-            <input id="pageTimer" class="form-control-sm" type="text" value="10">
-          </div>
-        </li>
-        <li class="nav-item">
-          <div class="d-flex align-items-center">
-            <a id="pageChanger">#</a>
-            <select class="form-select-sm" id="single-page-select"></select>
-          </div>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="fullscreener" title="Enter or Space">
-            <i class="bi bi-arrows-fullscreen"></i>
-          </a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOptions" role=-"button" data-bs-toggle="dropdown" aria-expanded="false">
-            Options<span class="caret"></span>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-dark aria-labelledby="navbarDropdownOptions">
-            <li>
-              <a class="dropdown-item" title="r" id="reload">
-                <span>&#10227;</span> Reload
-              </a>
+    <nav id="interfaceNav" class="navbar navbar-dark bg-dark navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" id="galleryInfo">Gallery</a>
+        <button id="navbar-button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">
+        <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse d-flex justify-content-center" id="collapseNavbar">
+        <ul id="funcs" class="navbar-nav text-end">
+            <li class="nav-item">
+            <a class="nav-link" title="Left arrow or j" id="nextPanel">
+                <i class="bi bi-chevron-left"></i> Next
+            </a>
             </li>
-            <li>
-              <a class="dropdown-item fitBtn" title="b" id="fitStretch">
-                <span>□</span> Fit Stretch
-              </a>
+            <li class="nav-item">
+            <a class="nav-link" title="Right arrow or k" id="prevPanel">
+                <i class="bi bi-chevron-right"></i> Prev
+            </a>
             </li>
-            <li>
-              <a class="dropdown-item fitBtn" title="b" id="fitBoth">
-                <span>╋</span> Fit Both
-              </a>
+            <li class="nav-item">
+            <div class="d-flex align-items-center">
+                <a id="autoPager" title="t">▶Auto</a>
+                <input id="pageTimer" class="form-control-sm" type="text" value="10">
+            </div>
             </li>
-            <li>
-              <a class="dropdown-item fitBtn" title="v" id="fitVertical">
-                <span>┃</span> Fit Vertical
-              </a>
+            <li class="nav-item">
+            <div class="d-flex align-items-center">
+                <a id="pageChanger">#</a>
+                <select class="form-select-sm" id="single-page-select"></select>
+            </div>
             </li>
-            <li>
-              <a class="dropdown-item fitBtn" title="h" id="fitHorizontal">
-                <span>━</span> Fit Horizontal
-              </a>
+            <li class="nav-item">
+            <a class="nav-link" id="fullscreener" title="Enter or Space">
+                <i class="bi bi-arrows-fullscreen"></i>
+            </a>
             </li>
-            <li>
-              <a class="dropdown-item" title="f" id="fullSpread">
-                <span>🕮</span> Full Spread
-              </a>
+            <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOptions" role=-"button" data-bs-toggle="dropdown" aria-expanded="false">
+                Options<span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark aria-labelledby="navbarDropdownOptions">
+                <li>
+                <a class="dropdown-item" title="r" id="reload">
+                    <span>&#10227;</span> Reload
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item fitBtn" title="b" id="fitStretch">
+                    <span>□</span> Fit Stretch
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item fitBtn" title="b" id="fitBoth">
+                    <span>╋</span> Fit Both
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item fitBtn" title="v" id="fitVertical">
+                    <span>┃</span> Fit Vertical
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item fitBtn" title="h" id="fitHorizontal">
+                    <span>━</span> Fit Horizontal
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item" title="f" id="fullSpread">
+                    <span>🕮</span> Full Spread
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item" title="s" id="singlePage">
+                    <span>🗍</span> Single Page
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item" title="rendering" id="renderingChanger">
+                    <span>🖽</span> Rendering
+                </a>
+                </li>
+                <li>
+                <a class="dropdown-item" title="p" id="preloader">
+                    Preload<input id="preloadInput" type="text" value="50">
+                </a>
+                </li>
+            </ul>
             </li>
-            <li>
-              <a class="dropdown-item" title="s" id="singlePage">
-                <span>🗍</span> Single Page
-              </a>
+            <li class="nav-item">
+            <a class="nav-link" title="Close viewer" id="viewerCloser">
+                <i class="bi bi-x-lg"></i>
+            </a>
             </li>
-            <li>
-              <a class="dropdown-item" title="rendering" id="renderingChanger">
-                <span>🖽</span> Rendering
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item" title="p" id="preloader">
-                Preload<input id="preloadInput" type="text" value="50">
-              </a>
-            </li>
-          </ul>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" title="Close viewer" id="viewerCloser">
-            <i class="bi bi-x-lg"></i>
-          </a>
-        </li>
-      </ul>
+        </ul>
+        </div>
     </div>
-  </div>
-</nav>
-
+    </nav>
     `
 
     imgFrameHTML = `
