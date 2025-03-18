@@ -93,7 +93,7 @@ class EXHaustViewer {
         $('#fullSpread', this.iframe_jq.contents()).hide();
 
         this.renderChange(this.iframe.contentDocument);
-        this.fitVertical();
+        this.fitStretch();
 
         var docElm = this.iframe.contentDocument.documentElement;
         if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
@@ -616,7 +616,7 @@ class EXHaustViewer {
     };
 
     resetFit() {
-        $('#comicImages', this.iframe_jq.contents()).removeClass();
+        $('#comicImages', this.iframe_jq.contents()).removeClass('fitStretch fitBoth fitHorizontal fitVertical');
         $('.fitBtn', this.iframe_jq.contents()).parent().hide();
     };
 
@@ -972,8 +972,8 @@ class EXHaustViewer {
     .fitStretch img {
         display: inline-block;
         vertical-align: middle;
-        width: 100%;
-        height: 100%;
+        width: 99%;
+        height: 99%;
         object-fit: contain;
     }
 
@@ -1206,17 +1206,17 @@ class EXHaustViewer {
             </li>
             <li>
               <a class="dropdown-item fitBtn" title="b" id="fitBoth">
-                <span>┃</span> Fit Vertical
+                <span>╋</span> Fit Both
               </a>
             </li>
             <li>
               <a class="dropdown-item fitBtn" title="v" id="fitVertical">
-                <span>━</span> Fit Horizontal
+                <span>┃</span> Fit Vertical
               </a>
             </li>
             <li>
               <a class="dropdown-item fitBtn" title="h" id="fitHorizontal">
-                <span>╋</span> Fit Both
+                <span>━</span> Fit Horizontal
               </a>
             </li>
             <li>
@@ -1254,11 +1254,10 @@ class EXHaustViewer {
     `
 
     imgFrameHTML = `
-    <div id="comicImages" class="fitVertical" tabindex="1">
+    <div id="comicImages" class="d-flex align-items-center justify-content-center" tabindex="1">
         <a id="fullscreen" title="Enter or Space">⛶</a>
         <a id="leftBtn" class="imageBtn"></a>
         <a id="rightBtn" class="imageBtn"></a>
-        <div class="centerer"></div>
     </div>
     <div id="preload"></div>
     `
