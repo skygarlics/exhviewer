@@ -14,7 +14,6 @@
 // @grant         GM_getResourceText
 // @grant		  GM.getResourceUrl
 // ==/UserScript==
-// ============== Viewer ==============
 
 class EXHaustViewer {
     // Viewer elements
@@ -526,13 +525,13 @@ class EXHaustViewer {
         }
 
         this.timerflag = !this.timerflag;
-        var pagerButton = this.iframe.contentDocument.getElementById('autoPager').getElementsByTagName('span')[0];
+        var pagerButton = this.iframe.contentDocument.getElementById('autoPager');
 
         if (this.timerflag) {
-            pagerButton.classList.add('icon_white');
+            pagerButton.style.color = 'white';
             this.timerInterval = setInterval(()=>this.nextPanel(), intervalSeconds * 1000);
         } else {
-            pagerButton.classList.remove('icon_white');
+            pagerButton.style = '';
             clearInterval(this.timerInterval);
         }
     };
