@@ -16,7 +16,6 @@
 // @grant         GM_getResourceText
 // @grant		  GM.getResourceUrl
 // ==/UserScript==
-
 // ============== Viewer ==============
 
 class EXHaustViewer {
@@ -41,7 +40,7 @@ class EXHaustViewer {
     };
 
     images = {}; // image datas (url, width, height, path, nl, updated), 0-indexed
-    curPanel; // current panel number (1-indexed, always has to be integer)
+    curPanel = 1; // current panel number (1-indexed, always has to be integer)
 
     #number_of_images;
     get number_of_images() {
@@ -74,11 +73,8 @@ class EXHaustViewer {
             curPanel = 1;
         }
         this.curPanel = curPanel;
-
         this.addIframe();
-        this.iframe.onload = () => {
-            this.init()
-        };
+        this.iframe.onload = () => this.init();
     }
 
     async init() {
@@ -95,7 +91,7 @@ class EXHaustViewer {
 
         this.addEventListeners(this.iframe.contentDocument);
         this.addFullscreenHandler(this.iframe.contentDocument);
-        
+
         $('.navbar ul li', this.iframe_jq.contents()).show();
         $('#fullSpread', this.iframe_jq.contents()).hide();
 
@@ -114,21 +110,36 @@ class EXHaustViewer {
     finally = this.pageChanged;
 
     // ==============  ==============
-    // functions can be overridden if nenecessary
+    // these functions can be overridden by nenecessary
+    prevEpisode() {
+        return;
+    }
+
+    nextEpisode() {
+        return;
+    }
+
     getReloadInfo = async (entry_idx, entry_url) => {
         // in default, it just returns original path
         return images[entry_idx].path;
     };
 
     extractImageData = async (url, idx) => {
-        // TODO : ganerally usable function
-        error = new Error("Not implemented");
-        throw error;
+        // in default, it just return nothing
+        return {}
     }
 
     // ============== setup functions ==============
+    saveConfig(key, value) {
+        return GM_setValue(key, value);
+    }
+
+    loadConfig(key) {
+        return GM_getValue(key);
+    }
+
     // Viewer iframe
-    async addIframe() {
+    addIframe() {
         var iframe = document.createElement('iframe');
         iframe.id = 'exhaustviewer';
         var src = document.location.href
@@ -141,8 +152,7 @@ class EXHaustViewer {
         iframe.style.height = '100%';
         iframe.style.border = 'none';
         iframe.style.zIndex = '9999';
-
-        //iframe.style.display = 'none';
+        iframe.style.display = 'none';
 
         // inje iframe html
         iframe.srcdoc = '<!DOCTYPE html><html>' +
@@ -189,7 +199,6 @@ class EXHaustViewer {
         // clear previous dropdown
         $('#single-page-select', this.iframe_jq.contents()).empty();
         $('#two-page-select', this.iframe_jq.contents()).empty();
-
         for (var i = 1; i <= this.number_of_images; i++) {
             var option = $('<option>', {
                 html: '' + i,
@@ -208,6 +217,10 @@ class EXHaustViewer {
 
     setGalleryTitle(text, title) {
         var gallery_info = this.iframe.contentDocument.getElementById('galleryInfo');
+        if (gallery_info == null) {
+            console.log("galleryInfo is null");
+            return;
+        }
 
         if (text) {
             gallery_info.textContent = text;
@@ -299,22 +312,22 @@ class EXHaustViewer {
         const currentPanel = this.curPanel;
         const totalImages = this.number_of_images;
         const singleSpread = this.spread === 1;
-    
+
         $('body', this.iframe_jq.contents()).attr('class', singleSpread ? 'spread1' : 'spread2');
-    
+
         // 기존 img 요소를 가져오거나 없는 경우 새로 추가
         let imgElements = comicImagesContainer.find('img');
         const requiredImageCount = singleSpread ? 1 : 2;
-    
+
         while (imgElements.length < requiredImageCount) {
             $('<img />', this.iframe_jq.contents()).appendTo(comicImagesContainer);
             imgElements = comicImagesContainer.find('img'); // 추가 후 업데이트
         }
-    
+
         if (!singleSpread && currentPanel > 1 && currentPanel < totalImages) {
             const currentImage = this.images[currentPanel];
             const previousImage = this.images[currentPanel - 1];
-    
+
             // 이미지의 가로 세로 비율에 따라 두 이미지를 표시할지 결정
             // TODO : nextPanel, prevPanel에서도 계산되는거 제거하기?
             if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
@@ -340,7 +353,7 @@ class EXHaustViewer {
             $('#rightBtn', this.iframe_jq.contents()).on('click', ()=>this.prevPanel());
             this.PanelListenerAdded = true;
         }
-    
+
         comicImagesContainer.scrollTop(0);
         $('body', this.iframe_jq.contents()).scrollTop(0);
     };
@@ -360,34 +373,34 @@ class EXHaustViewer {
 
         // 임시 이미지 객체를 생성하여 새 이미지를 로드
         const tempImg = new Image();
-    
+
         // 새 이미지의 경로 설정 (로딩이 바로 시작됨)
         tempImg.src = newSrc;
-    
+
         // 이미지가 캐시에 있는 경우: 즉시 로드 완료 이벤트가 발생
         tempImg.onload = function () {
             // 즉시 로드된 경우, src를 변경하고 바로 표시
             imgElement.attr('src', newSrc).css('opacity', '1');
         };
-    
+
         // 이미지가 캐시에 없는 경우: 로드가 완료될 때까지 투명하게 유지
         tempImg.onerror = function () {
             console.error("Image failed to load:", newSrc);
             //imgElement.css('opacity', '0'); // 계속 숨김
         };
-    
+
         // 캐시되지 않은 이미지는 로드 완료 후 표시
         if (!tempImg.complete) {
             // 이미지가 캐시되지 않은 경우 로드될 때까지 투명하게 설정
             imgElement.css('opacity', '0');
-    
+
             // 로드 완료 시 이미지의 src를 교체하고 표시
             tempImg.onload = function () {
                 imgElement.attr('src', newSrc).css('opacity', '1');
             };
         }
     }
-    
+
     // ============== Image loading functions ==============
     setImgData(page, imgData) {
         this.images[page] = imgData;
@@ -398,16 +411,17 @@ class EXHaustViewer {
             console.error("Invalid image data:", img);
             return;
         }
-        
+
         try {
             // imgData structure
             // {url: string, width: number, height: number, path: string, updated: boolean}
             var imgData = await callback(img.url, idx)
-    
+
             // 이미지 경로 및 크기 정보 업데이트
-            img.path = imgData.path;
-            img.width = imgData.width;
-            img.height = imgData.height;
+
+            if (imgData.path) img.path = imgData.path;
+            if (imgData.width) img.width = imgData.width;
+            if (imgData.height) img.height = imgData.height;
             img.updated = true;
         } catch (error) {
             console.error("Error updating image:", error);
@@ -421,31 +435,31 @@ class EXHaustViewer {
           console.error("Error in updateImgsAndCall: start is greater than end");
           return;
         }
-    
+
         const update_entry = [];
         for (let idx = Math.max(start, 1); idx < Math.min(end, this.number_of_images + 1); idx++) {
             update_entry.push(idx - 1);
         }
-    
+
         const promise_entry = update_entry.map(async (idx) => {
             const img = this.images[idx];
             if (img && img.updated) return;  // 이미 업데이트된 경우 skip
             await this.updateImgData(img, idx, this.extractImageData);  // async 함수 호출
         });
-    
+
         await Promise.all(promise_entry);
     };
 
     async reloadImg() {
         //console.log('reloadImg called');
         var n_curPanel = this.curPanel;
-    
+
         // images[n_curPanel] = next page
         // if current page is last, entry current page only
-    
+
         var entry_idx;
         var entry_url;
-    
+
         if (n_curPanel == this.number_of_images) {
             entry_idx = [n_curPanel];
             entry_url = [this.images[n_curPanel].url];
@@ -453,7 +467,7 @@ class EXHaustViewer {
             entry_idx = [n_curPanel-1, n_curPanel];
             entry_url = [this.images[n_curPanel-1].url, this.images[n_curPanel].url];
         }
-    
+
         var reloadinfo = await this.getReloadInfo(entry_idx, entry_url);
         for (var idx = 0; idx < reloadinfo.length; idx++) {
             this.images[entry_idx[idx]].path = reloadinfo[idx];
@@ -465,25 +479,25 @@ class EXHaustViewer {
         var len = this.iframe.contentDocument.getElementById('preloadInput').value;
         this.preloadImage(parseInt(len));
     }
-    
+
     async preloadImage(length) {
         const preloadContainer = $('#preload', this.iframe_jq.contents());
         const currentPanel = this.curPanel;
-    
+
         // 이미지 업데이트 호출 및 완료 후 처리
         await this.updateImgsAndCallAsync(currentPanel - 2, currentPanel + length + 1);
-    
+
         // 현재 preloadContainer 내의 img 요소 선택
         let imgElements = preloadContainer.find('img');
-    
+
         // 필요한 이미지를 미리 로드하고 src만 업데이트
         for (let idx = 0; idx < length; idx++) {
             const panelIndex = currentPanel + idx;
-    
+
             // 이미지가 존재하는 경우에만 로드
             if (panelIndex < this.number_of_images) {
                 const imagePath = this.images[panelIndex].path;
-    
+
                 if (idx < imgElements.length) {
                     // 이미 img 요소가 있으면 src만 변경
                     $(imgElements[idx], this.iframe_jq.contents()).attr('src', imagePath);
@@ -504,7 +518,7 @@ class EXHaustViewer {
     // ============== Paging functions ==============
     goPanel() {
         const target = parseInt(prompt('target page'), 10);
-    
+
         // target이 NaN이 아니고, 지정된 범위 내에 있을 때만 패널을 변경
         if (Number.isInteger(target) && target >= 0 && target <= this.number_of_images) {
             this.panelChange(target);
@@ -513,8 +527,6 @@ class EXHaustViewer {
 
     pageChanged() {
         // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
-        
-
         this.drawPanel();
         this.curPanel == 1 ? this.disable($('#prevPanel', this.iframe_jq.contents())) : this.enable($('#prevPanel', this.iframe_jq.contents()));
         this.curPanel == this.number_of_images ? this.disable($('#nextPanel', this.iframe_jq.contents())) : this.enable($('#nextPanel', this.iframe_jq.contents()));
@@ -525,10 +537,10 @@ class EXHaustViewer {
         if (intervalSeconds < 1 || isNaN(intervalSeconds)) {
             return;
         }
-      
+
         this.timerflag = !this.timerflag;
         var pagerButton = this.iframe.contentDocument.getElementById('autoPager').getElementsByTagName('span')[0];
-      
+
         if (this.timerflag) {
             pagerButton.classList.add('icon_white');
             this.timerInterval = setInterval(()=>this.nextPanel(), intervalSeconds * 1000);
@@ -547,7 +559,7 @@ class EXHaustViewer {
         } else {
             console.error("Invalid selector value:", selector_num);
         }
-    
+
         var selectedValue = selector.val();
         this.curPanel = Number(selectedValue);
         this.pageChanged();
@@ -566,9 +578,9 @@ class EXHaustViewer {
 
     prevPanel() {
         const currentPanel = this.curPanel;
-    
+
         if (currentPanel <= 1) return;
-    
+
         if (this.is_single_displayed) {
           this.panelChange(currentPanel - 1);
         } else {
@@ -578,15 +590,15 @@ class EXHaustViewer {
                             : currentPanel - 1;
           this.panelChange(newPanel);
         }
-    
+
         $('body').scrollTop(0);
     };
 
     nextPanel() {
         const currentPanel = this.curPanel;
-    
+
         if (currentPanel >= this.number_of_images) return;
-    
+
         if (this.is_single_displayed) {
           this.panelChange(currentPanel + 1);
         } else {
@@ -596,7 +608,7 @@ class EXHaustViewer {
                            : currentPanel + 1;
           this.panelChange(newPanel);
         }
-    
+
         $('body', this.iframe_jq.contents()).scrollTop(0);
     };
 
@@ -628,12 +640,12 @@ class EXHaustViewer {
         horizontal: { className: 'fitHorizontal', nextButton: '#fitVertical' },
         vertical: { className: 'fitVertical', nextButton: '#fitStretch' }
     };
-    
+
     resetFit() {
         $('#comicImages', this.iframe_jq.contents()).removeClass();
         $('.fitBtn', this.iframe_jq.contents()).parent().hide();
     };
-    
+
     applyFit(fitType) {
         this.resetFit();
         $('#comicImages', this.iframe_jq.contents()).addClass(this.fitOptions[fitType].className);
@@ -643,22 +655,22 @@ class EXHaustViewer {
 
     setSpread(num) {
         if (this.spread == num) return
-    
+
         $('body', this.iframe_jq.contents()).removeClass('spread' + this.spread);
         this.spread = num;
         $('body', this.iframe_jq.contents()).addClass('spread' + this.spread);
-    
+
         const isSinglePage = this.spread === 1;
-    
+
         $('#singlePage', this.iframe_jq.contents()).toggle(isSinglePage);
         $('#single-page-select', this.iframe_jq.contents()).toggle(isSinglePage);
-    
+
         $('#fullSpread', this.iframe_jq.contents()).toggle(!isSinglePage);
         $('#two-page-select', this.iframe_jq.contents()).toggle(!isSinglePage);
-    
+
         this.drawPanel();
     }
-    
+
 
     // 사용 예시
     fitStretch = () => this.applyFit('stretch');
@@ -682,9 +694,11 @@ class EXHaustViewer {
         if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
             // Fullscreen mode is active
             fullscreenButton.style.display = 'block';
+            this.saveConfig('is_fullscreen', true);
         } else {
             // Fullscreen mode is inactive
             fullscreenButton.style.display = 'none';
+            this.saveConfig('is_fullscreen', false);
         }
     }
 
@@ -698,8 +712,19 @@ class EXHaustViewer {
 
     // ============== Viewer functions ==============
     // functions called by user input
+    openViewer() {
+        this.iframe.style.display = 'block';
+        // to catch key events
+        this.iframe.focus();
+        console.log("Viewer opened");
+    }
+
     closeViewer() {
         this.iframe.style.display = 'none';
+    }
+
+    toggleViewer() {
+        this.iframe.style.display = this.iframe.style.display === 'none' ? 'block' : 'none';
     }
 
     goGallery() {
@@ -709,7 +734,7 @@ class EXHaustViewer {
 
     imgDrag(e) {
         if (!this.dragState.isDragging) return;
-    
+
         if (e.pageX > 0) {
         this.comicImages.scrollLeft += this.dragState.prevX - e.pageX;
         this.dragState.prevX = e.pageX;
@@ -719,13 +744,13 @@ class EXHaustViewer {
         this.dragState.prevY = e.pageY;
         }
     };
-    
+
     imgDragStart(e) {
         this.dragState.prevX = e.pageX;
         this.dragState.prevY = e.pageY;
         this.dragState.isDragging = true;
     };
-    
+
     imgDragEnd() {
         this.dragState.isDragging = false;
     };
@@ -734,7 +759,7 @@ class EXHaustViewer {
     doWheel(e) {
         const prevScrollTop = this.comicImages.scrollTop;
         this.comicImages.scrollTop += e.deltaY;
-    
+
         requestAnimationFrame(() => {
         if (this.comicImages.scrollTop === prevScrollTop) {
             e.deltaY > 0 ? this.nextPanel() : this.prevPanel();
@@ -744,12 +769,20 @@ class EXHaustViewer {
 
     doHotkey(e) {
         switch (e.key.toLowerCase()) {
-        case 'j':
         case 'arrowleft':
+        case 'h':
+            this.prevEpisode();
+            break;
+        case 'arrowright':
+        case 'l':
+            this.nextEpisode();
+            break;
+        case 'j':
+        case 'arrowdown':
             this.nextPanel();
             break;
         case 'k':
-        case 'arrowright':
+        case 'arrowup':
             this.prevPanel();
             break;
         case 'b':
@@ -768,6 +801,8 @@ class EXHaustViewer {
             this.setSpread(1);
             break;
         case 'enter':
+            this.toggleViewer();
+            break;
         case ' ':
             this.fullscreen();
             break;
@@ -804,7 +839,7 @@ class EXHaustViewer {
     // ============== Utility functions ==============
     openInNewTab(url) {
         var win = window.open(url, '_blank');
-        win.focus(); 
+        win.focus();
     }
 
     // code from koreapyj/dcinside_lite
@@ -1374,6 +1409,7 @@ var init = async function () {
     exhaust = new EXHaustViewer(curPanel);
     exhaust.getReloadInfo = getReloadInfo;
     exhaust.extractImageData = extractImageData;
+    exhaust.openViewer();
 
     exhaust.clearHotkeys();
 
@@ -1385,7 +1421,7 @@ var init = async function () {
 
     var original_btn_div = document.querySelector('.sn');
     original_btn_div.appendChild(btn);
-
+    
     getToken()
     .then(token => {
         exhaust.gallery_url = make_gallery_url(token.gid, token.token);
