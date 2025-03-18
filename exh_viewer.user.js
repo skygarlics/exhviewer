@@ -7,6 +7,7 @@
 // @include       https://exhentai.org/s/*
 // @include       https://e-hentai.org/s/*
 // @require       https://code.jquery.com/jquery-3.2.1.min.js
+// @resource bs_js https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js
 // @grant         GM_getValue
 // @grant         GM_setValue
 // @grant         GM_deleteValue
@@ -150,22 +151,22 @@ class EXHaustViewer {
         iframe.style.zIndex = '9999';
         iframe.style.display = 'none';
 
-        // injet iframe html
+        var bs_js = GM_getResourceText('bs_js');
+
         iframe.srcdoc = `<!DOCTYPE html><html>
             <head>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>` +
-                // custom css
-                '<style>' +
-                    this.viewer_style +
-                    this.fullscreen_style +
-                '</style>' +
-            '</head>' +
-            '<body>' +
-                this.navbarHTML +
-                this.imgFrameHTML +
-            '</body></html>';
+                <script>${bs_js}</script> 
+                <style>
+                    ${this.viewer_style}
+                    ${this.fullscreen_style}
+                </style>
+            </head>
+            <body>
+                ${this.navbarHTML}
+                ${this.imgFrameHTML}
+            </body></html>`;
         document.body.appendChild(iframe);
         this.iframe = iframe;
         this.iframe_jq = $(iframe);
