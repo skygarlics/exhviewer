@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       250308
+// @version       250327
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -547,8 +547,22 @@ class EXHaustViewer {
     };
 
     panelChange(target) {
+        if (target === this.curPanel) return; // Prevent unnecessary updates
+        
+        // Clear any pending image updates
+        if (this._panelChangeTimeout) {
+            clearTimeout(this._panelChangeTimeout);
+        }
+        
+        this.curPanel = target;
         $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
-        this.selectorChanged();
+        
+        // Use a small timeout to ensure UI updates first
+        this._panelChangeTimeout = setTimeout(() => {
+            this.pageChanged();
+            // Force redraw of the panel to ensure sync
+            this.drawPanel();
+        }, 10);
     };
 
     prevPanel() {
@@ -557,16 +571,18 @@ class EXHaustViewer {
         if (currentPanel <= 1) return;
 
         if (this.is_single_displayed) {
-          this.panelChange(currentPanel - 1);
+            this.panelChange(currentPanel - 1);
         } else {
-          const prevImage = this.images[currentPanel - 2];
-          const newPanel = (currentPanel > 2 && prevImage.width <= prevImage.height)
+            const prevImage = this.images[currentPanel - 2];
+            const newPanel = (currentPanel > 2 && prevImage.width <= prevImage.height)
                             ? currentPanel - 2
                             : currentPanel - 1;
-          this.panelChange(newPanel);
+            this.panelChange(newPanel);
         }
 
-        $('body').scrollTop(0);
+        // Fix: Use the iframe's content document for scrolling
+        $(this.iframe.contentDocument.body).scrollTop(0);
+        this.comicImages.scrollTop = 0;
     };
 
     nextPanel() {
@@ -575,16 +591,18 @@ class EXHaustViewer {
         if (currentPanel >= this.number_of_images) return;
 
         if (this.is_single_displayed) {
-          this.panelChange(currentPanel + 1);
+            this.panelChange(currentPanel + 1);
         } else {
-          const nextImage = this.images[currentPanel]; // images is 0-based, and currentPanel is 1-based
-          const newPanel = (currentPanel + 1 < this.number_of_images && nextImage.width <= nextImage.height)
+            const nextImage = this.images[currentPanel]; // images is 0-based, and currentPanel is 1-based
+            const newPanel = (currentPanel + 1 < this.number_of_images && nextImage.width <= nextImage.height)
                            ? currentPanel + 2
                            : currentPanel + 1;
-          this.panelChange(newPanel);
+            this.panelChange(newPanel);
         }
 
-        $('body', this.iframe_jq.contents()).scrollTop(0);
+        // Fix: Use the iframe's content document for scrolling
+        $(this.iframe.contentDocument.body).scrollTop(0);
+        this.comicImages.scrollTop = 0;
     };
 
     // ============== Viewer options ==============
@@ -1143,14 +1161,21 @@ class EXHaustViewer {
     div:-moz-full-screen {background-color: black;}
     div:-ms-fullscreen {background-color: black;}
     div:fullscreen {background-color: black;}
+
     .fitVertical:-webkit-full-screen img {max-height: 100% !important;}
     .fitVertical:-moz-full-screen img {max-height: 100% !important;}
     .fitVertical:-ms-fullscreen img {max-height: 100% !important;}
     .fitVertical:fullscreen img {max-height: 100% !important;}
+
     .fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}
     .fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}
     .fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}
     .fitStretch:fullscreen img {height: 100% !important; width: auto !important;}
+
+    .fitBoth:-webkit-full-screen img {max-height: 100% !important; max-width: 100% !important;}
+    .fitBoth:-moz-full-screen img {max-height: 100% !important; max-width: 100% !important;}
+    .fitBoth:-ms-fullscreen img {max-height: 100% !important; max-width: 100% !important;}
+    .fitBoth:fullscreen img {max-height: 100% !important; max-width: 100% !important;}
     `
 
     // ============== HTML ==============
