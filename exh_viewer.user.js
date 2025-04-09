@@ -16,6 +16,9 @@
 // @grant		  GM.getResourceUrl
 // ==/UserScript==
 
+
+(function() {
+'use strict';
 class EXHaustViewer {
     // Viewer elements
     iframe = null;
@@ -724,8 +727,8 @@ class EXHaustViewer {
     // functions called by user input
     openViewer() {
         this.iframe.style.display = 'block';
-        // to catch key events
         this.iframe.focus();
+        // to catch key events
         console.log("Viewer opened");
     }
 
@@ -734,7 +737,12 @@ class EXHaustViewer {
     }
 
     toggleViewer() {
-        this.iframe.style.display = this.iframe.style.display === 'none' ? 'block' : 'none';
+        var is_visible = this.iframe.style.display === 'block';
+        if (is_visible) {
+            this.closeViewer();
+        } else {
+            this.openViewer();
+        }
     }
 
     goGallery() {
@@ -776,6 +784,16 @@ class EXHaustViewer {
         }
         });
     };
+
+    setGlobalHotkey(key, callback) {
+        // Add global hotkey listener to root document
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === key.toLowerCase()) {
+                e.preventDefault(); // Prevent default behavior of the key
+                callback(e); // Call the provided callback function
+            }
+        });
+    }
 
     doHotkey(e) {
         switch (e.key.toLowerCase()) {
@@ -1306,6 +1324,7 @@ class EXHaustViewer {
     `
 }
 // ============== Exh global ==============
+var exhaust;
 var API_URL = null;
 var GID_TOKEN = null;
 var host = document.location.host;
@@ -1414,6 +1433,9 @@ var init = async function () {
 
     // add button to iframe visible
     exhaust.addShowbutton('.sn')
+    exhaust.setGlobalHotkey('Enter', () => {
+        exhaust.toggleViewer();
+    })
 
     exhaust.openViewer();
     getToken()
@@ -1490,3 +1512,4 @@ var init = async function () {
 };
 
 init();
+})();
