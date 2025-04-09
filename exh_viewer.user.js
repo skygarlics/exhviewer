@@ -24,7 +24,8 @@ class EXHaustViewer {
 
     update_check = false;
     PanelListenerAdded = false;
-    spread = 1;
+    set_spread = 1;
+    class_spread = 1;
     is_single_displayed = true;
     timerflag = false;
     timerInterval = null;
@@ -135,6 +136,16 @@ class EXHaustViewer {
         return GM_getValue(key);
     }
 
+    addShowbutton(selector) {
+        var target = document.querySelector(selector);
+
+        var btn = document.createElement('a');
+        btn.id = 'enableViewer';
+        btn.innerHTML = 'Viewer';
+        btn.onclick = ()=>this.toggleViewer();
+        target.appendChild(btn);
+    }
+
     // Viewer iframe
     addIframe() {
         var iframe = document.createElement('iframe');
@@ -157,7 +168,7 @@ class EXHaustViewer {
             <head>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-                <script>${bs_js}</script> 
+                <script>${bs_js}</script>
                 <style>
                     ${this.viewer_style}
                     ${this.fullscreen_style}
@@ -295,12 +306,10 @@ class EXHaustViewer {
 
     // ============== Draw functions ==============
     drawPanel_() {
-        const comicImagesContainer = $('#comicImages', this.iframe.contentDocument);
+        const comicImagesContainer = $('#centerer', this.iframe.contentDocument);
         const currentPanel = this.curPanel;
         const totalImages = this.number_of_images;
-        const singleSpread = this.spread === 1;
-
-        $('body', this.iframe_jq.contents()).attr('class', singleSpread ? 'spread1' : 'spread2');
+        const singleSpread = this.set_spread === 1;
 
         // 기존 img 요소를 가져오거나 없는 경우 새로 추가
         let imgElements = comicImagesContainer.find('img');
@@ -318,20 +327,31 @@ class EXHaustViewer {
             // 이미지의 가로 세로 비율에 따라 두 이미지를 표시할지 결정
             // TODO : nextPanel, prevPanel에서도 계산되는거 제거하기?
             if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
-                this.updateImageWithFadeIn($(imgElements[1], this.iframe_jq.contents()), previousImage.path);
-                this.updateImageWithFadeIn($(imgElements[0]), currentImage.path);
+                // two image
+                this.setSpreadClass(2);
+                var rt_img = $(imgElements[1]);
+                rt_img.addClass('rt_img');
+                var lt_img = $(imgElements[0]);
+                lt_img.addClass('lt_img');
+
+                this.updateImageWithFadeIn(rt_img, previousImage.path);
+                this.updateImageWithFadeIn(lt_img, currentImage.path);
                 this.is_single_displayed = false;
                 this.preloadImage(3);
             } else {
-                this.updateImageWithFadeIn($(imgElements[0], this.iframe_jq.contents()), previousImage.path);
-                $(imgElements[1], this.iframe_jq.contents()).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+                // single image
+                this.setSpreadClass(1);
+                this.updateImageWithFadeIn($(imgElements[0]), previousImage.path);
+                $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
                 this.is_single_displayed = true;
                 this.preloadImage(2);
             }
         } else if (currentPanel <= totalImages) {
-            this.updateImageWithFadeIn($(imgElements[0], this.iframe_jq.contents()), this.images[currentPanel - 1].path);
+            // single image
+            this.setSpreadClass(1);
+            this.updateImageWithFadeIn($(imgElements[0]), this.images[currentPanel - 1].path);
             this.is_single_displayed = true;
-            $(imgElements[1], this.iframe_jq.contents()).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+            $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
             this.preloadImage(2);
         }
 
@@ -419,8 +439,8 @@ class EXHaustViewer {
     async updateImgsAndCallAsync(start, end) {
 
         if (end < start) {
-          console.error("Error in updateImgsAndCall: start is greater than end");
-          return;
+        console.error("Error in updateImgsAndCall: start is greater than end");
+        return;
         }
 
         const update_entry = [];
@@ -548,20 +568,18 @@ class EXHaustViewer {
 
     panelChange(target) {
         if (target === this.curPanel) return; // Prevent unnecessary updates
-        
+
         // Clear any pending image updates
         if (this._panelChangeTimeout) {
             clearTimeout(this._panelChangeTimeout);
         }
-        
+
         this.curPanel = target;
         $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
-        
+
         // Use a small timeout to ensure UI updates first
         this._panelChangeTimeout = setTimeout(() => {
             this.pageChanged();
-            // Force redraw of the panel to ensure sync
-            this.drawPanel();
         }, 10);
     };
 
@@ -595,8 +613,8 @@ class EXHaustViewer {
         } else {
             const nextImage = this.images[currentPanel]; // images is 0-based, and currentPanel is 1-based
             const newPanel = (currentPanel + 1 < this.number_of_images && nextImage.width <= nextImage.height)
-                           ? currentPanel + 2
-                           : currentPanel + 1;
+                        ? currentPanel + 2
+                        : currentPanel + 1;
             this.panelChange(newPanel);
         }
 
@@ -647,19 +665,22 @@ class EXHaustViewer {
     };
 
     setSpread(num) {
-        if (this.spread == num) return
+        if (this.set_spread == num) return
 
-        $('body', this.iframe_jq.contents()).removeClass('spread' + this.spread);
-        this.spread = num;
-        $('body', this.iframe_jq.contents()).addClass('spread' + this.spread);
-
-        const isSinglePage = this.spread === 1;
+        this.set_spread = num;
+        const isSinglePage = this.set_spread === 1;
 
         $('#singlePage', this.iframe_jq.contents()).toggle(isSinglePage);
         $('#fullSpread', this.iframe_jq.contents()).toggle(!isSinglePage);
         this.drawPanel();
     }
 
+    setSpreadClass(num) {
+        if (this.class_spread == num) return
+        $('body', this.iframe_jq.contents()).removeClass('spread1 spread2');
+        $('body', this.iframe_jq.contents()).addClass('spread' + num);
+        this.class_spread = num;
+    }
 
     // 사용 예시
     fitStretch = () => this.applyFit('stretch');
@@ -959,43 +980,29 @@ class EXHaustViewer {
     .nav>li>a {
         padding: 15px 10px;
     }
-
-
     #comicImages {
         height: calc(100% - 50px);
         overflow: auto;
         text-align: center;
         white-space: nowrap;
     }
-    #comicImages .centerer {
-        display: inline-block;
-        vertical-align: middle;
-        height: 100%;
-    }
-    #imageDragger {
-        pointer-events: none;
-        cursor: default;
-        position: fixed;
-        margin-bottom: 25px;
-        z-index: 1;
-        width: 30%;
-        height: calc(100% - 50px - 25px);
-        left: 35%;
+        
+    #centerer {
         display: flex;
+        height: 100%;
+        width: 100%;
         align-items: center;
         justify-content: center;
-        text-decoration: none;
     }
 
-    /* fitStretch */
+    /* fitStretch*/
     .fitStretch img {
         display: inline-block;
-        vertical-align: middle;
-        width: 99%;
-        height: 99%;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
     }
-
+    
     /* fitBoth */
     .fitBoth img {
         display: inline-block;
@@ -1003,7 +1010,15 @@ class EXHaustViewer {
         max-width: 100%;
         max-height: 100%;
     }
-    .spread2 .fitBoth img {
+
+    /* fitHorizontal styles */
+    .fitHorizontal img {
+        display: inline-block;
+        vertical-align: middle;
+        max-width: 100%;
+    }
+    .spread2 .fitHorizontal img {
+        max-height: none;
         max-width: 50%;
     }
 
@@ -1014,19 +1029,21 @@ class EXHaustViewer {
         max-height: 100%;
     }
     .spread2 .fitVertical img {
-        max-width: 50%;
+        max-width: none;
+        max-height: 100%;
     }
 
-    /* fitHorizontal styles */
-    .fitHorizontal img {
-        display: inline-block;
-        vertical-align: middle;
-        max-width: 100%;
+    .spread2 img.lt_img {
+        object-position: right center;
     }
-    .spread2 .fitHorizontal img {
-        max-width: 50%;
+    .spread2 img.rt_img {
+        object-position: left center;
     }
 
+    .spread2 img{
+        max-width: fit-content;
+    }
+    
     #preload {
         display: none;
     }
@@ -1132,7 +1149,6 @@ class EXHaustViewer {
         height: 2rem;
         width: 3rem;
     }
-    
 
     /* exitfullscreen button */
     #fullscreen {
@@ -1283,11 +1299,12 @@ class EXHaustViewer {
         <a id="fullscreen" title="Enter or Space">⛶</a>
         <a id="leftBtn" class="imageBtn"></a>
         <a id="rightBtn" class="imageBtn"></a>
+        <div id="centerer">
+        </div>
     </div>
     <div id="preload"></div>
     `
 }
-
 // ============== Exh global ==============
 var API_URL = null;
 var GID_TOKEN = null;
@@ -1385,7 +1402,6 @@ var enable_viewer = function () {
     iframe.style.display = 'block';
 }
 
-
 var init = async function () {
     var url = document.location.href;
     var curPanel = Number(url.substring(url.lastIndexOf('-') + 1));
@@ -1397,13 +1413,8 @@ var init = async function () {
     exhaust.clearHotkeys();
 
     // add button to iframe visible
-    var btn = document.createElement('a');
-    btn.id = 'enableViewer';
-    btn.innerHTML = 'Viewer';
-    btn.onclick = enable_viewer;
+    exhaust.addShowbutton('.sn')
 
-    var original_btn_div = document.querySelector('.sn');
-    original_btn_div.appendChild(btn);
     exhaust.openViewer();
     getToken()
     .then(token => {
