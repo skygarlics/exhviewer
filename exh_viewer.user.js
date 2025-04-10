@@ -175,6 +175,7 @@ class EXHaustViewer {
                 <style>
                     ${this.viewer_style}
                     ${this.fullscreen_style}
+                    ${this.makeDynamicStyles()}
                 </style>
             </head>
             <body>
@@ -247,19 +248,24 @@ class EXHaustViewer {
         docu.getElementById('fitBoth').addEventListener('click', ()=>this.fitBoth());
         docu.getElementById('fitVertical').addEventListener('click', ()=>this.fitVertical());
         docu.getElementById('fitHorizontal').addEventListener('click', ()=>this.fitHorizontal());
-        docu.getElementById('fullscreen').addEventListener('click', ()=>this.fullscreen());
-        docu.getElementById('fullscreener').addEventListener('click', ()=>this.fullscreen());
+        docu.getElementById('fullscreen').addEventListener('click', ()=>this.toggleFullscreen());
+        docu.getElementById('fullscreener').addEventListener('click', ()=>this.toggleFullscreen());
         docu.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
         docu.getElementById('singlePage').addEventListener('click', ()=>this.setSpread(2));
         docu.getElementById('renderingChanger').addEventListener('click', () => this.renderChange());
-        docu.getElementById('reload').addEventListener('click', ()=>this.reloadImg());
+        docu.getElementById('reload').addEventListener('click', ()=>this.reloadCurrent());
         docu.getElementById('preloader').addEventListener('click', ()=>this.preloader());
         docu.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
         docu.getElementById('pageChanger').addEventListener('click', () => this.goPanel());
         docu.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged());
-        docu.getElementById('comicImages').addEventListener('dragstart', (e) => this.imgDragStart(e));
-        docu.getElementById('comicImages').addEventListener('drag', (e) => this.imgDrag(e));
-        docu.getElementById('comicImages').addEventListener('dragend', () => this.imgDragEnd());
+        
+        docu.getElementById('comicImages').addEventListener('mousedown', (e) => this.imgDragStart(e));
+        docu.getElementById('comicImages').addEventListener('mousemove', (e) => this.imgDrag(e));
+        docu.getElementById('comicImages').addEventListener('mouseup', () => this.imgDragEnd());
+        docu.getElementById('comicImages').addEventListener('touchstart', (e) => this.touchStart(e), {passive:false});
+        docu.getElementById('comicImages').addEventListener('touchmove', (e) => this.touchDrag(e));
+        docu.getElementById('comicImages').addEventListener('touchend', () => this.imgDragEnd());
+
         docu.getElementById('viewerCloser').addEventListener('click', () => this.closeViewer());
         docu.getElementById('galleryInfo').addEventListener('click', () => this.goGallery());
     }
@@ -337,14 +343,14 @@ class EXHaustViewer {
                 var lt_img = $(imgElements[0]);
                 lt_img.addClass('lt_img');
 
-                this.updateImageWithFadeIn(rt_img, previousImage.path);
-                this.updateImageWithFadeIn(lt_img, currentImage.path);
+                this.updateImageWithFadeIn(rt_img, previousImage);
+                this.updateImageWithFadeIn(lt_img, currentImage);
                 this.is_single_displayed = false;
                 this.preloadImage(3);
             } else {
                 // single image
                 this.setSpreadClass(1);
-                this.updateImageWithFadeIn($(imgElements[0]), previousImage.path);
+                this.updateImageWithFadeIn($(imgElements[0]), previousImage);
                 $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
                 this.is_single_displayed = true;
                 this.preloadImage(2);
@@ -352,7 +358,7 @@ class EXHaustViewer {
         } else if (currentPanel <= totalImages) {
             // single image
             this.setSpreadClass(1);
-            this.updateImageWithFadeIn($(imgElements[0]), this.images[currentPanel - 1].path);
+            this.updateImageWithFadeIn($(imgElements[0]), this.images[currentPanel - 1]);
             this.is_single_displayed = true;
             $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
             this.preloadImage(2);
@@ -374,7 +380,9 @@ class EXHaustViewer {
         .then(()=>this.drawPanel_());
     };
 
-    updateImageWithFadeIn(imgElement, newSrc) {
+    updateImageWithFadeIn(imgElement, imbObj) {
+        var newSrc = imbObj.path
+
         // check if newSrc is undefined
         if (!newSrc) {
             //console.error("newSrc is undefined");
@@ -395,7 +403,7 @@ class EXHaustViewer {
 
         // 이미지가 캐시에 없는 경우: 로드가 완료될 때까지 투명하게 유지
         tempImg.onerror = function () {
-            console.error("Image failed to load:", newSrc);
+            console.error("Cache failed:", newSrc);
             //imgElement.css('opacity', '0'); // 계속 숨김
         };
 
@@ -460,7 +468,7 @@ class EXHaustViewer {
         await Promise.all(promise_entry);
     };
 
-    async reloadImg() {
+    async reloadCurrentImg() {
         //console.log('reloadImg called');
         var n_curPanel = this.curPanel;
 
@@ -484,6 +492,10 @@ class EXHaustViewer {
         }
         this.drawPanel();
     };
+
+    async reloadImg() {
+
+    }
 
     preloader() {
         var len = this.iframe.contentDocument.getElementById('preloadInput').value;
@@ -693,12 +705,23 @@ class EXHaustViewer {
 
 
     //  ============== full screen functions ==============
-    fullscreen() {
+
+    requestFullscreen() {
+        if (document.fullscreenElement) return;
         var elem = this.comicImages;
+        elem.requestFullscreen?.() || elem.msRequestFullscreen?.() || elem.mozRequestFullScreen?.() || elem.webkitRequestFullscreen?.();
+    }
+
+    exitFullscreen() {
+        if (!document.fullscreenElement) return;
+        document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+    }
+
+    toggleFullscreen() {
         if (!document.fullscreenElement) {
-            elem.requestFullscreen?.() || elem.msRequestFullscreen?.() || elem.mozRequestFullScreen?.() || elem.webkitRequestFullscreen?.();
+            this.requestFullscreen()
         } else {
-            document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+            this.exitFullscreen()
         }
     }
 
@@ -734,6 +757,7 @@ class EXHaustViewer {
 
     closeViewer() {
         this.iframe.style.display = 'none';
+        this.exitFullscreen();
     }
 
     toggleViewer() {
@@ -754,19 +778,46 @@ class EXHaustViewer {
         if (!this.dragState.isDragging) return;
 
         if (e.pageX > 0) {
-        this.comicImages.scrollLeft += this.dragState.prevX - e.pageX;
-        this.dragState.prevX = e.pageX;
+            const deltaX = this.dragState.prevX - e.pageX;
+            this.comicImages.scrollLeft += deltaX;
+            this.dragState.prevX = e.pageX;
         }
         if (e.pageY > 0) {
-        this.comicImages.scrollTop += this.dragState.prevY - e.pageY;
-        this.dragState.prevY = e.pageY;
+            const deltaY = this.dragState.prevY - e.pageY;
+            this.comicImages.scrollTop += deltaY;
+            this.dragState.prevY = e.pageY;
         }
+        e.preventDefault();
     };
+    touchDrag(e) {
+        if (!this.dragState.isDragging || e.touches.length !== 1) return; // multi touch
+
+        const touch = e.touches[0];
+        if (touch.pageX > 0) {
+            const deltaX = this.dragState.prevX - touch.pageX;
+            this.comicImages.scrollLeft += deltaX;
+            this.dragState.prevX = touch.pageX;
+        }
+        if (touch.pageY > 0) {
+            const deltaY = this.dragState.prevY - touch.pageY;
+            this.comicImages.scrollTop += deltaY;
+            this.dragState.prevY = touch.pageY;
+        }
+    }
 
     imgDragStart(e) {
         this.dragState.prevX = e.pageX;
         this.dragState.prevY = e.pageY;
         this.dragState.isDragging = true;
+        e.preventDefault();
+    };
+    touchStart(e) {
+        if (e.touches.length !== 1) return; 
+        const touch = e.touches[0];
+        this.dragState.prevX = touch.pageX;
+        this.dragState.prevY = touch.pageY;
+        this.dragState.isDragging = true;
+        e.preventDefault();
     };
 
     imgDragEnd() {
@@ -779,9 +830,9 @@ class EXHaustViewer {
         this.comicImages.scrollTop += e.deltaY;
 
         requestAnimationFrame(() => {
-        if (this.comicImages.scrollTop === prevScrollTop) {
-            e.deltaY > 0 ? this.nextPanel() : this.prevPanel();
-        }
+            if (this.comicImages.scrollTop === prevScrollTop) {
+                e.deltaY > 0 ? this.nextPanel() : this.prevPanel();
+            }
         });
     };
 
@@ -832,13 +883,13 @@ class EXHaustViewer {
             this.toggleViewer();
             break;
         case ' ':
-            this.fullscreen();
+            this.toggleFullscreen();
             break;
         case 't':
             this.toggleTimer();
             break;
         case 'r':
-            this.reloadImg();
+            this.reloadCurrent();
             break;
         case 'p':
             this.preloader();
@@ -979,6 +1030,7 @@ class EXHaustViewer {
     viewer_style = `
     html {
         height: 100%;
+        user-select: none;
     }
     body {
         background: #171717;
@@ -1183,12 +1235,42 @@ class EXHaustViewer {
         padding: 0.2rem;
     }
 
-    #interfaceNav .navbar-nav .nav-item:not(:first-child)  {
-        border-left: 1px solid #4b4b4b; /* 원하는 색상으로 변경 가능 */
+    #funcs .nav-item:not(:first-child)  {
         padding-left: 0.5rem;
         margin-left: 0.5rem;
     }
     `
+
+    // ============== Dynamic styles ==============
+    breakpoints = [
+        { name: 'xs', width: 0 },
+        { name: 'sm', width: 576 },
+        { name: 'md', width: 768 },
+        { name: 'lg', width: 992 },
+        { name: 'xl', width: 1200 },
+        { name: 'xxl', width: 1400 }
+    ];
+
+    d_style = `
+    @media (max-width: {bp_width-1}px) {
+
+    }
+    @media (min-width: {bp_width}px) {
+        .seperator-{bp_name}:not(:first-child)  {
+            border-left: 1px solid #4b4b4b;
+        }
+    }`
+    makeDynamicStyles() {
+        var ret;
+        this.breakpoints.forEach((bp) => {
+            var style = this.d_style
+                .replace(/{bp_name}/g, bp.name)
+                .replace(/{bp_width}/g, bp.width)
+                .replace(/{bp_width-1}/g, bp.width -1);
+            ret += style;
+        });
+        return ret;
+    }
 
     fullscreen_style = `
     div:-webkit-full-screen {background-color: black;}
@@ -1220,40 +1302,40 @@ class EXHaustViewer {
         <button id="navbar-button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">
         <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse d-flex justify-content-center" id="collapseNavbar">
+        <div class="collapse navbar-collapse justify-content-center" id="collapseNavbar">
         <ul id="funcs" class="navbar-nav text-end">
-            <li class="nav-item">
+            <li class="seperator-lg nav-item">
             <a class="nav-link" title="Left arrow or j" id="nextPanel">
                 <i class="bi bi-chevron-left"></i> Next
             </a>
             </li>
-            <li class="nav-item">
+            <li class="seperator-lg nav-item">
             <a class="nav-link" title="Right arrow or k" id="prevPanel">
                 <i class="bi bi-chevron-right"></i> Prev
             </a>
             </li>
-            <li class="nav-item">
-            <div class="d-flex align-items-center">
+            <li class="seperator-lg nav-item">
+            <div class="align-items-center">
                 <a id="autoPager" title="t">▶Auto</a>
                 <input id="pageTimer" class="form-control-sm" type="text" value="10">
             </div>
             </li>
-            <li class="nav-item">
-            <div class="d-flex align-items-center">
+            <li class="seperator-lg nav-item">
+            <div class="align-items-center">
                 <a id="pageChanger">#</a>
                 <select class="form-select-sm" id="single-page-select"></select>
             </div>
             </li>
-            <li class="nav-item">
+            <li class="seperator-lg nav-item">
             <a class="nav-link" id="fullscreener" title="Enter or Space">
                 <i class="bi bi-arrows-fullscreen"></i>
             </a>
             </li>
-            <li class="nav-item dropdown">
+            <li class="seperator-lg nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOptions" role=-"button" data-bs-toggle="dropdown" aria-expanded="false">
                 Options<span class="caret"></span>
             </a>
-            <ul class="dropdown-menu dropdown-menu-dark aria-labelledby="navbarDropdownOptions">
+            <ul class="seperator-lg dropdown-menu dropdown-menu-dark aria-labelledby="navbarDropdownOptions">
                 <li>
                 <a class="dropdown-item" title="r" id="reload">
                     <span>&#10227;</span> Reload
@@ -1301,7 +1383,7 @@ class EXHaustViewer {
                 </li>
             </ul>
             </li>
-            <li class="nav-item">
+            <li class="seperator-lg nav-item">
             <a class="nav-link" title="Close viewer" id="viewerCloser">
                 <i class="bi bi-x-lg"></i>
             </a>
