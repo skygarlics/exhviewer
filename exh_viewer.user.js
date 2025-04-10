@@ -120,14 +120,13 @@ class EXHaustViewer {
         return;
     }
 
-    getReloadInfo = async (entry_idx, entry_url) => {
-        // in default, it just returns original path
-        return images[entry_idx].path;
+    getReloadInfo = async (nl_url, path) => {
+        return { path: path, nl_url: nl_url };
     };
 
     extractImageData = async (url, idx) => {
         // in default, it just return nothing
-        return {}
+        return { path: url };
     }
 
     // ============== setup functions ==============
@@ -253,7 +252,7 @@ class EXHaustViewer {
         docu.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
         docu.getElementById('singlePage').addEventListener('click', ()=>this.setSpread(2));
         docu.getElementById('renderingChanger').addEventListener('click', () => this.renderChange());
-        docu.getElementById('reload').addEventListener('click', ()=>this.reloadCurrent());
+        docu.getElementById('reload').addEventListener('click', ()=>this.reloadCurrentImg());
         docu.getElementById('preloader').addEventListener('click', ()=>this.preloader());
         docu.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
         docu.getElementById('pageChanger').addEventListener('click', () => this.goPanel());
@@ -376,7 +375,7 @@ class EXHaustViewer {
 
     drawPanel() {
         var n_curPanel = this.curPanel;
-        this.updateImgsAndCallAsync(n_curPanel, n_curPanel+2)
+        this.updageImgsRange(n_curPanel, n_curPanel+2)
         .then(()=>this.drawPanel_());
     };
 
@@ -385,37 +384,24 @@ class EXHaustViewer {
 
         // check if newSrc is undefined
         if (!newSrc) {
-            //console.error("newSrc is undefined");
             return;
         }
 
-        // 임시 이미지 객체를 생성하여 새 이미지를 로드
+        imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
+
         const tempImg = new Image();
-
-        // 새 이미지의 경로 설정 (로딩이 바로 시작됨)
         tempImg.src = newSrc;
-
-        // 이미지가 캐시에 있는 경우: 즉시 로드 완료 이벤트가 발생
         tempImg.onload = function () {
-            // 즉시 로드된 경우, src를 변경하고 바로 표시
             imgElement.attr('src', newSrc).css('opacity', '1');
         };
 
         // 이미지가 캐시에 없는 경우: 로드가 완료될 때까지 투명하게 유지
         tempImg.onerror = function () {
-            console.error("Cache failed:", newSrc);
-            //imgElement.css('opacity', '0'); // 계속 숨김
+            console.error("Img load failed:", newSrc);
         };
 
-        // 캐시되지 않은 이미지는 로드 완료 후 표시
-        if (!tempImg.complete) {
-            // 이미지가 캐시되지 않은 경우 로드될 때까지 투명하게 설정
-            imgElement.css('opacity', '0');
-
-            // 로드 완료 시 이미지의 src를 교체하고 표시
-            tempImg.onload = function () {
-                imgElement.attr('src', newSrc).css('opacity', '1');
-            };
+        if (tempImg.complete) {
+            imgElement.attr('src', newSrc).css('opacity', '1');
         }
     }
 
@@ -424,7 +410,7 @@ class EXHaustViewer {
         this.images[page] = imgData;
     };
 
-    async updateImgData(img, idx, callback) {
+    async updateImgData(img, idx, callback, reload) {
         if (!img || !img.url) {
             console.error("Invalid image data:", img);
             return;
@@ -432,14 +418,25 @@ class EXHaustViewer {
 
         try {
             // imgData structure
-            // {url: string, width: number, height: number, path: string, updated: boolean}
-            var imgData = await callback(img.url, idx)
-
+            // {url: string // url of page contiang image
+            //  width: number // image width, 
+            //  height: number // image height, 
+            //  path: string // path of image, 
+            //  updated: boolean // is Data itself is updated
+            //  nl: number // page url get when reload requested
+            var imgData;
+            if (reload) {
+                imgData = await callback(img.nl, idx)
+            } else {
+                imgData = await callback(img.url, idx)
+            }
+            
             // 이미지 경로 및 크기 정보 업데이트
 
             if (imgData.path) img.path = imgData.path;
             if (imgData.width) img.width = imgData.width;
             if (imgData.height) img.height = imgData.height;
+            if (imgData.nl) img.nl = imgData.nl;
             img.updated = true;
         } catch (error) {
             console.error("Error updating image:", error);
@@ -447,11 +444,10 @@ class EXHaustViewer {
         }
     };
 
-    async updateImgsAndCallAsync(start, end) {
-
+    async updageImgsRange(start, end) {
         if (end < start) {
-        console.error("Error in updateImgsAndCall: start is greater than end");
-        return;
+            console.error("Error in updateImgsAndCall: start is greater than end");
+            return;
         }
 
         const update_entry = [];
@@ -462,7 +458,7 @@ class EXHaustViewer {
         const promise_entry = update_entry.map(async (idx) => {
             const img = this.images[idx];
             if (img && img.updated) return;  // 이미 업데이트된 경우 skip
-            await this.updateImgData(img, idx, this.extractImageData);  // async 함수 호출
+            await this.updateImgData(img, idx, this.extractImageData);
         });
 
         await Promise.all(promise_entry);
@@ -475,26 +471,23 @@ class EXHaustViewer {
         // images[n_curPanel] = next page
         // if current page is last, entry current page only
 
-        var entry_idx;
-        var entry_url;
-
+        var update_entry;
         if (n_curPanel == this.number_of_images) {
-            entry_idx = [n_curPanel];
-            entry_url = [this.images[n_curPanel].url];
+            update_entry = [n_curPanel];
         } else {
-            entry_idx = [n_curPanel-1, n_curPanel];
-            entry_url = [this.images[n_curPanel-1].url, this.images[n_curPanel].url];
+            update_entry = [n_curPanel-1, n_curPanel];
         }
 
-        var reloadinfo = await this.getReloadInfo(entry_idx, entry_url);
-        for (var idx = 0; idx < reloadinfo.length; idx++) {
-            this.images[entry_idx[idx]].path = reloadinfo[idx];
-        }
+        const promise_entry = update_entry.map(async (idx) => {
+            await this.reloadImg(idx);
+        });
+        await Promise.all(promise_entry);
         this.drawPanel();
     };
 
-    async reloadImg() {
-
+    async reloadImg(idx) {
+        var imgObj = this.images[idx];
+        await this.updateImgData(imgObj, idx, this.extractImageData, true)
     }
 
     preloader() {
@@ -507,7 +500,7 @@ class EXHaustViewer {
         const currentPanel = this.curPanel;
 
         // 이미지 업데이트 호출 및 완료 후 처리
-        await this.updateImgsAndCallAsync(currentPanel - 2, currentPanel + length + 1);
+        await this.updageImgsRange(currentPanel - 2, currentPanel + length + 1);
 
         // 현재 preloadContainer 내의 img 요소 선택
         let imgElements = preloadContainer.find('img');
@@ -889,7 +882,7 @@ class EXHaustViewer {
             this.toggleTimer();
             break;
         case 'r':
-            this.reloadCurrent();
+            this.reloadCurrentImg();
             break;
         case 'p':
             this.preloader();
@@ -1466,41 +1459,23 @@ var extractImageData = async function (url, idx) {
     const fileInfoText = doc.getElementById('i4').firstChild.firstChild.textContent;
     const fileInfoMatch = fileInfoText.match(/ :: (\d+) x (\d+)/);
     if (!fileInfoMatch) throw new Error("File info not found");
+
+    const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
+    const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
+    if (!nlMatch) throw new Error("NL value not found");
+
+    var nl_url = url.replace(/\?.*/, '') + '?nl=' + nlMatch[1];
     
     return {
         path: doc.getElementById('img').src,
         width: Number(fileInfoMatch[1]),
-        height: Number(fileInfoMatch[2])
+        height: Number(fileInfoMatch[2]),
+        nl: nl_url,
     }
-}
-
-var getReloadInfo = async function (entry_idx, entry_url) {
-    var ret = [];
-    for (var idx = 0; idx < entry_url.length; idx++) {
-        var url = entry_url[idx];
-        var response = await exhaust.simpleRequestAsync(url);
-        var doc = exhaust.parseHTML(response);
-        const loadFailAttr = doc.getElementById("loadfail").getAttribute("onclick");
-        const nlMatch = loadFailAttr.match(/nl\('(.*)'\)/);
-        if (!nlMatch) throw new Error("NL value not found");
-        
-        var nl =  nlMatch[1];
-        url = url.replace(/\?.*/, '') + '?nl=' + nl;
-        response = await exhaust.simpleRequestAsync(url);
-        doc = exhaust.parseHTML(response);
-        const imgSrc = doc.getElementById('img').src;
-        ret.push(imgSrc);
-    }
-    return ret;
 }
 
 var make_gallery_url = function(gid, token) {
     return 'https://' + host + '/g/' + gid + '/' + token;
-}
-
-var enable_viewer = function () {
-    var iframe = document.querySelector('iframe');
-    iframe.style.display = 'block';
 }
 
 var init = async function () {
@@ -1508,9 +1483,7 @@ var init = async function () {
     var curPanel = Number(url.substring(url.lastIndexOf('-') + 1));
     
     exhaust = new EXHaustViewer(curPanel);
-    exhaust.getReloadInfo = getReloadInfo;
     exhaust.extractImageData = extractImageData;
-
     exhaust.clearHotkeys();
 
     // add button to iframe visible
