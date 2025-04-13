@@ -114,11 +114,32 @@ class EXHaustViewer {
 
     // ==============  ==============
     // these functions can be overridden by nenecessary
-    scrollTo(idx) {
-        // "Original" page scrolls to idx-th image
-        console.log("override required: scrollTo()");
-        return;
+    
+    /**
+     * Override to make "Original page" scrolls to idx-th image
+     * @param {number} idx index of image to scroll to\n
+     *  */ 
+    moveOriginalByViewer = null;
+
+    /**
+     * Helper to make moveOriginalByViewer function; move to idx-th element by querySelectorAll(selector)
+     * */
+    makeMoveOriginalByViewer(selector) {
+        return (idx) => {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length > idx) {
+                elements[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                console.warn(`Element at index ${idx} not found for selector "${selector}"`);
+            }
+        }
     }
+
+    /**
+     * Override to get current page by current image on original page
+     * @returns {number} current page that Original page is showing
+     *  */ 
+    getPageByOriginal = null;
 
     prevEpisode() {
         console.log("override required: prevEpisode()");
@@ -566,6 +587,7 @@ class EXHaustViewer {
     pageChanged() {
         // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
         this.drawPanel();
+        this.moveOriginalByViewer ? this.moveOriginalByViewer(this.curPanel - 1) : null;
         this.curPanel == 1 ? this.disable($('#prevPanel', this.iframe_jq.contents())) : this.enable($('#prevPanel', this.iframe_jq.contents()));
         this.curPanel == this.number_of_images ? this.disable($('#nextPanel', this.iframe_jq.contents())) : this.enable($('#nextPanel', this.iframe_jq.contents()));
     };
@@ -765,6 +787,10 @@ class EXHaustViewer {
     // ============== Viewer functions ==============
     // functions called by user input
     openViewer() {
+        var original_page = this.getPageByOriginal ? this.getPageByOriginal() : null;
+        if (original_page) {
+            this.panelChange(original_page);
+        }
         this.iframe.style.display = 'block';
         this.iframe.focus();
         // to catch key events
@@ -942,6 +968,97 @@ class EXHaustViewer {
     }
 
     // ============== Utility functions ==============
+
+    /**
+     * @param {Element} element - target element
+     * @param {number} visibleRatio - visible ratio (0.0 ~ 1.0). Default is 0.5 (50%)
+     * @param {Element} [rootElement=null] - root element for intersection observer (optional)
+     * @returns {Promise<boolean>} - true if element is visible more than specific ratio, false otherwise
+     */
+    isElementVisible(element, visibleRatio = 0.5, rootElement = null) {
+        return new Promise(resolve => {
+            options = {
+                root: rootElement,
+                rootMargin: '0px',
+                threshold: visibleRatio
+            }
+            const observer = new IntersectionObserver(entries => {
+                resolve(entries[0].intersectionRatio >= visibleRatio);
+                observer.disconnect();
+            }, options);
+            
+            observer.observe(element);
+        });
+    }
+    
+    /**
+     * Find the element closest to the target scroll position
+     * @param {string} selector - CSS selector for the target elements.
+     * @param {position} position - The target scroll position [top, mid, bottom] (default is center of the window).
+     * @returns {HTMLElement|null} - The closest element to the target scroll position, or null if not found.
+     * */
+    findElementAtScroll(selector, position = 'mid') {
+        if (!selector) return null;
+    
+        const elements = document.querySelectorAll(selector);
+        if (elements.length === 0) return null;
+        
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
+
+        let targetPoint;
+        switch (position.toLowerCase()) {
+            case 'top':
+                targetPoint = scrollTop + (windowHeight * 0.25);
+                break;
+            case 'bottom':
+                targetPoint = scrollTop + (windowHeight * 0.75);
+                break;
+            case 'mid':
+            default:
+                targetPoint = scrollTop + (windowHeight * 0.5);
+                break;
+        }
+
+        let bestMatch = null;
+        let minDistance = Infinity;
+        
+        Array.from(elements).forEach((element, index) => {
+            const rect = element.getBoundingClientRect();
+            
+            // 요소의 위치 계산 (스크롤 위치 포함)
+            const elementTop = rect.top + scrollTop;
+            const elementBottom = rect.bottom + scrollTop;
+            const elementHeight = rect.height;
+            
+            // 위치에 따라 요소의 참조점 결정
+            let referencePoint;
+            switch (position.toLowerCase()) {
+                case 'top':
+                    referencePoint = elementTop; // 요소의 상단
+                    break;
+                case 'bottom':
+                    referencePoint = elementBottom; // 요소의 하단
+                    break;
+                case 'mid':
+                default:
+                    referencePoint = elementTop + (elementHeight / 2); // 요소의 중앙
+                    break;
+            }
+            
+            // 타겟 지점과의 거리 계산
+            const distance = Math.abs(referencePoint - targetPoint);
+            
+            // 가장 가까운 요소 업데이트
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestMatch = { element, index };
+            }
+        });
+        
+        return bestMatch;
+    }
+
     sleepSync(ms) {
         // can cause UI freeze
         var start = new Date().getTime();
@@ -1588,9 +1705,23 @@ async function extract_page (url, idx) {
 }
 
 // to maintain compability, use closure
- 
 function make_extract_api(gid, imagelist, mpvkey) {
     return async(url, idx) => {
+        // before api call, check original page if image laready loaded
+        const img_elem = document.querySelector('#imgsrc_'+(idx+1));
+        if (img_elem && img_elem.src) {
+            // width/height is inaccurate but faster.
+            // if it cause problem, then use below
+            // var img = new Image(); img.onload = ()=>{resolve({ width: this.naturalWidth, height: this.naturalHeight})}; img.src = url;
+            var data = {
+                path : img_elem.src,
+                width : img_elem.width,
+                height : img_elem.height,
+                nl : BASE + '/s/' + imagelist[idx].k + '/' + gid + '-' + (idx+1)
+            }
+            return data;
+        }
+
         const imgkey = imagelist[idx].k;
         const page = idx + 1; // page starts from 1
         const response = await exhaust.simpleRequestAsync(S_API, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify({
@@ -1624,6 +1755,28 @@ function make_extract_api(gid, imagelist, mpvkey) {
 
 function make_gallery_url(gid, token) {
     return 'https://' + host + '/g/' + gid + '/' + token;
+}
+
+function scroll_to_image(idx) {
+    const nth_image = document.querySelector('#image_'+(idx+1));
+    if (nth_image) {
+        nth_image.scrollIntoView({ block: 'start' });
+    }
+    return idx;
+}
+
+function page_from_original() {
+    // assume last image that visible 
+    var selector = 'div.mimg';
+    var best_match = exhaust.findElementAtScroll(selector, 'top');
+    if (best_match) {
+        // ex) <div id="image_16" class="mimg" style="height: 880px; visibility: visible; max-width: 1280px;">
+        var id_ = best_match.element.id;
+        var page = id_.split('_')[1];
+        return Number(page)
+    } else {
+        return null;
+    }
 }
 
 async function init () {
@@ -1663,7 +1816,12 @@ async function init () {
         })
         .then((ext) => {
             exhaust.number_of_images = PAGECOUNT;
+
+            // override original functions
             exhaust.extractImageData = make_extract_api(GID, IMAGELIST, MPVKEY);
+            exhaust.moveOriginalByViewer = scroll_to_image;
+            exhaust.getPageByOriginal = page_from_original;
+
             for (var i = 0; i < IMAGELIST.length; i++) {
                 var imgkey = IMAGELIST[i].k;
                 var img_url = BASE + '/s/' + imgkey + '/' + GID + '-' + (i+1);
