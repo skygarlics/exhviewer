@@ -475,6 +475,10 @@ class EXHaustViewer {
             } else {
                 imgData = await callback(img.url, idx)
             }
+
+            if (!imgData) {
+                return;
+            }
             
             // 이미지 경로 및 크기 정보 업데이트
             if (imgData.path) img.path = imgData.path;
@@ -1080,6 +1084,11 @@ class EXHaustViewer {
     xmlhttpRequest(details) {
         var bfloc = null;
         var xmlhttp = new XMLHttpRequest();
+
+        if (details.withCredentials) {
+            xmlhttp.withCredentials = true;
+        }
+
         xmlhttp.ontimeout = function () {
             details.ontimeout();
         };
@@ -1152,15 +1161,22 @@ class EXHaustViewer {
             history.pushState(bfloc, bfloc, bfloc);
     };
 
-    simpleRequestAsync(url, method = 'GET', headers = {}, data = null) {
+    simpleRequestAsync(url, method = 'GET', headers = {}, data = null, withCredentials = true) {
         return new Promise((resolve, reject) => {
             var details = {
                 method,
                 url,
                 timeout: 10000,
+                withCredentials: withCredentials,
                 ontimeout: (e) => reject(new Error("Request timed out")),
-                onload: (response) => resolve(response),
-                onerror: (error) => reject(new Error(error.statusText || "Request failed"))
+                onload: (response) => {
+                    if (response.status >= 200 && response.status < 300) {
+                        resolve(response)
+                    } else {
+                        reject(response)
+                    }
+                },
+                onerror: (error) => reject(error)
             };
             // Add headers if any
             if (headers) {
@@ -1564,6 +1580,7 @@ class EXHaustViewer {
 var exhaust;
 var API = null;
 var S_API = null;
+var API_AVAIL = true;
 var GID = null;
 var TOKEN = null;
 var BASE = null;
@@ -1722,33 +1739,48 @@ function make_extract_api(gid, imagelist, mpvkey) {
             return data;
         }
 
+        if (!API_AVAIL) {
+            return null;
+        }
+
         const imgkey = imagelist[idx].k;
         const page = idx + 1; // page starts from 1
-        const response = await exhaust.simpleRequestAsync(S_API, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify({
-            gid: gid,
-            method: 'imagedispatch',
-            imgkey: imgkey,
-            mpvkey: mpvkey,
-            page: page
-        }));
-        // example response
-        // {"d":"1280 x 1870 :: 143.7 KiB","o":"Download original 1498 x 2189 691.3 KiB source","lf":"fullimg\/3201509\/5\/5knnxxvadx1\/batch_250104_09483266.jpg","ls":"?f_shash=a6422374e86f1a0aa599b184aed3486cb9356c73&fs_from=batch_250104_09483266.webp+from+%28Hedera%29+Suomi+%28Patreon%29+%5BAi+Generated%5D","ll":"a6422374e86f1a0aa599b184aed3486cb9356c73-707879-1498-2189-jpg\/forumtoken\/3201509-5\/batch_250104_09483266.webp","lo":"s\/a6422374e8\/3201509-5","xres":"1280","yres":"1870","i":"https:\/\/kynlskr.mqqquvqcmmzg.hath.network\/h\/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp\/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280\/batch_250104_09483266.webp","s":"41611"}    // d = 1280 x 1870 :: 147.7 KiB
-        // d = 1280 x 1870 :: 143.7 KiB
-        // o = Download original 1498 x 2189 691.3 KiB source
-        // lf = fullimg/3201509/5/5knnxxvadx1/batch_250104_09483266.jpg
-        // ls = ?f_shash=a6422374e86f1a0aa599b184aed3486cb9356c73&fs_from=batch_250104_09483266.webp+from+%28Hedera%29+Suomi+%28Patreon%29+%5BAi+Generated%5D
-        // ll = a6422374e86f1a0aa599b184aed3486cb9356c73-707879-1498-2189-jpg/forumtoken/3201509-5/batch_250104_09483266.webp
-        // lo = s/a6422374e8/3201509-5
-        // xres = 1280
-        // yres = 1870
-        // i = https://kynlskr.mqqquvqcmmzg.hath.network/h/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280/batch_250104_09483266.webp
-        // s = 41611
-        const parsed = JSON.parse(response.responseText);
-        return {
-            path: parsed.i,
-            width: Number(parsed.xres),
-            height: Number(parsed.yres),
-            nl: BASE + "/" + parsed.lo
+
+        try {
+            const response = await exhaust.simpleRequestAsync(S_API, 'POST',
+                { 'Content-Type': 'application/json' }, 
+                JSON.stringify({
+                    gid: gid,
+                    method: 'imagedispatch',
+                    imgkey: imgkey,
+                    mpvkey: mpvkey,
+                    page: page
+                })
+            );
+            // example response
+            // {"d":"1280 x 1870 :: 143.7 KiB","o":"Download original 1498 x 2189 691.3 KiB source","lf":"fullimg\/3201509\/5\/5knnxxvadx1\/batch_250104_09483266.jpg","ls":"?f_shash=a6422374e86f1a0aa599b184aed3486cb9356c73&fs_from=batch_250104_09483266.webp+from+%28Hedera%29+Suomi+%28Patreon%29+%5BAi+Generated%5D","ll":"a6422374e86f1a0aa599b184aed3486cb9356c73-707879-1498-2189-jpg\/forumtoken\/3201509-5\/batch_250104_09483266.webp","lo":"s\/a6422374e8\/3201509-5","xres":"1280","yres":"1870","i":"https:\/\/kynlskr.mqqquvqcmmzg.hath.network\/h\/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp\/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280\/batch_250104_09483266.webp","s":"41611"}    // d = 1280 x 1870 :: 147.7 KiB
+            // d = 1280 x 1870 :: 143.7 KiB
+            // o = Download original 1498 x 2189 691.3 KiB source
+            // lf = fullimg/3201509/5/5knnxxvadx1/batch_250104_09483266.jpg
+            // ls = ?f_shash=a6422374e86f1a0aa599b184aed3486cb9356c73&fs_from=batch_250104_09483266.webp+from+%28Hedera%29+Suomi+%28Patreon%29+%5BAi+Generated%5D
+            // ll = a6422374e86f1a0aa599b184aed3486cb9356c73-707879-1498-2189-jpg/forumtoken/3201509-5/batch_250104_09483266.webp
+            // lo = s/a6422374e8/3201509-5
+            // xres = 1280
+            // yres = 1870
+            // i = https://kynlskr.mqqquvqcmmzg.hath.network/h/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280/batch_250104_09483266.webp
+            // s = 41611
+            const parsed = JSON.parse(response.responseText);
+            return {
+                path: parsed.i,
+                width: Number(parsed.xres),
+                height: Number(parsed.yres),
+                nl: BASE + "/" + parsed.lo
+            }
+        } catch (error) {
+            console.error("Error fetching image data:", error);
+            console.log("API call failed. diable API call.");
+            API_AVAIL = false; // disable api call
+            return null;
         }
     }
 }
