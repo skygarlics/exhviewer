@@ -35,7 +35,7 @@ class EXHaustViewer {
     timerflag = false;
     timerInterval = null;
     renderType = 0;
-    renderStyle;
+    fitType = 0;
 
     dragState = {
         isDragging: false,
@@ -100,7 +100,7 @@ class EXHaustViewer {
         $('#fullSpread', this.iframe_jq.contents()).hide();
 
         this.renderChange(this.iframe.contentDocument);
-        this.fitStretch();
+        this.changeFit();
 
         var docElm = this.iframe.contentDocument.documentElement;
         if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
@@ -276,10 +276,7 @@ class EXHaustViewer {
         }, { passive: false });
         docu.getElementById('prevPanel').addEventListener('click', ()=>this.prevPanel());
         docu.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel());
-        docu.getElementById('fitStretch').addEventListener('click', ()=>this.fitStretch());
-        docu.getElementById('fitBoth').addEventListener('click', ()=>this.fitBoth());
-        docu.getElementById('fitVertical').addEventListener('click', ()=>this.fitVertical());
-        docu.getElementById('fitHorizontal').addEventListener('click', ()=>this.fitHorizontal());
+        docu.getElementById('fitChanger').addEventListener('click', () => this.changeFit());
         docu.getElementById('fullscreen').addEventListener('click', ()=>this.toggleFullscreen());
         docu.getElementById('fullscreener').addEventListener('click', ()=>this.toggleFullscreen());
         docu.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
@@ -333,16 +330,6 @@ class EXHaustViewer {
         var textNode = doc.createTextNode(css);
         style.appendChild(textNode);
         parent.appendChild(style);
-    }
-
-    disable(elem) {
-        elem.parent().addClass('disabled');
-        elem.children().removeClass('icon_white');
-    }
-
-    enable(elem) {
-        elem.parent().removeClass('disabled');
-        elem.children().addClass('icon_white');
     }
 
     // ============== Draw functions ==============
@@ -681,45 +668,52 @@ class EXHaustViewer {
     };
 
     // ============== Viewer options ==============
+
+    renderOptions = [
+        'render_auto',
+        'render_crisp',
+        'render_pixelated',
+    ];
+
     renderChange(){
-        var docu = this.iframe.contentDocument;
-        const renderOptions = [
-            {
-                style: 'img {image-rendering: optimizeQuality; image-rendering: -webkit-optimize-contrast;}',
-                text: '<span>🖽</span> Render: optimized'
-            },
-            {
-                style: 'img {image-rendering: auto;}',
-                text: '<span>🖽</span> Render: auto'
-            },
-            {
-                style: 'img {image-rendering: -moz-crisp-edges; image-rendering: pixelated;}',
-                text: '<span>🖽</span> Render: pixelated'
-            }
-        ];
-        this.renderType = (this.renderType + 1) % renderOptions.length;
-        this.renderStyle.textContent = renderOptions[this.renderType].style;
-        docu.getElementById('renderingChanger').innerHTML = renderOptions[this.renderType].text;
+        var centerer = this.iframe.contentDocument.getElementById('centerer');
+        this.renderType = (this.renderType + 1) % this.renderOptions.length;
+        var render_class = this.renderOptions[this.renderType];
+
+        this.removeClasses(centerer, this.renderOptions);
+        centerer.classList.add(render_class);
     }
 
-    fitOptions = {
-        stretch: { className: 'fitStretch', nextButton: '#fitBoth' },
-        both: { className: 'fitBoth', nextButton: '#fitHorizontal' },
-        horizontal: { className: 'fitHorizontal', nextButton: '#fitVertical' },
-        vertical: { className: 'fitVertical', nextButton: '#fitStretch' }
-    };
+    fitOptions = [
+        {
+            class: 'stretchBoth',
+            inner: '<i class="bi bi-arrows-move"></i> Stretch Both'
+        },
+        {
+            class: 'fitBoth',
+            inner: '<i class="bi bi-plus-lg"></i> Fit Both'
+        },
+        {
+            class: 'fitHorizontal',
+            inner: '<i class="bi bi-dash-lg"></i> Fit Horizontal'
+        }, 
+        {
+            class: 'fitVertical',
+            inner: '<span>┃</span> Fit Vertical'
+        }, 
+    ];
 
-    resetFit() {
-        $('#comicImages', this.iframe_jq.contents()).removeClass('fitStretch fitBoth fitHorizontal fitVertical');
-        $('.fitBtn', this.iframe_jq.contents()).parent().hide();
-    };
+    changeFit() {
+        this.fitType = (this.fitType + 1) % this.fitOptions.length;
+        const fitOption = this.fitOptions[this.fitType];
 
-    applyFit(fitType) {
-        this.resetFit();
-        $('#comicImages', this.iframe_jq.contents()).addClass(this.fitOptions[fitType].className);
-        $(this.fitOptions[fitType].nextButton, this.iframe_jq.contents()).parent().show();
-        $('body', this.iframe_jq.contents()).scrollTop(0);
-    };
+        const centerer = this.iframe.contentDocument.getElementById('centerer');
+        this.removeClasses(centerer, this.fitOptions.map(option => option.class));
+        centerer.classList.add(fitOption.class);
+        
+        const fitChanger = this.iframe.contentDocument.getElementById('fitChanger');
+        fitChanger.innerHTML = fitOption.inner;
+    }
 
     setSpread(num) {
         if (this.set_spread == num) return
@@ -738,13 +732,6 @@ class EXHaustViewer {
         $('body', this.iframe_jq.contents()).addClass('spread' + num);
         this.class_spread = num;
     }
-
-    // 사용 예시
-    fitStretch = () => this.applyFit('stretch');
-    fitBoth = () => this.applyFit('both');
-    fitHorizontal = () => this.applyFit('horizontal');
-    fitVertical = () => this.applyFit('vertical');
-
 
     //  ============== full screen functions ==============
 
@@ -972,6 +959,27 @@ class EXHaustViewer {
     }
 
     // ============== Utility functions ==============
+    
+    disable(elem) {
+        elem.parent().addClass('disabled');
+        elem.children().removeClass('icon_white');
+    }
+
+    enable(elem) {
+        elem.parent().removeClass('disabled');
+        elem.children().addClass('icon_white');
+    }
+
+    /**
+     * 
+     * @param {Element} elem - target element
+     * @param {[string]} classes - List of strings to remove
+     */
+    removeClasses(elem, classes) {
+        classes.forEach(cls => {
+            elem.classList.remove(cls);
+        });
+    }
 
     /**
      * @param {Element} element - target element
@@ -1236,8 +1244,13 @@ class EXHaustViewer {
         justify-content: center;
     }
 
-    /* fitStretch*/
-    .fitStretch img {
+    /* vanila state */
+    img {
+        display: inline-block;
+    }
+
+    /* stretchBoth*/
+    .stretchBoth img {
         display: inline-block;
         width: 100%;
         height: 100%;
@@ -1410,6 +1423,19 @@ class EXHaustViewer {
         padding-left: 0.5rem;
         margin-left: 0.5rem;
     }
+    
+    /* Render options */
+    .render_auto img {
+        image-rendering: auto;
+    }
+
+    .render_crisp img {
+        image-rendering: -moz-crisp-edges; image-rendering: -webkit-optimize-contrast;
+    }
+
+    .render_pixelated img {
+        image-rendering: pixelated;
+    }
     `
 
     // ============== Dynamic styles ==============
@@ -1454,10 +1480,10 @@ class EXHaustViewer {
     .fitVertical:-ms-fullscreen img {max-height: 100% !important;}
     .fitVertical:fullscreen img {max-height: 100% !important;}
 
-    .fitStretch:-webkit-full-screen img {height: 100% !important; width: auto !important;}
-    .fitStretch:-moz-full-screen img {height: 100% !important; width: auto !important;}
-    .fitStretch:-ms-fullscreen img {height: 100% !important; width: auto !important;}
-    .fitStretch:fullscreen img {height: 100% !important; width: auto !important;}
+    .stretchBoth:-webkit-full-screen img {height: 100% !important; width: auto !important;}
+    .stretchBoth:-moz-full-screen img {height: 100% !important; width: auto !important;}
+    .stretchBoth:-ms-fullscreen img {height: 100% !important; width: auto !important;}
+    .stretchBoth:fullscreen img {height: 100% !important; width: auto !important;}
 
     .fitBoth:-webkit-full-screen img {max-height: 100% !important; max-width: 100% !important;}
     .fitBoth:-moz-full-screen img {max-height: 100% !important; max-width: 100% !important;}
@@ -1508,44 +1534,29 @@ class EXHaustViewer {
             </a>
             <ul class="seperator-lg dropdown-menu dropdown-menu-dark aria-labelledby="navbarDropdownOptions">
                 <li>
-                <a class="dropdown-item" title="r" id="reload">
-                    <span>&#10227;</span> Reload
-                </a>
+                    <a class="dropdown-item" title="r" id="reload">
+                        <span>&#10227;</span> Reload
+                    </a>
                 </li>
                 <li>
-                <a class="dropdown-item fitBtn" title="b" id="fitStretch">
-                    <span>□</span> Fit Stretch
-                </a>
+                    <a class="dropdown-item fitBtn" title="b" id="fitChanger">
+                        <i class="bi bi-arrows-move"></i> Change Fit
+                    </a>
                 </li>
                 <li>
-                <a class="dropdown-item fitBtn" title="b" id="fitBoth">
-                    <span>╋</span> Fit Both
-                </a>
+                    <a class="dropdown-item" title="f" id="fullSpread">
+                        <i class="bi bi-book"></i> Full Spread
+                    </a>
                 </li>
                 <li>
-                <a class="dropdown-item fitBtn" title="v" id="fitVertical">
-                    <span>┃</span> Fit Vertical
-                </a>
+                    <a class="dropdown-item" title="s" id="singlePage">
+                        <i class="bi bi-book-half"></i> Single Page
+                    </a>
                 </li>
                 <li>
-                <a class="dropdown-item fitBtn" title="h" id="fitHorizontal">
-                    <span>━</span> Fit Horizontal
-                </a>
-                </li>
-                <li>
-                <a class="dropdown-item" title="f" id="fullSpread">
-                    <span>🕮</span> Full Spread
-                </a>
-                </li>
-                <li>
-                <a class="dropdown-item" title="s" id="singlePage">
-                    <span>🗍</span> Single Page
-                </a>
-                </li>
-                <li>
-                <a class="dropdown-item" title="rendering" id="renderingChanger">
-                    <span>🖽</span> Rendering
-                </a>
+                    <a class="dropdown-item" title="rendering" id="renderingChanger">
+                        <i class="bi bi-brush"></i> Rendering
+                    </a>
                 </li>
                 <li>
                 <a class="dropdown-item" title="p" id="preloader">
