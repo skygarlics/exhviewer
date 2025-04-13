@@ -140,12 +140,14 @@ class EXHaustViewer {
         return GM_getValue(key);
     }
 
-    addShowbutton(selector) {
+    addShowbutton(selector, elem_type, inner_html) {
+        var elem_ = elem_type ? elem_type : 'a';
+        var inner = inner_html ? inner_html : '<div style="font-size: 2em; user-select: none">🕮</div>';
         var target = document.querySelector(selector);
 
-        var btn = document.createElement('a');
+        var btn = document.createElement(elem_);
         btn.id = 'enableViewer';
-        btn.innerHTML = 'Viewer';
+        btn.innerHTML = inner;
         btn.onclick = ()=>this.toggleViewer();
         target.appendChild(btn);
     }
@@ -1634,7 +1636,6 @@ async function init () {
     });
 
     exhaust.openViewer();
-
     if (is_mpv()) {
         getToken()
         .then(token => {
