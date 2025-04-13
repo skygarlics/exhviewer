@@ -34,8 +34,8 @@ class EXHaustViewer {
     is_single_displayed = true;
     timerflag = false;
     timerInterval = null;
-    renderType = 0;
-    fitType = 0;
+    renderType = -1; // make sure renderType start from 0
+    fitType = -1;
 
     dragState = {
         isDragging: false,
@@ -99,7 +99,7 @@ class EXHaustViewer {
         $('.navbar ul li', this.iframe_jq.contents()).show();
         $('#fullSpread', this.iframe_jq.contents()).hide();
 
-        this.renderChange(this.iframe.contentDocument);
+        this.renderChange();
         this.changeFit();
 
         var docElm = this.iframe.contentDocument.documentElement;
@@ -201,7 +201,7 @@ class EXHaustViewer {
 
         iframe.srcdoc = `<!DOCTYPE html><html>
             <head>
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
                 <script>${bs_js}</script>
                 <style>
@@ -684,35 +684,25 @@ class EXHaustViewer {
         centerer.classList.add(render_class);
     }
 
-    fitOptions = [
-        {
-            class: 'stretchBoth',
-            inner: '<i class="bi bi-arrows-move"></i> Stretch Both'
-        },
-        {
-            class: 'fitBoth',
-            inner: '<i class="bi bi-plus-lg"></i> Fit Both'
-        },
-        {
-            class: 'fitHorizontal',
-            inner: '<i class="bi bi-dash-lg"></i> Fit Horizontal'
-        }, 
-        {
-            class: 'fitVertical',
-            inner: '<span>┃</span> Fit Vertical'
-        }, 
-    ];
+    fitOptions = {
+        'stretchBoth': '<i class="bi bi-arrows-move"></i> Stretch Both',
+        'stretchHorizontal': '<i class="bi bi-arrows"></i> Stretch Width',
+        'stretchVertical': '<i class="bi bi-arrows-vertical"></i> Stretch Height',
+        'fitBoth': '<i class="bi bi-plus-lg"></i> Fit Both',
+        'fitHorizontal': '<i class="bi bi-dash-lg"></i> Fit Width',
+        'fitVertical': '<span>┃</span> Fit Height',
+    };
 
     changeFit() {
-        this.fitType = (this.fitType + 1) % this.fitOptions.length;
-        const fitOption = this.fitOptions[this.fitType];
+        this.fitType = (this.fitType + 1) % Object.keys(this.fitOptions).length;
+        const classes = Object.keys(this.fitOptions);
 
         const centerer = this.iframe.contentDocument.getElementById('centerer');
-        this.removeClasses(centerer, this.fitOptions.map(option => option.class));
-        centerer.classList.add(fitOption.class);
+        this.removeClasses(centerer, classes);
+        centerer.classList.add(classes[this.fitType]);
         
         const fitChanger = this.iframe.contentDocument.getElementById('fitChanger');
-        fitChanger.innerHTML = fitOption.inner;
+        fitChanger.innerHTML = this.fitOptions[classes[this.fitType]];
     }
 
     setSpread(num) {
@@ -1249,12 +1239,26 @@ class EXHaustViewer {
         display: inline-block;
     }
 
-    /* stretchBoth*/
+    /* stretchBoth */
     .stretchBoth img {
         display: inline-block;
         width: 100%;
         height: 100%;
         object-fit: contain;
+    }
+
+    /* stretchHorizontal */
+    .stretchHorizontal img {
+        display: inline-block;
+        width: 100%;
+        height: auto;
+    }
+
+    /* stretchVertical */
+    .stretchVertical img {
+        display: inline-block;
+        width: auto;
+        height: 100%;
     }
     
     /* fitBoth */
