@@ -329,12 +329,12 @@ class EXHaustViewer {
         }
 
         if (!singleSpread && currentPanel > 1 && currentPanel < totalImages) {
-            const currentImage = this.images[currentPanel];
-            const previousImage = this.images[currentPanel - 1];
+            const nextImage = this.images[currentPanel];
+            const currentImage = this.images[currentPanel - 1];
 
             // 이미지의 가로 세로 비율에 따라 두 이미지를 표시할지 결정
             // TODO : nextPanel, prevPanel에서도 계산되는거 제거하기?
-            if (currentImage.width <= currentImage.height && previousImage.width <= previousImage.height) {
+            if (nextImage.width <= nextImage.height && currentImage.width <= currentImage.height) {
                 // two image
                 this.setSpreadClass(2);
                 var rt_img = $(imgElements[1]);
@@ -342,14 +342,14 @@ class EXHaustViewer {
                 var lt_img = $(imgElements[0]);
                 lt_img.addClass('lt_img');
 
-                this.updateImageWithFadeIn(rt_img, previousImage);
-                this.updateImageWithFadeIn(lt_img, currentImage);
+                this.showImage(rt_img, currentImage, currentPanel-1, currentPanel);
+                this.showImage(lt_img, nextImage, currentPanel, currentPanel);
                 this.is_single_displayed = false;
                 this.preloadImage(3);
             } else {
                 // single image
                 this.setSpreadClass(1);
-                this.updateImageWithFadeIn($(imgElements[0]), previousImage);
+                this.showImage($(imgElements[0]), currentImage, currentPanel-1, currentPanel);
                 $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
                 this.is_single_displayed = true;
                 this.preloadImage(2);
@@ -357,7 +357,7 @@ class EXHaustViewer {
         } else if (currentPanel <= totalImages) {
             // single image
             this.setSpreadClass(1);
-            this.updateImageWithFadeIn($(imgElements[0]), this.images[currentPanel - 1]);
+            this.showImage($(imgElements[0]), this.images[currentPanel-1], currentPanel-1, currentPanel);
             this.is_single_displayed = true;
             $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
             this.preloadImage(2);
@@ -379,29 +379,41 @@ class EXHaustViewer {
         .then(()=>this.drawPanel_());
     };
 
-    updateImageWithFadeIn(imgElement, imbObj) {
-        var newSrc = imbObj.path
+    showImage(imgElement, imgObj, idx, curPanel) {
+        var RETRY_LIMIT = 3;
+        var retry_count = 0;
 
         // check if newSrc is undefined
-        if (!newSrc) {
+        if (!imgObj.path) {
             return;
         }
 
-        imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
-
         const tempImg = new Image();
-        tempImg.src = newSrc;
-        tempImg.onload = function () {
-            imgElement.attr('src', newSrc).css('opacity', '1');
+        
+        tempImg.onload = () => {
+            var is_cur = this.curPanel == curPanel; // check if current panel is still same
+            if (!is_cur) return;
+            imgElement.attr('src', imgObj.path).css('opacity', '1');
+        };
+        
+        tempImg.onerror = () => {
+            console.error("Img load failed:", imgObj.path);
+            if (retry_count < RETRY_LIMIT) {
+                console.log("Retrying to load image:", imgObj.path);
+                retry_count++;
+                setTimeout(() => {
+                    this.reloadImg(imgObj, idx)
+                }, 500);
+            }
         };
 
-        // 이미지가 캐시에 없는 경우: 로드가 완료될 때까지 투명하게 유지
-        tempImg.onerror = function () {
-            console.error("Img load failed:", newSrc);
-        };
-
+        // imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
+        tempImg.src = imgObj.path;
+            // 이미 캐시에 있는 경우 즉시 표시
         if (tempImg.complete) {
-            imgElement.attr('src', newSrc).css('opacity', '1');
+            imgElement.attr('src', imgObj.path).css('opacity', '1');
+        } else {
+            imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
         }
     }
 
@@ -432,7 +444,6 @@ class EXHaustViewer {
             }
             
             // 이미지 경로 및 크기 정보 업데이트
-
             if (imgData.path) img.path = imgData.path;
             if (imgData.width) img.width = imgData.width;
             if (imgData.height) img.height = imgData.height;
@@ -479,14 +490,14 @@ class EXHaustViewer {
         }
 
         const promise_entry = update_entry.map(async (idx) => {
-            await this.reloadImg(idx);
+            var iobj = this.images[idx];
+            await this.reloadImg(iobj, idx);
         });
         await Promise.all(promise_entry);
         this.drawPanel();
     };
 
-    async reloadImg(idx) {
-        var imgObj = this.images[idx];
+    async reloadImg(imgObj, idx) {
         await this.updateImgData(imgObj, idx, this.extractImageData, true)
     }
 
@@ -909,6 +920,18 @@ class EXHaustViewer {
     }
 
     // ============== Utility functions ==============
+    sleepSync(ms) {
+        // can cause UI freeze
+        var start = new Date().getTime();
+        while (new Date().getTime() < start + ms) {
+            // do nothing
+        }
+    }
+
+    sleepAsync(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     openInNewTab(url) {
         var win = window.open(url, '_blank');
         win.focus();
@@ -1551,11 +1574,15 @@ var init = async function () {
                     .then(pushImgs);
             }
         })
-        .then(()=>{
+        .then(async ()=>{
             exhaust.finally()
             // load rest of galleries
             for (var i = 1; i < gallery_page_len+1; i++) {
+                // sleep 1 seconds between requests
+                await exhaust.sleepAsync(1000);
+
                 if (i+1 !== current_gallery_page) {
+                    var now = Date.now();
                     exhaust.simpleRequestAsync(gallery_page_url + i)
                     .then(exhaust.parseHTML)
                     .then(pushImgs);
