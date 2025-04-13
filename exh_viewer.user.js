@@ -5,7 +5,9 @@
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
+// @include       https://exhentai.org/mpv/*
 // @include       https://e-hentai.org/s/*
+// @include       https://e-hentai.org/mpv/*
 // @require       https://code.jquery.com/jquery-3.2.1.min.js
 // @resource bs_js https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js
 // @grant         GM_getValue
@@ -1423,39 +1425,107 @@ class EXHaustViewer {
 }
 // ============== Exh global ==============
 var exhaust;
-var API_URL = null;
-var GID_TOKEN = null;
+var API = null;
+var S_API = null;
+var GID = null;
+var TOKEN = null;
+var BASE = null;
+var IMAGELIST = null;
+var IS_MPV = null;
+var MPVKEY = null;
+var PAGECOUNT = null
 var host = document.location.host;
-if (host === 'exhentai.org')
-    API_URL = 'https://exhentai.org/api.php';
-else if (host === 'e-hentai.org')
-    API_URL = 'https://e-hentai.org/api.php';
-else
-    alert("Host unavailable!\nHOST: "+host);
 
+if (host === 'exhentai.org') {
+    BASE = 'https://exhentai.org';
+    API = 'https://exhentai.org/api.php';
+    S_API = 'https://s.exhentai.org/api.php';
+} else if (host === 'e-hentai.org') {
+    BASE = 'https://e-hentai.org';
+    API = 'https://e-hentai.org/api.php';
+    S_API = 'https://api.e-hentai.org/api.php';
+} else {
+    alert("Host unavailable!\nHOST: "+host);
+}
 
 // ============== Exh specific functions ==============
 
+function set_gallery_data() {
+    // mpv only
+    var scripts = document.querySelectorAll('script');
+    for (var i = 0; i < scripts.length; i++) {
+        if (scripts[i].innerText.includes('var gid=')) {
+            const extract = new Function(`${scripts[i].innerText}
+                return {
+                    gid: gid,
+                    mpvkey: mpvkey,
+                    pagecount: pagecount,
+                    imagelist: imagelist,
+                }`
+            )
+            var ext = extract();
+            GID = ext.gid;
+            IMAGELIST = ext.imagelist;
+            MPVKEY = ext.mpvkey;
+            PAGECOUNT = ext.pagecount;
+            return ext;
+        }
+    }
+    return null;
+}
+
+function is_mpv() {
+    if (IS_MPV !== null) return IS_MPV;
+    // check if the current page is mpv
+    const path = document.location.pathname;
+    IS_MPV = path.includes('/mpv/');
+    return IS_MPV;
+}
+
+
 async function getToken() {
     // GID_TOKEN이 이미 존재하면 즉시 반환
-    if (GID_TOKEN) return GID_TOKEN;
+    if (GID && TOKEN) return {gid: GID, token: TOKEN};
+    var gid;
+    var imagekey;
+    var page;
+    const path = document.location.pathname;
+    if (is_mpv()) {
+        await set_gallery_data();
+        // mpv : /mpv/3201509/2f4559c310/#page2
+        // /mpv/<gid>/<???>/#page<page>
+        if (!IMAGELIST) {
+            throw new Error("imagelist not found");
+        }
+        var hash = document.location.hash;
 
-    // URL에서 필요한 정보를 추출
-    const page_regex = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-    const match = page_regex.exec(document.location);
+        // use first image to get token
+        imagekey = IMAGELIST[0]["k"];
+        gid = path.split('/')[2];
+        page = 1;
+    } else {
+        // single : /s/f2e488999a/3201509-1
+        // /s/<imageKey>/<gid>-<page>
+        var splits = path.split('/');
+        imagekey = splits[2];
+        gid = splits[3].split('-')[0];
+        page = splits[3].split('-')[1];
+    }
+
     const data = {
         method: 'gtoken',
-        pagelist: [[match[2], match[1], match[3]]]
+        pagelist: [[gid, imagekey, page]] // [gid, imageKey, page]
     };
 
     try {
         // simpleRequestAsync로 API 호출
-        const response = await exhaust.simpleRequestAsync(API_URL, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify(data));
+        const response = await exhaust.simpleRequestAsync(API, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify(data));
 
         // 응답을 JSON으로 파싱 후 토큰 저장
         const tokens = JSON.parse(response.responseText).tokenlist[0];
-        GID_TOKEN = { gid: tokens.gid, token: tokens.token };
-        return GID_TOKEN;
+        GID = tokens.gid;
+        TOKEN = tokens.token;
+        return { gid: GID, token: TOKEN };
 
     } catch (error) {
         console.error("Error fetching token:", error);
@@ -1464,17 +1534,17 @@ async function getToken() {
 }
 
 
-var getGdataAsync = async function (gid, token) {
+async function getGdataAsync(gid, token) {
     var data = {
         'method': 'gdata',
         'gidlist': [[gid, token]]
     };
-    const response = await exhaust.simpleRequestAsync(API_URL, 'POST', {}, JSON.stringify(data));
+    const response = await exhaust.simpleRequestAsync(API, 'POST', {}, JSON.stringify(data));
     return response;
 };
 
 
-var extractImageData = async function (url, idx) {
+async function extract_page (url, idx) {
     const response = await exhaust.simpleRequestAsync(url);  // 비동기 요청 대기
     const doc = exhaust.parseHTML(response);
 
@@ -1497,100 +1567,176 @@ var extractImageData = async function (url, idx) {
     }
 }
 
-var make_gallery_url = function(gid, token) {
+// to maintain compability, use closure
+ 
+function make_extract_api(gid, imagelist, mpvkey) {
+    return async(url, idx) => {
+        const imgkey = imagelist[idx].k;
+        const page = idx + 1; // page starts from 1
+        const response = await exhaust.simpleRequestAsync(S_API, 'POST', { 'Content-Type': 'application/json' }, JSON.stringify({
+            gid: gid,
+            method: 'imagedispatch',
+            imgkey: imgkey,
+            mpvkey: mpvkey,
+            page: page
+        }));
+        // example response
+        // {"d":"1280 x 1870 :: 143.7 KiB","o":"Download original 1498 x 2189 691.3 KiB source","lf":"fullimg\/3201509\/5\/5knnxxvadx1\/batch_250104_09483266.jpg","ls":"?f_shash=a6422374e86f1a0aa599b184aed3486cb9356c73&fs_from=batch_250104_09483266.webp+from+%28Hedera%29+Suomi+%28Patreon%29+%5BAi+Generated%5D","ll":"a6422374e86f1a0aa599b184aed3486cb9356c73-707879-1498-2189-jpg\/forumtoken\/3201509-5\/batch_250104_09483266.webp","lo":"s\/a6422374e8\/3201509-5","xres":"1280","yres":"1870","i":"https:\/\/kynlskr.mqqquvqcmmzg.hath.network\/h\/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp\/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280\/batch_250104_09483266.webp","s":"41611"}    // d = 1280 x 1870 :: 147.7 KiB
+        // d = 1280 x 1870 :: 143.7 KiB
+        // o = Download original 1498 x 2189 691.3 KiB source
+        // lf = fullimg/3201509/5/5knnxxvadx1/batch_250104_09483266.jpg
+        // ls = ?f_shash=a6422374e86f1a0aa599b184aed3486cb9356c73&fs_from=batch_250104_09483266.webp+from+%28Hedera%29+Suomi+%28Patreon%29+%5BAi+Generated%5D
+        // ll = a6422374e86f1a0aa599b184aed3486cb9356c73-707879-1498-2189-jpg/forumtoken/3201509-5/batch_250104_09483266.webp
+        // lo = s/a6422374e8/3201509-5
+        // xres = 1280
+        // yres = 1870
+        // i = https://kynlskr.mqqquvqcmmzg.hath.network/h/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280/batch_250104_09483266.webp
+        // s = 41611
+        const parsed = JSON.parse(response.responseText);
+        return {
+            path: parsed.i,
+            width: Number(parsed.xres),
+            height: Number(parsed.yres),
+            nl: BASE + "/" + parsed.lo
+        }
+    }
+}
+
+function make_gallery_url(gid, token) {
     return 'https://' + host + '/g/' + gid + '/' + token;
 }
 
-var init = async function () {
-    var url = document.location.href;
-    var curPanel = Number(url.substring(url.lastIndexOf('-') + 1));
+async function init () {
+    var cur_url = document.location.href;
+    // check single or multipage view by path
+    // ex) single = https://exhentai.org/s/f2e488999a/3201509-1
+    // ex) multi = https://exhentai.org/mpv/3201509/2f4559c310/#page1
+    var is_single = cur_url.split('/')[3] == 's';
+
+    var curPanel = 1;
+    if (is_single) {
+        curPanel = Number(cur_url.substring(cur_url.lastIndexOf('-') + 1));
+    }
     
     exhaust = new EXHaustViewer(curPanel);
-    exhaust.extractImageData = extractImageData;
+    exhaust.extractImageData = extract_page;
     exhaust.clearHotkeys();
 
     // add button to iframe visible
-    exhaust.addShowbutton('.sn')
+    if (is_single) {
+        exhaust.addShowbutton('.sn');
+    } else {
+        exhaust.addShowbutton('#bar3');
+    }
+
     exhaust.setGlobalHotkey('Enter', () => {
         exhaust.toggleViewer();
-    })
+    });
 
     exhaust.openViewer();
-    getToken()
-    .then(token => {
-        exhaust.gallery_url = make_gallery_url(token.gid, token.token);
-        var title = document.querySelector('h1').textContent;
-        exhaust.setGalleryTitle(null, title);
-        return getGdataAsync(token.gid, token.token)
-    })
-    .then((response) => {
-        // make image list
-        var gmetadata = JSON.parse(response.responseText).gmetadata[0];
-        exhaust.number_of_images = Number(gmetadata.filecount);
-        var gallery_page_url = make_gallery_url(gmetadata.gid, gmetadata.token) + '/?p=';
 
-        var pushImgs = function (doc) {
-            var imgs = doc.querySelectorAll("#gdt > a");
-            for (var idx = 0; idx < imgs.length; idx++) {
-                var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
-                var img = imgs[idx];
-                var url_temp = img.href;
-                var match_temp = regex_temp.exec(url_temp);
-                exhaust.setImgData(match_temp[3] - 1,{
-                        page: match_temp[3],
-                        url: url_temp,  // url is page that contains image, not path of image
-                        token: match_temp[1]
-                    }
-                );
+    if (is_mpv()) {
+        getToken()
+        .then(token => {
+            exhaust.gallery_url = make_gallery_url(token.gid, token.token);
+            exhaust.setGalleryTitle(null, document.title);
+            return set_gallery_data();
+        })
+        .then((ext) => {
+            exhaust.number_of_images = PAGECOUNT;
+            exhaust.extractImageData = make_extract_api(GID, IMAGELIST, MPVKEY);
+            for (var i = 0; i < IMAGELIST.length; i++) {
+                var imgkey = IMAGELIST[i].k;
+                var img_url = BASE + '/s/' + imgkey + '/' + GID + '-' + (i+1);
+                var img_data = {
+                    page: i+1,
+                    url: img_url,
+                    token: imgkey
+                };
+                exhaust.setImgData(i, img_data);
             }
-        };
-
-        var gallery_page_len;
-        var current_gallery_page;
-
-        exhaust.simpleRequestAsync(gallery_page_url + 0)
-        .then(exhaust.parseHTML)
-        .then((doc) => {
-            // pages td count in table.ptt
-            var table = doc.querySelector('table.ptt');
-            var cnt = doc.querySelectorAll("#gdt > a").length;
-            if (table.querySelectorAll('td').length > 3) { // if there are more than 3 buttons, there are more than 1 page
-                // determine image per page
-                gallery_page_len = Math.ceil(exhaust.number_of_images / cnt);
-            } else {
-                gallery_page_len = 1;
-            }
-
-            current_gallery_page = Number(table.querySelector('.ptds').textContent);
-
-            // push requestes page1 images
-            pushImgs(doc);
         })
         .then(() => {
-            // push current page first
-            if (current_gallery_page !== 1) {
-                return exhaust.simpleRequestAsync(gallery_page_url + (current_gallery_page - 1))
-                    .then(exhaust.parseHTML)
-                    .then(pushImgs);
-            }
-        })
-        .then(async ()=>{
             exhaust.finally()
-            // load rest of galleries
-            for (var i = 1; i < gallery_page_len+1; i++) {
-                // sleep 1 seconds between requests
-                await exhaust.sleepAsync(1000);
+        })
+    } else {
+        getToken()
+        .then(token => {
+            exhaust.gallery_url = make_gallery_url(token.gid, token.token);
+            exhaust.setGalleryTitle(null, document.title);
+            return getGdataAsync(token.gid, token.token)
+        })
+        .then((response) => {
+            // make image list
+            var gmetadata = JSON.parse(response.responseText).gmetadata[0];
+            exhaust.number_of_images = Number(gmetadata.filecount);
+            var gallery_page_url = make_gallery_url(gmetadata.gid, gmetadata.token) + '/?p=';
 
-                if (i+1 !== current_gallery_page) {
-                    var now = Date.now();
-                    exhaust.simpleRequestAsync(gallery_page_url + i)
-                    .then(exhaust.parseHTML)
-                    .then(pushImgs);
+            var pushImgs = function (doc) {
+                var imgs = doc.querySelectorAll("#gdt > a");
+                for (var idx = 0; idx < imgs.length; idx++) {
+                    var regex_temp = /^(?:.*?\/\/)(?:.*?\/)(?:.*?\/)(.*?)\/(\d*?)-(\d+)(?:\?.*)*(?:#\d+)*$/g;
+                    var img = imgs[idx];
+                    var url_temp = img.href;
+                    var match_temp = regex_temp.exec(url_temp);
+                    // match [1] = image token, [2] = gid, [3] = page number
+                    // image token is not same as gid token
+                    exhaust.setImgData(match_temp[3] - 1,{
+                            page: match_temp[3],
+                            url: url_temp,  // url is page that contains image, not path of image
+                            token: match_temp[1]
+                        }
+                    );
                 }
-            }
-        });
-    })
-    .catch(error => console.error("Error initializing viewer:", error));
+            };
+
+            var gallery_page_len;
+            var current_gallery_page;
+
+            exhaust.simpleRequestAsync(gallery_page_url + 0)
+            .then(exhaust.parseHTML)
+            .then((doc) => {
+                // pages td count in table.ptt
+                var table = doc.querySelector('table.ptt');
+                var cnt = doc.querySelectorAll("#gdt > a").length;
+                if (table.querySelectorAll('td').length > 3) { // if there are more than 3 buttons, there are more than 1 page
+                    // determine image per page
+                    gallery_page_len = Math.ceil(exhaust.number_of_images / cnt);
+                } else {
+                    gallery_page_len = 1;
+                }
+
+                current_gallery_page = Number(table.querySelector('.ptds').textContent);
+
+                // push requestes page1 images
+                pushImgs(doc);
+            })
+            .then(() => {
+                // push current page first
+                if (current_gallery_page !== 1) {
+                    return exhaust.simpleRequestAsync(gallery_page_url + (current_gallery_page - 1))
+                        .then(exhaust.parseHTML)
+                        .then(pushImgs);
+                }
+            })
+            .then(async ()=>{
+                exhaust.finally()
+                // load rest of galleries
+                for (var i = 1; i < gallery_page_len+1; i++) {
+                    // sleep 1 seconds between requests
+                    await exhaust.sleepAsync(500);
+
+                    if (i+1 !== current_gallery_page) {
+                        var now = Date.now();
+                        exhaust.simpleRequestAsync(gallery_page_url + i)
+                        .then(exhaust.parseHTML)
+                        .then(pushImgs);
+                    }
+                }
+            });
+        })
+        .catch(error => console.error("Error initializing viewer:", error));
+    }
 };
 
 init();
