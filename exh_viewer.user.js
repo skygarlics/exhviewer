@@ -114,11 +114,19 @@ class EXHaustViewer {
 
     // ==============  ==============
     // these functions can be overridden by nenecessary
+    scrollTo(idx) {
+        // "Original" page scrolls to idx-th image
+        console.log("override required: scrollTo()");
+        return;
+    }
+
     prevEpisode() {
+        console.log("override required: prevEpisode()");
         return;
     }
 
     nextEpisode() {
+        console.log("override required: nextEpisode()");
         return;
     }
 
@@ -834,16 +842,26 @@ class EXHaustViewer {
 
     // wheel on bottom to next image
     doWheel(e) {
-        const prevScrollTop = this.comicImages.scrollTop;
-        this.comicImages.scrollTop += e.deltaY;
-
-        requestAnimationFrame(() => {
-            if (this.comicImages.scrollTop === prevScrollTop) {
-                e.deltaY > 0 ? this.nextPanel() : this.prevPanel();
-            }
+        e.preventDefault();
+        const deltaY = e.deltaY || e.wheelDeltaY || e.detail || 0;
+        
+        // 이미지 컨테이너의 현재 스크롤 상태 확인
+        const isAtTop = this.comicImages.scrollTop <= 0;
+        const isAtBottom = this.comicImages.scrollTop + this.comicImages.clientHeight >= this.comicImages.scrollHeight - 1;
+        
+        // 위/아래 경계에 있고 해당 방향으로 더 스크롤하려는 경우
+        if ((isAtTop && deltaY < 0) || (isAtBottom && deltaY > 0)) {
+            // 즉시 페이지 전환 (스크롤 없이)
+            deltaY > 0 ? this.nextPanel() : this.prevPanel();
+            return;
+        }
+        
+        // 그 외의 경우 정상 스크롤 처리
+        this.comicImages.scrollTo({
+            top: this.comicImages.scrollTop + deltaY,
+            behavior: 'smooth'
         });
-    };
-
+    }
     setGlobalHotkey(key, callback) {
         // Add global hotkey listener to root document
         document.addEventListener('keydown', (e) => {
