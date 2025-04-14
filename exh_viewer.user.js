@@ -116,30 +116,10 @@ class EXHaustViewer {
     // these functions can be overridden by nenecessary
     
     /**
-     * Override to make "Original page" scrolls to idx-th image
-     * @param {number} idx index of image to scroll to\n
-     *  */ 
-    moveOriginalByViewer = null;
-
-    /**
-     * Helper to make moveOriginalByViewer function; move to idx-th element by querySelectorAll(selector)
-     * */
-    makeMoveOriginalByViewer(selector) {
-        return (idx) => {
-            const elements = document.querySelectorAll(selector);
-            if (elements.length > idx) {
-                elements[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-                console.warn(`Element at index ${idx} not found for selector "${selector}"`);
-            }
-        }
-    }
-
-    /**
      * Override to get current page by current image on original page
      * @returns {number} current page that Original page is showing
-     *  */ 
-    getPageByOriginal = null;
+     *  */
+    getPageFromOriginal = null;
 
     prevEpisode() {
         console.log("override required: prevEpisode()");
@@ -575,13 +555,31 @@ class EXHaustViewer {
         }
     };
 
+    pageChangedHalders = [];
     pageChanged() {
         // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
         this.drawPanel();
-        this.moveOriginalByViewer ? this.moveOriginalByViewer(this.curPanel - 1) : null;
         this.curPanel == 1 ? this.disable($('#prevPanel', this.iframe_jq.contents())) : this.enable($('#prevPanel', this.iframe_jq.contents()));
         this.curPanel == this.number_of_images ? this.disable($('#nextPanel', this.iframe_jq.contents())) : this.enable($('#nextPanel', this.iframe_jq.contents()));
+        for (const handler of this.pageChangedHalders) {
+            handler(this.curPanel);
+        }
     };
+    addPageChangedHandler(handler) {
+        if (typeof handler === 'function') {
+            this.pageChangedHalders.push(handler);
+            return handler;
+        }
+    }
+    removePageChangedHandler(to_remove) {
+        if (!to_remove) return false;
+        const initialLength = this.pageChangedHalders.length;
+        this.pageChangedHalders = this.pageChangedHalders.filter(handler => handler !== to_remove);
+        return this.pageChangedHalders.length < initialLength;
+    }
+    clearPageChangedHandlers() {
+        this.pageChangedHalders = [];
+    }
 
     toggleTimer () {
         var intervalSeconds = parseFloat(this.iframe.contentDocument.getElementById('pageTimer').value);
@@ -768,7 +766,7 @@ class EXHaustViewer {
     // ============== Viewer functions ==============
     // functions called by user input
     openViewer() {
-        var original_page = this.getPageByOriginal ? this.getPageByOriginal() : null;
+        var original_page = this.getPageFromOriginal ? this.getPageFromOriginal() : null;
         if (original_page) {
             this.panelChange(original_page);
         }
@@ -1059,6 +1057,20 @@ class EXHaustViewer {
         });
         
         return bestMatch;
+    }
+
+    /**
+     * Helper to make moveOriginalByViewer function; move to idx-th element by querySelectorAll(selector)
+     * */
+    makeMoveOriginalByViewer(selector) {
+        return (idx) => {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length > idx) {
+                elements[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                console.warn(`Element at index ${idx} not found for selector "${selector}"`);
+            }
+        }
     }
 
     sleepSync(ms) {
@@ -1804,12 +1816,12 @@ function make_gallery_url(gid, token) {
     return 'https://' + host + '/g/' + gid + '/' + token;
 }
 
-function scroll_to_image(idx) {
-    const nth_image = document.querySelector('#image_'+(idx+1));
+function scroll_to_image(page) {
+    const nth_image = document.querySelector('#image_'+(page));
     if (nth_image) {
         nth_image.scrollIntoView({ block: 'start' });
     }
-    return idx;
+    return page;
 }
 
 function page_from_original() {
@@ -1866,8 +1878,10 @@ async function init () {
 
             // override original functions
             exhaust.extractImageData = make_extract_api(GID, IMAGELIST, MPVKEY);
-            exhaust.moveOriginalByViewer = scroll_to_image;
-            exhaust.getPageByOriginal = page_from_original;
+            exhaust.getPageFromOriginal = page_from_original;
+
+            // adding handler
+            exhaust.addPageChangedHandler(scroll_to_image);
 
             for (var i = 0; i < IMAGELIST.length; i++) {
                 var imgkey = IMAGELIST[i].k;
