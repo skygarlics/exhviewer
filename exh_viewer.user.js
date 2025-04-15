@@ -1774,7 +1774,7 @@ var API_AVAIL = true;
 var GID = null;
 var TOKEN = null;
 var BASE = null;
-var IMAGELIST = null;
+var IMAGELIST = [];
 var IS_MPV = null;
 var MPVKEY = null;
 var PAGECOUNT = null
@@ -2020,6 +2020,36 @@ function page_from_original() {
     }
 }
 
+
+function get_thumb_size(idx) {
+    var thumb_elem = document.querySelector('#thumb_'+(idx+1));
+    var width = thumb_elem.clientWidth;
+    var height = thumb_elem.clientHeight;
+    return {width: width, height: height};
+}
+
+function make_mpv_thumbnails() {
+    return IMAGELIST.reduce((pv, cv, ci) => {
+        // n: "batch_250212_20455664.jpg"
+        // t: "(https://zurswtyclg.hath.network/c2/0sslqmehw2ww9qzb7/3302769-0.webp) -0px 0"
+        // <div id="thumb_1" style="width: 200px; height: 292px; visibility: visible; background: transparent url(&quot;https://zurswtyclg.hath.network/c2/0sslqmehw2ww9qzb7/3302769-0.webp&quot;) 0px 0px no-repeat;" title="Page 1 - batch_250212_20455664.jpg"></div>
+        var thumb_dim = get_thumb_size(ci);
+
+        // make thumbnail div
+        var thumb_elem = document.createElement('div');
+        thumb_elem.id = 'thumb_' + (ci+1);
+        thumb_elem.style.background = "transparent url" + cv.t + " no-repeat";
+        thumb_elem.title = "Page " + (ci+1) + " - " + cv.n;
+        thumb_elem.style.width = thumb_dim.width + 'px';
+        thumb_elem.style.height = thumb_dim.height + 'px';
+        thumb_elem.style.visibility = 'visible';
+
+        pv.push(thumb_elem);
+        return pv;
+    }, []);
+}
+
+
 async function init () {
     var cur_url = document.location.href;
     // check single or multipage view by path
@@ -2056,7 +2086,10 @@ async function init () {
             return set_gallery_data();
         })
         .then((ext) => {
-            exhaust.set_number_of_images(PAGECOUNT, true);
+            exhaust.set_number_of_images(PAGECOUNT, false);
+
+            var thumbnail_elems = make_mpv_thumbnails();
+            exhaust.batchAddThumbnails(thumbnail_elems);
 
             // override original functions
             exhaust.extractImageData = make_extract_api(GID, IMAGELIST, MPVKEY);
