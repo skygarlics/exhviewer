@@ -300,6 +300,16 @@ class EXHaustViewer {
         docu.getElementById('viewerCloser').addEventListener('click', () => this.closeViewer());
         docu.getElementById('galleryInfo').addEventListener('click', () => this.goGallery());
 
+        docu.getElementById('thumbnailModal').addEventListener('show.bs.modal', () => {
+            setTimeout(() => {
+                const curr = this.curPanel;
+                const target_thumb = this.thumbnailContainer.querySelector(`#thumbnail_${curr - 1}`);
+                if (target_thumb) {
+                    target_thumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 150);
+        });
+
         // docu.getElementById('addthumb').addEventListener('click', () => {
         //     var thumb_count = this.thumbnailContainer.childElementCount;
         //     var thumb_elem = docu.createElement('div');
@@ -1111,6 +1121,61 @@ class EXHaustViewer {
             observer.observe(element);
         });
     }
+
+
+    scrollToElem(scroll_elem, target_elem, option = { behavior: 'smooth', block: 'center' }) {
+        if (scroll_elem == null || target_elem == null) return;
+        // check if target_elem is descendant of scroll_elem
+        if (!scroll_elem.contains(target_elem)) {
+            console.warn(`Target element is not a descendant of scroll element: ${target_elem}`);
+            return;
+        }
+
+        // Get the target element's position relative to the scroll container
+        const targetTop = target_elem.offsetTop - scroll_elem.offsetTop;
+        const targetHeight = target_elem.offsetHeight;
+        const containerHeight = scroll_elem.clientHeight;
+
+        let ttop = 0;
+        // Calculate the scroll position based on the block option
+        switch (option.block) {
+            case 'start':
+                ttop = targetTop; // Align the top of the target element with the top of the container
+                break;
+            case 'end':
+                ttop = targetTop + targetHeight - containerHeight; // Align the bottom of the target element with the bottom of the container
+                break;
+            case 'nearest':
+                const scrollTop = scroll_elem.scrollTop;
+                const scrollBottom = scrollTop + containerHeight;
+                const targetBottom = targetTop + targetHeight;
+
+                if (targetBottom <= scrollBottom && targetTop >= scrollTop) {
+                    // Already visible, no need to scroll
+                    ttop = scrollTop;
+                } else if (targetTop < scrollTop) {
+                    // Scroll up to make the top of the target element visible
+                    ttop = targetTop;
+                } else {
+                    // Scroll down to make the bottom of the target element visible
+                    ttop = targetBottom - containerHeight;
+                }
+                break;
+            case 'center':
+            default:
+                ttop = targetTop - (containerHeight - targetHeight) / 2; // Center the target element in the container
+                break;
+        }
+        var tleft = target_elem.offsetLeft;
+        // scroll_elem.scrollTop = ttop;
+        // scroll_elem.scrollLeft = tleft;
+        scroll_elem.scrollTo({
+            top: ttop,
+            left: tleft,
+            behavior: option.behavior,
+        });
+        // 왜구현했냐이거대체
+    }
     
     /**
      * Find the element closest to the target scroll position
@@ -1426,14 +1491,14 @@ class EXHaustViewer {
         max-height: 100%;
     }
 
-    .spread2 img.lt_img {
+    .spread2 #comicImages img.lt_img {
         object-position: right center;
     }
-    .spread2 img.rt_img {
+    .spread2 #comicImages img.rt_img {
         object-position: left center;
     }
 
-    .spread2 img{
+    .spread2 #comicImages img{
         max-width: fit-content;
     }
     
@@ -2008,7 +2073,7 @@ function make_gallery_url(gid, token) {
 function scroll_to_image(page) {
     const nth_image = document.querySelector('#image_'+(page));
     if (nth_image) {
-        nth_image.scrollIntoView({ block: 'start' });
+        nth_image.scrollIntoView({block : 'start'});
     }
     return page;
 }
