@@ -1420,6 +1420,8 @@ class EXHaustViewer {
     }
 
     #comicImages {
+        height: 100%;
+        width: 100%;
         position: relative;
         overflow: auto;
         text-align: center;
@@ -1534,11 +1536,10 @@ class EXHaustViewer {
     }
     .imageBtn,
     .imageBtn:hover {
-        position: fixed;
-        margin-bottom: 25px;
+        position: absolute;
         z-index: 1;
-        width: calc(35% - 25px);
-        height: calc(100% - 50px - 25px);
+        width: 35%;
+        height: 100%;
         font-size: 30px;
         color: rgba(255, 255, 255, 0.3);
         display: flex;
@@ -1833,11 +1834,11 @@ class EXHaustViewer {
     `
 
     imgFrameHTML = `
-    <div id="comicImages" class="d-flex align-items-center justify-content-center" tabindex="1">
+    <div id="comicImages" tabindex="1">
         <a id="fullscreen" title="Enter or Space">⛶</a>
         <a id="leftBtn" class="imageBtn"></a>
         <a id="rightBtn" class="imageBtn"></a>
-        <div id="centerer">
+        <div id="centerer" class="d-flex">
         </div>
     </div>
     <div id="preload"></div>
