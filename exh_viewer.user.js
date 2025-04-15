@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       250414
+// @version       250416
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -1579,7 +1579,6 @@ class EXHaustViewer {
         align-items: center;
         justify-content: center;
         min-width: 9em;
-        min-height: 12em;
         width: min-content;
         height: min-content;
         background-color:rgba(60, 60, 60, 0.2);
@@ -1747,7 +1746,7 @@ class EXHaustViewer {
                     <h6 class="modal-title" id="thumbnailModalLabel">Thumbnails</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div id="thumb_container" class="modal-body d-flex flex-wrap justify-content-center">
+                <div id="thumb_container" class="modal-body d-flex flex-wrap justify-content-center align-items-center">
                 </div>
                 <!-- <div class="modal-footer"><button type="button" class="btn btn-primary" id="addthumb">Add thumb</button></div> -->
             </div>
