@@ -26,6 +26,7 @@ class EXHaustViewer {
     iframe = null;
     iframe_jq = null;
     comicImages;
+    thumbnailContainer;
 
     update_check = false;
     PanelListenerAdded = false;
@@ -43,16 +44,33 @@ class EXHaustViewer {
         prevY: 0
     };
 
-    images = {}; // image datas (url, width, height, path, nl, updated), 0-indexed
+    images = {}; // image datas. 0-indexed. {idx: {url, width, height, path, nl, updated}}
+    thumbnails = {}; // thumbnail datas. {idx: element} // each element has data-idx attribute.
+
     curPanel = 1; // current panel number (1-indexed, always has to be integer)
 
     #number_of_images;
     get number_of_images() {
         return this.#number_of_images;
     }
+
     set number_of_images(value) {
+        if (value < 1) {
+            console.error("Invalid number of images:", value);
+            return;
+        }
         this.#number_of_images = value;
         this.createPageDropdown();
+    }
+
+    set_number_of_images(value, make_thumb) {
+        this.number_of_images = value;
+        if (make_thumb) {
+            this.batchReplaceThumbnails(
+                (function* () {for (let i = 1; i < value+1; i++) { yield i }})(),
+                'empty_thumb'
+            );
+        }
     }
 
     #gallery_url;
@@ -85,6 +103,7 @@ class EXHaustViewer {
         this.body = this.iframe.contentDocument.body;
         this.renderStyle = this.addRenderStyle(this.iframe.contentDocument);
         this.comicImages = this.iframe.contentDocument.getElementById('comicImages');
+        this.thumbnailContainer = this.iframe.contentDocument.getElementById('thumb_container');
         // prevent dropdown from close
         $('.dropdown-menu', this.iframe_jq.contents()).on('click', function(e) {
             e.stopPropagation();
@@ -183,7 +202,9 @@ class EXHaustViewer {
             <head>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-                <script>${bs_js}</script>
+                <script>
+                    ${bs_js}
+                </script>
                 <style>
                     ${this.viewer_style}
                     ${this.fullscreen_style}
@@ -193,7 +214,7 @@ class EXHaustViewer {
             <body>
                 ${this.navbarHTML}
                 ${this.imgFrameHTML}
-                ${this.thmbnailContainerHTML}
+                ${this.thumbnailModalHTML}
             </body></html>`;
         document.body.appendChild(iframe);
         this.iframe = iframe;
@@ -249,7 +270,7 @@ class EXHaustViewer {
 
     addEventListeners(docu) {
         docu.addEventListener('keydown', (e) => this.doHotkey(e));
-        docu.addEventListener('wheel', (e) => {
+        this.comicImages.addEventListener('wheel', (e) => {
             this.doWheel(e)
             // ensure wheel don't propagae to parent
             e.stopPropagation();
@@ -268,7 +289,6 @@ class EXHaustViewer {
         docu.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
         docu.getElementById('pageChanger').addEventListener('click', () => this.goPanel());
         docu.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged());
-        docu.getElementById('thumbnailBtn').addEventListener('click', () => this.toggleThumbnailContainer());
         
         docu.getElementById('comicImages').addEventListener('mousedown', (e) => this.imgDragStart(e));
         docu.getElementById('comicImages').addEventListener('mousemove', (e) => this.imgDrag(e));
@@ -279,6 +299,13 @@ class EXHaustViewer {
 
         docu.getElementById('viewerCloser').addEventListener('click', () => this.closeViewer());
         docu.getElementById('galleryInfo').addEventListener('click', () => this.goGallery());
+
+        // docu.getElementById('addthumb').addEventListener('click', () => {
+        //     var thumb_count = this.thumbnailContainer.childElementCount;
+        //     var thumb_elem = docu.createElement('div');
+        //     thumb_elem.textContent = 'Thumb ' + thumb_count;
+        //     this.setThumbnail(thumb_count, thumb_elem)
+        // });
     }
 
     // ============== Dangerous functions ==============
@@ -400,13 +427,6 @@ class EXHaustViewer {
         
         tempImg.onerror = () => {
             console.error("Img load failed:", imgObj.path);
-            if (retry_count < RETRY_LIMIT) {
-                console.log("Retrying to load image:", imgObj.path);
-                retry_count++;
-                setTimeout(() => {
-                    this.reloadImg(imgObj, idx)
-                }, 500);
-            }
         };
 
         // imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
@@ -417,6 +437,87 @@ class EXHaustViewer {
         } else {
             imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
         }
+    }
+
+    // ============== Thumbnail functions ==============
+    createThumbnailWrapper(idx, element, callback) {
+        if (element == null || element === undefined) {
+            console.error("Element is null or undefined:", element);
+            return;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'thumbnail_wrapper';
+        wrapper.id = 'thumbnail_' + idx;
+        if (callback) {
+            wrapper.addEventListener('click', () => {
+                callback(idx);
+            });
+        } else {
+            wrapper.addEventListener('click', () => {
+                this.panelChange(idx + 1);
+                const close_button = this.iframe.contentDocument.querySelector('.btn-close');
+                if (close_button) {
+                    close_button.click(); // Close the thumbnail modal
+                }
+            });
+        }
+
+        // if element type is string, then just set wrapper's innerHTML
+        if (typeof element === 'string' || typeof element === 'number') {
+            wrapper.innerHTML = element;
+        } else {
+            // element.setAttribute('data-idx', idx);
+            wrapper.appendChild(element);
+        }
+        return wrapper;
+    }
+
+    batchReplaceThumbnails(elements, class_string, callback) {
+        // empthy thumbnail
+        this.thumbnailContainer.innerHTML = '';
+        this.thumbnails = {};
+
+        this.batchAddThumbnails(elements, class_string, callback);
+    }
+
+    batchAddThumbnails(elements, class_strings, callback) {
+        if (!elements || typeof elements[Symbol.iterator] !== 'function') {
+            console.error("elements is not iterable", elements);
+            return;
+        }
+        const frag = this.iframe.contentDocument.createDocumentFragment();
+
+        var idx = 0;
+        for (const element of elements) {
+            const wrapper = this.createThumbnailWrapper(idx, element, callback);
+            if (class_strings) {
+                wrapper.classList.add(...class_strings.split(' '));
+            }
+            this.thumbnails[idx] = wrapper;
+            frag.appendChild(wrapper);
+            idx++;
+        }
+        this.thumbnailContainer.appendChild(frag);
+    }
+
+    setThumbnail(idx, element, class_strings, force, callback) {
+        const neww = this.createThumbnailWrapper(idx, element, callback);
+        if (class_strings) {
+            neww.classList.add(...class_strings.split(' '));
+        }
+
+        const oldw = this.thumbnailContainer.querySelector('#thumbnail_' + idx);
+
+        if (oldw) {
+            if (!force) {
+                return; // Thumbnail already exists, no need to replace
+            }
+            this.thumbnailContainer.replaceChild(neww, oldw);
+        } else {
+            this.thumbnailContainer.appendChild(neww);
+        }
+        this.thumbnails[idx] = neww;
     }
 
     // ============== Image loading functions ==============
@@ -455,6 +556,15 @@ class EXHaustViewer {
             if (imgData.height) img.height = imgData.height;
             if (imgData.nl) img.nl = imgData.nl;
             img.updated = true;
+
+            // check if thumbnails is empty
+            const cls_list = this.thumbnails[idx]?.classList;
+            if (!this.thumbnails[idx] || cls_list.contains('empty_thumb') || (reload && cls_list.contains("original_image")))  {
+                var thumb_elem = this.iframe.contentDocument.createElement('img');
+                thumb_elem.src = img.path;
+                this.setThumbnail(idx, thumb_elem, "original_image", true);
+            }
+
         } catch (error) {
             console.error("Error updating image:", error);
             throw error;  // 오류가 발생한 경우 상위로 throw하여 처리
@@ -767,15 +877,6 @@ class EXHaustViewer {
 
     // ============== Viewer functions ==============
     // functions called by user input
-
-    toggleThumbnailContainer() {
-        const thumbnails = this.iframe.contentDocument.getElementById('thumbnailContainer');
-        if (thumbnails.style.display === 'none') {
-            thumbnails.style.display = 'block';
-        } else {
-            thumbnails.style.display = 'none';
-        }
-    }
 
     openViewer() {
         var original_page = this.getPageFromOriginal ? this.getPageFromOriginal() : null;
@@ -1244,7 +1345,9 @@ class EXHaustViewer {
     .nav>li>a {
         padding: 15px 10px;
     }
+
     #comicImages {
+        position: relative;
         overflow: auto;
         text-align: center;
         white-space: nowrap;
@@ -1419,10 +1522,9 @@ class EXHaustViewer {
         width: 58px;
     }
     #preloadInput {
-        color: black;
         margin: 0px 10px;
-        width: 35px;
-        height: 17px;
+        width: 3em;
+        height: 1.8em;
     }
 
     #pageTimer,
@@ -1465,18 +1567,33 @@ class EXHaustViewer {
         image-rendering: pixelated;
     }
 
-    #thumbnailContainer {
-        position: fixed;
-        top: 0;
-        left: 0;
-        transform: translate(50%, 50%);
-        width: 80%;
-        height: 80%;
-        background: #00ff0480;
-        overflow-x: auto;
-        white-space: nowrap;
-        padding: 5px;
-        display: none;
+    .display_block {
+        display: block !important;
+    }
+    .display_none {
+        display: none !important;
+    }
+
+    .thumbnail_wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 9em;
+        min-height: 12em;
+        width: min-content;
+        height: min-content;
+        background-color:rgba(60, 60, 60, 0.2);
+        margin: 2px;
+    }
+
+    .thumbnail_wrapper > * {
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    #thumb_content {
+        width: 100%;
+        height: 100%;
     }
     `
 
@@ -1535,7 +1652,7 @@ class EXHaustViewer {
 
     // ============== HTML ==============
     navbarHTML = `
-    <nav id="interfaceNav" class="navbar navbar-dark bg-dark navbar-expand-lg">
+    <nav id="interfaceNav" class="navbar bg-dark navbar-expand-lg" data-bs-theme="dark" aria-label="Main navigation">
     <div class="container-fluid">
         <a class="navbar-brand" id="galleryInfo">Gallery</a>
         <button id="navbar-button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">
@@ -1571,7 +1688,7 @@ class EXHaustViewer {
                 </a>
             </li>
             <li class="seperator-lg nav-item">
-                <a class="nav-link" id="thumbnailBtn" title="Show Thumbnails">
+                <a class="nav-link" id="thumbnailBtn" title="Show Thumbnails" data-bs-toggle="modal" data-bs-target="#thumbnailModal">
                     <i class="bi bi-grid"></i>
                 </a>
             </li>
@@ -1622,12 +1739,22 @@ class EXHaustViewer {
     </nav>
     `
 
-    thmbnailContainerHTML = `
-        <div id="thumbnailContainer"">
-            <!-- Thumbnails will be inserted here -->
+    thumbnailModalHTML = `
+    <div id="thumbnailModal" class="modal fade" tabindex="-1" data-bs-theme="dark" aria-labelledby="thumbnailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
+            <div id="thumb_content" class="modal-content text-light">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="thumbnailModalLabel">Thumbnails</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div id="thumb_container" class="modal-body d-flex flex-wrap justify-content-center">
+                </div>
+                <!-- <div class="modal-footer"><button type="button" class="btn btn-primary" id="addthumb">Add thumb</button></div> -->
+            </div>
         </div>
+    </div>
     `
-    
+
     imgFrameHTML = `
     <div id="comicImages" class="d-flex align-items-center justify-content-center" tabindex="1">
         <a id="fullscreen" title="Enter or Space">⛶</a>
@@ -1784,21 +1911,37 @@ async function extract_page (url, idx) {
     }
 }
 
+function loadImageAsync(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+        img.src = src;
+    });
+}
+
 // to maintain compability, use closure
 function make_extract_api(gid, imagelist, mpvkey) {
     return async(url, idx) => {
-        // before api call, check original page if image laready loaded
+        // before api call, check original page if image already loaded
         const img_elem = document.querySelector('#imgsrc_'+(idx+1));
-        if (img_elem && img_elem.src) {
-            // width/height is inaccurate but faster.
-            // if it cause problem, then use below
-            // var img = new Image(); img.onload = ()=>{resolve({ width: this.naturalWidth, height: this.naturalHeight})}; img.src = url;
-            return {
-                path : img_elem.src,
-                width : img_elem.width,
-                height : img_elem.height,
-                nl : null
-            };
+        if (img_elem && img_elem.src && img_elem.complete && img_elem.naturalWidth > 0) {
+            var is_loaded = false;
+            try {
+                await loadImageAsync(img_elem.src);
+                is_loaded = true;
+            } catch (error) {
+            }
+            if (is_loaded) {
+                // width/height is inaccurate but faster.
+                // if it cause problem, then use =>  var img = new Image(); img.onload = ()=>{resolve({ width: this.naturalWidth, height: this.naturalHeight})}; img.src = url;
+                return {
+                    path : img_elem.src,
+                    width : img_elem.width,
+                    height : img_elem.height,
+                    nl : null
+                };
+            }
         }
 
         if (!API_AVAIL) {
@@ -1913,7 +2056,7 @@ async function init () {
             return set_gallery_data();
         })
         .then((ext) => {
-            exhaust.number_of_images = PAGECOUNT;
+            exhaust.set_number_of_images(PAGECOUNT, true);
 
             // override original functions
             exhaust.extractImageData = make_extract_api(GID, IMAGELIST, MPVKEY);
@@ -1937,6 +2080,7 @@ async function init () {
             exhaust.finally()
         })
     } else {
+        // no mpv
         getToken()
         .then(token => {
             exhaust.gallery_url = make_gallery_url(token.gid, token.token);
@@ -1946,7 +2090,7 @@ async function init () {
         .then((response) => {
             // make image list
             var gmetadata = JSON.parse(response.responseText).gmetadata[0];
-            exhaust.number_of_images = Number(gmetadata.filecount);
+            exhaust.set_number_of_images(Number(gmetadata.filecount), true);
             var gallery_page_url = make_gallery_url(gmetadata.gid, gmetadata.token) + '/?p=';
 
             var pushImgs = function (doc) {
