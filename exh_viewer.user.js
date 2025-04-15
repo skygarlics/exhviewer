@@ -1819,9 +1819,10 @@ class EXHaustViewer {
     <div id="thumbnailModal" class="modal fade" tabindex="-1" data-bs-theme="dark" aria-labelledby="thumbnailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
             <div id="thumb_content" class="modal-content text-light">
-                <div class="modal-header">
-                    <h6 class="modal-title" id="thumbnailModalLabel">Thumbnails</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header d-flex justify-content-between" style="padding:0rem 0.3rem;">
+                    <div></div>
+                    <div><h6 class="modal-title" id="thumbnailModalLabel">Thumbnails</h5></div>
+                    <div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin:0"></button></div>  
                 </div>
                 <div id="thumb_container" class="modal-body d-flex flex-wrap justify-content-center align-items-center">
                 </div>
