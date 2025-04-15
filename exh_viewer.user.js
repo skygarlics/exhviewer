@@ -1600,11 +1600,15 @@ class EXHaustViewer {
         height: 1.8em;
     }
 
-    #pageTimer,
-    #single-page-select {
+    #pageTimer {
         margin-left: 0.5rem;
         height: 2rem;
         width: 3rem;
+    }
+    #single-page-select {
+        margin-left: 0.5rem;
+        height: 2rem;
+        width: 4rem;
     }
 
     /* exitfullscreen button */
