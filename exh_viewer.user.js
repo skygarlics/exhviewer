@@ -361,9 +361,10 @@ class EXHaustViewer {
             const nextImage = this.images[currentPanel];
             const currentImage = this.images[currentPanel - 1];
 
-            // 이미지의 가로 세로 비율에 따라 두 이미지를 표시할지 결정
             // TODO : nextPanel, prevPanel에서도 계산되는거 제거하기?
-            if (nextImage.width <= nextImage.height && currentImage.width <= currentImage.height) {
+            // normally 
+            var hw_ratio = currentImage.height / currentImage.width;
+            if (nextImage.width <= nextImage.height && hw_ratio > 1.2) {
                 // two image
                 this.setSpreadClass(2);
                 var rt_img = $(imgElements[1]);
@@ -815,6 +816,10 @@ class EXHaustViewer {
         fitChanger.innerHTML = this.fitOptions[classes[this.fitType]];
     }
 
+    toggleSpread() {
+        this.setSpread(this.set_spread == 1 ? 2 : 1);
+    }
+
     setSpread(num) {
         if (this.set_spread == num) return
 
@@ -826,6 +831,11 @@ class EXHaustViewer {
         this.drawPanel();
     }
 
+    /**
+     * Set spread's class "Without" changing spread mode; Used to inner logic to single page view on landscape picture
+     * @param {Number} num - number to set spread class. 1 or 2
+     * @returns 
+     */
     setSpreadClass(num) {
         if (this.class_spread == num) return
         $('body', this.iframe_jq.contents()).removeClass('spread1 spread2');
@@ -992,52 +1002,50 @@ class EXHaustViewer {
 
     doHotkey(e) {
         switch (e.key.toLowerCase()) {
-        case 'arrowleft':
-        case 'h':
-            this.prevEpisode();
-            break;
-        case 'arrowright':
-        case 'l':
-            this.nextEpisode();
-            break;
-        case 'j':
-        case 'arrowdown':
-            this.nextPanel();
-            break;
-        case 'k':
-        case 'arrowup':
-            this.prevPanel();
-            break;
-        case 'b':
-            this.fitBoth();
-            break;
-        case 'v':
-            this.fitVertical();
-            break;
-        case 'h':
-            this.fitHorizontal();
-            break;
-        case 'f':
-            this.setSpread(2);
-            break;
-        case 's':
-            this.setSpread(1);
-            break;
-        case 'enter':
-            this.toggleViewer();
-            break;
-        case ' ':
-            this.toggleFullscreen();
-            break;
-        case 't':
-            this.toggleTimer();
-            break;
-        case 'r':
-            this.reloadCurrentImg();
-            break;
-        case 'p':
-            this.preloader();
-            break;
+            case 'h':
+            case 'a':
+            case 'arrowleft':
+                this.prevEpisode();
+                break;
+            case 'l':
+            case 'd':
+            case 'arrowright':
+                this.nextEpisode();
+                break;
+            case 'j':
+            case 'd':
+            case 'arrowdown':
+                this.nextPanel();
+                break;
+            case 'k':
+            case 'w':
+            case 'arrowup':
+                this.prevPanel();
+                break;
+            case 'f':
+                this.toggleSpread();
+                break;
+            case 'v':
+                this.changeFit();
+                break;
+            case 'c':
+                this.renderChange();
+                break;
+            case 'enter':
+                this.toggleViewer();
+                break;
+            case ' ':
+                this.toggleFullscreen();
+                break;
+            case 't':
+                this.toggleTimer();
+                break;
+            case 'r':
+                this.reloadCurrentImg();
+                break;
+            case 'p':
+                this.preloader();
+                break;
         }
     };
 
@@ -2064,6 +2072,10 @@ async function init () {
     exhaust = new EXHaustViewer(curPanel);
     exhaust.extractImageData = extract_page;
     exhaust.clearHotkeys();
+
+    // prev/next episode function is useless in exhentai
+    exhaust.prevEpisode = exhaust.nextPanel;
+    exhaust.nextEpisode = exhaust.prevPanel;
 
     // add button to iframe visible
     if (is_single) {
