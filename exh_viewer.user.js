@@ -193,6 +193,7 @@ class EXHaustViewer {
             <body>
                 ${this.navbarHTML}
                 ${this.imgFrameHTML}
+                ${this.thmbnailContainerHTML}
             </body></html>`;
         document.body.appendChild(iframe);
         this.iframe = iframe;
@@ -267,6 +268,7 @@ class EXHaustViewer {
         docu.getElementById('autoPager').addEventListener('click', () => this.toggleTimer());
         docu.getElementById('pageChanger').addEventListener('click', () => this.goPanel());
         docu.getElementById('single-page-select').addEventListener('change', ()=>this.selectorChanged());
+        docu.getElementById('thumbnailBtn').addEventListener('click', () => this.toggleThumbnailContainer());
         
         docu.getElementById('comicImages').addEventListener('mousedown', (e) => this.imgDragStart(e));
         docu.getElementById('comicImages').addEventListener('mousemove', (e) => this.imgDrag(e));
@@ -765,6 +767,16 @@ class EXHaustViewer {
 
     // ============== Viewer functions ==============
     // functions called by user input
+
+    toggleThumbnailContainer() {
+        const thumbnails = this.iframe.contentDocument.getElementById('thumbnailContainer');
+        if (thumbnails.style.display === 'none') {
+            thumbnails.style.display = 'block';
+        } else {
+            thumbnails.style.display = 'none';
+        }
+    }
+
     openViewer() {
         var original_page = this.getPageFromOriginal ? this.getPageFromOriginal() : null;
         if (original_page) {
@@ -1220,7 +1232,8 @@ class EXHaustViewer {
         background-color: #171717 !important;
         color: #999;
         height: 100%;
-        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
     h1 {
         color: #fff;
@@ -1232,7 +1245,6 @@ class EXHaustViewer {
         padding: 15px 10px;
     }
     #comicImages {
-        height: calc(100% - 50px);
         overflow: auto;
         text-align: center;
         white-space: nowrap;
@@ -1452,6 +1464,20 @@ class EXHaustViewer {
     .render_pixelated img {
         image-rendering: pixelated;
     }
+
+    #thumbnailContainer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        transform: translate(50%, 50%);
+        width: 80%;
+        height: 80%;
+        background: #00ff0480;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 5px;
+        display: none;
+    }
     `
 
     // ============== Dynamic styles ==============
@@ -1518,73 +1544,77 @@ class EXHaustViewer {
         <div class="collapse navbar-collapse justify-content-center" id="collapseNavbar">
         <ul id="funcs" class="navbar-nav text-end">
             <li class="seperator-lg nav-item">
-            <a class="nav-link" title="Left arrow or j" id="nextPanel">
-                <i class="bi bi-chevron-left"></i> Next
-            </a>
+                <a class="nav-link" title="Left arrow or j" id="nextPanel">
+                    <i class="bi bi-chevron-left"></i> Next
+                </a>
             </li>
             <li class="seperator-lg nav-item">
-            <a class="nav-link" title="Right arrow or k" id="prevPanel">
-                <i class="bi bi-chevron-right"></i> Prev
-            </a>
+                <a class="nav-link" title="Right arrow or k" id="prevPanel">
+                    <i class="bi bi-chevron-right"></i> Prev
+                </a>
             </li>
             <li class="seperator-lg nav-item">
-            <div class="align-items-center">
-                <a id="autoPager" title="t">▶Auto</a>
-                <input id="pageTimer" class="form-control-sm" type="text" value="10">
-            </div>
+                <div class="align-items-center">
+                    <a id="autoPager" title="t">▶Auto</a>
+                    <input id="pageTimer" class="form-control-sm" type="text" value="10">
+                </div>
             </li>
             <li class="seperator-lg nav-item">
-            <div class="align-items-center">
-                <a id="pageChanger">#</a>
-                <select class="form-select-sm" id="single-page-select"></select>
-            </div>
+                <div class="align-items-center">
+                    <a id="pageChanger">#</a>
+                    <select class="form-select-sm" id="single-page-select"></select>
+                </div>
             </li>
             <li class="seperator-lg nav-item">
-            <a class="nav-link" id="fullscreener" title="Enter or Space">
-                <i class="bi bi-arrows-fullscreen"></i>
-            </a>
+                <a class="nav-link" id="fullscreener" title="Space">
+                    <i class="bi bi-arrows-fullscreen"></i>
+                </a>
+            </li>
+            <li class="seperator-lg nav-item">
+                <a class="nav-link" id="thumbnailBtn" title="Show Thumbnails">
+                    <i class="bi bi-grid"></i>
+                </a>
             </li>
             <li class="seperator-lg nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOptions" role=-"button" data-bs-toggle="dropdown" aria-expanded="false">
-                Options<span class="caret"></span>
-            </a>
-            <ul class="seperator-lg dropdown-menu dropdown-menu-dark aria-labelledby="navbarDropdownOptions">
-                <li>
-                    <a class="dropdown-item" title="r" id="reload">
-                        <span>&#10227;</span> Reload
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item fitBtn" title="b" id="fitChanger">
-                        <i class="bi bi-arrows-move"></i> Change Fit
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" title="f" id="fullSpread">
-                        <i class="bi bi-book"></i> Full Spread
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" title="s" id="singlePage">
-                        <i class="bi bi-book-half"></i> Single Page
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" title="rendering" id="renderingChanger">
-                        <i class="bi bi-brush"></i> Rendering
-                    </a>
-                </li>
-                <li>
-                <a class="dropdown-item" title="p" id="preloader">
-                    Preload<input id="preloadInput" type="text" value="50">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOptions" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Options<span class="caret"></span>
                 </a>
-                </li>
-            </ul>
+                <ul class="seperator-lg dropdown-menu dropdown-menu-dark aria-labelledby="navbarDropdownOptions">
+                    <li>
+                        <a class="dropdown-item" title="r" id="reload">
+                            <span>&#10227;</span> Reload
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item fitBtn" title="b" id="fitChanger">
+                            <i class="bi bi-arrows-move"></i> Change Fit
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" title="f" id="fullSpread">
+                            <i class="bi bi-book"></i> Full Spread
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" title="s" id="singlePage">
+                            <i class="bi bi-book-half"></i> Single Page
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" title="rendering" id="renderingChanger">
+                            <i class="bi bi-brush"></i> Rendering
+                        </a>
+                    </li>
+                    <li>
+                    <a class="dropdown-item" title="p" id="preloader">
+                        Preload<input id="preloadInput" type="text" value="50">
+                    </a>
+                </ul>
             </li>
             <li class="seperator-lg nav-item">
-            <a class="nav-link" title="Close viewer" id="viewerCloser">
-                <i class="bi bi-x-lg"></i>
-            </a>
+                <a class="nav-link" title="Close viewer" id="viewerCloser">
+                    <i class="bi bi-x-lg"></i>
+                </a>
             </li>
         </ul>
         </div>
@@ -1592,6 +1622,12 @@ class EXHaustViewer {
     </nav>
     `
 
+    thmbnailContainerHTML = `
+        <div id="thumbnailContainer"">
+            <!-- Thumbnails will be inserted here -->
+        </div>
+    `
+    
     imgFrameHTML = `
     <div id="comicImages" class="d-flex align-items-center justify-content-center" tabindex="1">
         <a id="fullscreen" title="Enter or Space">⛶</a>
@@ -1757,13 +1793,12 @@ function make_extract_api(gid, imagelist, mpvkey) {
             // width/height is inaccurate but faster.
             // if it cause problem, then use below
             // var img = new Image(); img.onload = ()=>{resolve({ width: this.naturalWidth, height: this.naturalHeight})}; img.src = url;
-            var data = {
+            return {
                 path : img_elem.src,
                 width : img_elem.width,
                 height : img_elem.height,
-                nl : BASE + '/s/' + imagelist[idx].k + '/' + gid + '-' + (idx+1)
-            }
-            return data;
+                nl : null
+            };
         }
 
         if (!API_AVAIL) {
@@ -1771,18 +1806,22 @@ function make_extract_api(gid, imagelist, mpvkey) {
         }
 
         const imgkey = imagelist[idx].k;
+        const nl = imagelist[idx].nl;
         const page = idx + 1; // page starts from 1
+
+        var payload = {
+            gid: gid,
+            method: 'imagedispatch',
+            imgkey: imgkey,
+            mpvkey: mpvkey,
+            page: page
+        };
+        if (nl) { payload.nl = nl; };
 
         try {
             const response = await exhaust.simpleRequestAsync(S_API, 'POST',
                 { 'Content-Type': 'application/json' }, 
-                JSON.stringify({
-                    gid: gid,
-                    method: 'imagedispatch',
-                    imgkey: imgkey,
-                    mpvkey: mpvkey,
-                    page: page
-                })
+                JSON.stringify(payload)
             );
             // example response
             // {"d":"1280 x 1870 :: 143.7 KiB","o":"Download original 1498 x 2189 691.3 KiB source","lf":"fullimg\/3201509\/5\/5knnxxvadx1\/batch_250104_09483266.jpg","ls":"?f_shash=a6422374e86f1a0aa599b184aed3486cb9356c73&fs_from=batch_250104_09483266.webp+from+%28Hedera%29+Suomi+%28Patreon%29+%5BAi+Generated%5D","ll":"a6422374e86f1a0aa599b184aed3486cb9356c73-707879-1498-2189-jpg\/forumtoken\/3201509-5\/batch_250104_09483266.webp","lo":"s\/a6422374e8\/3201509-5","xres":"1280","yres":"1870","i":"https:\/\/kynlskr.mqqquvqcmmzg.hath.network\/h\/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp\/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280\/batch_250104_09483266.webp","s":"41611"}    // d = 1280 x 1870 :: 147.7 KiB
@@ -1795,13 +1834,13 @@ function make_extract_api(gid, imagelist, mpvkey) {
             // xres = 1280
             // yres = 1870
             // i = https://kynlskr.mqqquvqcmmzg.hath.network/h/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280/batch_250104_09483266.webp
-            // s = 41611
+            // s = 41611  <- this means nl
             const parsed = JSON.parse(response.responseText);
             return {
                 path: parsed.i,
                 width: Number(parsed.xres),
                 height: Number(parsed.yres),
-                nl: BASE + "/" + parsed.lo
+                nl: parsed.s
             }
         } catch (error) {
             console.error("Error fetching image data:", error);
