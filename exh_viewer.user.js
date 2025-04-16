@@ -9,7 +9,6 @@
 // @include       https://e-hentai.org/s/*
 // @include       https://e-hentai.org/mpv/*
 // @require       https://code.jquery.com/jquery-3.2.1.min.js
-// @resource bs_js https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js
 // @grant         GM_getValue
 // @grant         GM_setValue
 // @grant         GM_deleteValue
@@ -196,15 +195,11 @@ class EXHaustViewer {
         iframe.style.zIndex = '9999';
         iframe.style.display = 'none';
 
-        var bs_js = GM_getResourceText('bs_js');
-
         iframe.srcdoc = `<!DOCTYPE html><html>
             <head>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-                <script>
-                    ${bs_js}
-                </script>
+                <link href=" https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css " rel="stylesheet">
+                <script src=" https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js "></script>
                 <style>
                     ${this.viewer_style}
                     ${this.fullscreen_style}
