@@ -8,7 +8,6 @@
 // @include       https://exhentai.org/mpv/*
 // @include       https://e-hentai.org/s/*
 // @include       https://e-hentai.org/mpv/*
-// @require       https://code.jquery.com/jquery-3.2.1.min.js
 // @grant         GM_getValue
 // @grant         GM_setValue
 // @grant         GM_deleteValue
@@ -18,18 +17,19 @@
 // ==/UserScript==
 
 
-(function() {
-'use strict';
 class EXHaustViewer {
+    "use strict";
     // Viewer elements
     iframe = null;
-    iframe_jq = null;
+    get iframe_doc() {
+        return this.iframe?.contentDocument || null;
+    }
     comicImages;
     thumbnailContainer;
 
     update_check = false;
     PanelListenerAdded = false;
-    set_spread = 1;
+    set_spread = 0;
     class_spread = 1;
     is_single_displayed = true;
     timerflag = false;
@@ -79,7 +79,7 @@ class EXHaustViewer {
     set gallery_url(value) {
         this.#gallery_url = value;
 
-        var gallery_info = this.iframe.contentDocument.getElementById('galleryInfo');
+        var gallery_info = this.iframe_doc.getElementById('galleryInfo');
         if (!gallery_info) {
             return;
         }
@@ -99,33 +99,28 @@ class EXHaustViewer {
     }
 
     async init() {
-        this.body = this.iframe.contentDocument.body;
-        this.renderStyle = this.addRenderStyle(this.iframe.contentDocument);
-        this.comicImages = this.iframe.contentDocument.getElementById('comicImages');
-        this.thumbnailContainer = this.iframe.contentDocument.getElementById('thumb_container');
+        this.body = this.iframe_doc.body;
+        this.renderStyle = this.addRenderStyle(this.iframe_doc);
+        this.comicImages = this.iframe_doc.getElementById('comicImages');
+        this.thumbnailContainer = this.iframe_doc.getElementById('thumb_container');
         // prevent dropdown from close
-        $('.dropdown-menu', this.iframe_jq.contents()).on('click', function(e) {
-            e.stopPropagation();
+
+        let dropdowns = this.iframe_doc.querySelectorAll('.dropdown-menu');
+        dropdowns.forEach((dropdown) => {
+            dropdown.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click event from propagating to the document
+            })
         });
 
-        this.iframe.contentDocument.body.setAttribute('class', 'spread1');
+        this.iframe_doc.body.setAttribute('class', 'spread1');
         //this.addStyle('div#i1 {display:none;} p.ip {display:none;}');
 
-        this.addEventListeners(this.iframe.contentDocument);
-        this.addFullscreenHandler(this.iframe.contentDocument);
-
-        $('.navbar ul li', this.iframe_jq.contents()).show();
-        $('#fullSpread', this.iframe_jq.contents()).hide();
+        this.addEventListeners(this.iframe_doc);
+        this.addFullscreenHandler(this.iframe_doc);
 
         this.renderChange();
         this.changeFit();
-
-        var docElm = this.iframe.contentDocument.documentElement;
-        if (!docElm.requestFullscreen && !docElm.mozRequestFullScreen && !docElm.webkitRequestFullScreen && !docElm.msRequestFullscreen) {
-            $('#fullscreen', this.iframe_jq.contents()).parent().hide();
-        }
-
-        $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', this.curPanel - 1);
+        this.iframe_doc.getElementById('single-page-select').value = this.curPanel - 1;
     }
 
     finally = this.pageChanged;
@@ -160,10 +155,18 @@ class EXHaustViewer {
 
     // ============== setup functions ==============
     saveConfig(key, value) {
+        if (!GM_getValue) {
+            console.error("GM_getValue is not defined. Cannot save config.");
+            return false;
+        }
         return GM_setValue(key, value);
     }
 
     loadConfig(key) {
+        if (!GM_getValue) {
+            console.error("GM_getValue is not defined. Cannot load config.");
+            return null;
+        }
         return GM_getValue(key);
     }
 
@@ -198,7 +201,7 @@ class EXHaustViewer {
         iframe.srcdoc = `<!DOCTYPE html><html>
             <head>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-                <link href=" https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css " rel="stylesheet">
+                <link href=" https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
                 <script src=" https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js "></script>
                 <style>
                     ${this.viewer_style}
@@ -212,8 +215,6 @@ class EXHaustViewer {
             </body></html>`;
         document.body.appendChild(iframe);
         this.iframe = iframe;
-        this.iframe_jq = $(iframe);
-
         return iframe;
     }
 
@@ -230,24 +231,29 @@ class EXHaustViewer {
     }
 
     addHTML(code) {
-        var body = this.iframe.contentDocument.body;
+        var body = this.iframe_doc.body;
         body.innerHTML += code;
     }
 
     createPageDropdown() {
         // clear previous dropdown
-        $('#single-page-select', this.iframe_jq.contents()).empty();
+        const dropdown = this.iframe_doc.getElementById('single-page-select');
+        dropdown.innerHTML = ''; // Clear previous options
+
+        const fragment = this.iframe_doc.createDocumentFragment();
+
         for (var i = 1; i <= this.number_of_images; i++) {
-            var option = $('<option>', {
-                html: '' + i,
-                value: i
-            });
-            $('#single-page-select', this.iframe_jq.contents()).append(option);
+            const option = this.iframe_doc.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            option.selected = i === this.curPanel; // Select the current panel
+            fragment.appendChild(option);
         }
+        dropdown.appendChild(fragment);
     }
 
     setGalleryTitle(text, title) {
-        var gallery_info = this.iframe.contentDocument.getElementById('galleryInfo');
+        var gallery_info = this.iframe_doc.getElementById('galleryInfo');
         if (gallery_info == null) {
             console.log("galleryInfo is null");
             return;
@@ -274,8 +280,7 @@ class EXHaustViewer {
         docu.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel());
         docu.getElementById('fitChanger').addEventListener('click', () => this.changeFit());
         docu.getElementById('fullscreener').addEventListener('click', ()=>this.toggleFullscreen());
-        docu.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
-        docu.getElementById('singlePage').addEventListener('click', ()=>this.setSpread(2));
+        docu.getElementById('spreadChanger').addEventListener('click', () => this.toggleSpread());
         docu.getElementById('renderingChanger').addEventListener('click', () => this.renderChange());
         docu.getElementById('reload').addEventListener('click', ()=>this.reloadCurrentImg());
         docu.getElementById('preloader').addEventListener('click', ()=>this.preloader());
@@ -344,7 +349,7 @@ class EXHaustViewer {
     }
 
     addStyle(css) {
-        var doc = this.iframe.contentDocument;
+        var doc = this.iframe_doc;
         var parent = doc.head || doc.documentElement;
         var style = doc.createElement('style');
         style.type = 'text/css';
@@ -355,19 +360,22 @@ class EXHaustViewer {
 
     // ============== Draw functions ==============
     drawPanel_() {
-        const comicImagesContainer = $('#centerer', this.iframe.contentDocument);
+        const comicImagesContainer = this.iframe_doc.getElementById('centerer');
         const currentPanel = this.curPanel;
         const totalImages = this.number_of_images;
         const singleSpread = this.set_spread === 1;
 
         // 기존 img 요소를 가져오거나 없는 경우 새로 추가
-        let imgElements = comicImagesContainer.find('img');
+        // let imgElements = comicImagesContainer.find('img');
+        let imgElements = comicImagesContainer.querySelectorAll('img');
         const requiredImageCount = singleSpread ? 1 : 2;
 
-        while (imgElements.length < requiredImageCount) {
-            $('<img />', this.iframe_jq.contents()).appendTo(comicImagesContainer);
-            imgElements = comicImagesContainer.find('img'); // 추가 후 업데이트
+        let count = requiredImageCount - imgElements.length;
+        for (let idx = 0; idx < count; idx++) {
+            const newImage = this.iframe_doc.createElement('img');
+            comicImagesContainer.appendChild(newImage);
         }
+        imgElements = comicImagesContainer.querySelectorAll('img'); // Update the imgElements after adding new images
 
         if (!singleSpread && currentPanel > 1 && currentPanel < totalImages) {
             const nextImage = this.images[currentPanel];
@@ -379,10 +387,10 @@ class EXHaustViewer {
             if (nextImage.width <= nextImage.height && hw_ratio > 1.2) {
                 // two image
                 this.setSpreadClass(2);
-                var rt_img = $(imgElements[1]);
-                rt_img.addClass('rt_img');
-                var lt_img = $(imgElements[0]);
-                lt_img.addClass('lt_img');
+                var rt_img = imgElements[1];
+                rt_img.classList.add('rt_img');
+                var lt_img = imgElements[0];
+                lt_img.classList.add('lt_img');
 
                 this.showImage(rt_img, currentImage, currentPanel-1, currentPanel);
                 this.showImage(lt_img, nextImage, currentPanel, currentPanel);
@@ -391,28 +399,32 @@ class EXHaustViewer {
             } else {
                 // single image
                 this.setSpreadClass(1);
-                this.showImage($(imgElements[0]), currentImage, currentPanel-1, currentPanel);
-                $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+                this.showImage(imgElements[0], currentImage, currentPanel-1, currentPanel);
+                if (imgElements.length > 1) {
+                    imgElements[0].classList.remove('lt_img');
+                    imgElements[1].remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+                }
                 this.is_single_displayed = true;
                 this.preloadImage(2);
             }
         } else if (currentPanel <= totalImages) {
             // single image
             this.setSpreadClass(1);
-            this.showImage($(imgElements[0]), this.images[currentPanel-1], currentPanel-1, currentPanel);
+            this.showImage(imgElements[0], this.images[currentPanel-1], currentPanel-1, currentPanel);
             this.is_single_displayed = true;
-            $(imgElements[1]).remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+            if (imgElements.length > 1) {
+                imgElements[0].classList.remove('lt_img');
+                imgElements[1].remove(); // 두 번째 이미지가 필요하지 않을 경우 제거
+            }
             this.preloadImage(2);
         }
 
         if (!this.PanelListenerAdded) {
-            $('#leftBtn', this.iframe_jq.contents()).on('click', ()=>this.nextPanel());
-            $('#rightBtn', this.iframe_jq.contents()).on('click', ()=>this.prevPanel());
+            this.iframe_doc.getElementById('leftBtn').addEventListener('click', () => this.nextPanel());
+            this.iframe_doc.getElementById('rightBtn').addEventListener('click', () => this.prevPanel());
             this.PanelListenerAdded = true;
         }
-
-        comicImagesContainer.scrollTop(0);
-        $('body', this.iframe_jq.contents()).scrollTop(0);
+        comicImagesContainer.scrollTop = 0;;
     };
 
     drawPanel() {
@@ -435,7 +447,8 @@ class EXHaustViewer {
         tempImg.onload = () => {
             var is_cur = this.curPanel == curPanel; // check if current panel is still same
             if (!is_cur) return;
-            imgElement.attr('src', imgObj.path).css('opacity', '1');
+            imgElement.setAttribute('src', imgObj.path);
+            imgElement.style.opacity = '1';
         };
         
         tempImg.onerror = () => {
@@ -446,9 +459,10 @@ class EXHaustViewer {
         tempImg.src = imgObj.path;
             // 이미 캐시에 있는 경우 즉시 표시
         if (tempImg.complete) {
-            imgElement.attr('src', imgObj.path).css('opacity', '1');
+            imgElement.setAttribute('src', imgObj.path);
+            imgElement.style.opacity = '1';
         } else {
-            imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
+            imgElement.style.opacity = '0'; // 로드 중에는 투명하게 유지
         }
     }
 
@@ -469,7 +483,7 @@ class EXHaustViewer {
         } else {
             wrapper.addEventListener('click', () => {
                 this.panelChange(idx + 1);
-                const close_button = this.iframe.contentDocument.querySelector('.btn-close');
+                const close_button = this.iframe_doc.querySelector('.btn-close');
                 if (close_button) {
                     close_button.click(); // Close the thumbnail modal
                 }
@@ -499,7 +513,7 @@ class EXHaustViewer {
             console.error("elements is not iterable", elements);
             return;
         }
-        const frag = this.iframe.contentDocument.createDocumentFragment();
+        const frag = this.iframe_doc.createDocumentFragment();
 
         var idx = 0;
         for (const element of elements) {
@@ -573,7 +587,7 @@ class EXHaustViewer {
             // check if thumbnails is empty
             const cls_list = this.thumbnails[idx]?.classList;
             if (!this.thumbnails[idx] || cls_list.contains('empty_thumb') || (reload && cls_list.contains("original_image")))  {
-                var thumb_elem = this.iframe.contentDocument.createElement('img');
+                var thumb_elem = this.iframe_doc.createElement('img');
                 thumb_elem.src = img.path;
                 this.setThumbnail(idx, thumb_elem, "original_image", true);
             }
@@ -631,20 +645,32 @@ class EXHaustViewer {
     }
 
     preloader() {
-        var len = this.iframe.contentDocument.getElementById('preloadInput').value;
+        var len = this.iframe_doc.getElementById('preloadInput').value;
         this.preloadImage(parseInt(len));
     }
 
     async preloadImage(length) {
-        const preloadContainer = $('#preload', this.iframe_jq.contents());
+        const preloadContainer = this.iframe_doc.getElementById('preload');
         const currentPanel = this.curPanel;
 
         // 이미지 업데이트 호출 및 완료 후 처리
         await this.updageImgsRange(currentPanel - 2, currentPanel + length + 1);
 
         // 현재 preloadContainer 내의 img 요소 선택
-        let imgElements = preloadContainer.find('img');
+        let imgElements = preloadContainer.querySelectorAll('img');
+        let cnt = length - imgElements.length;
 
+        // 부족한 경우 새 img 요소를 추가
+        if (cnt > 0) {
+            let fragment = this.iframe_doc.createDocumentFragment();
+            for (let idx = 0; idx < cnt; idx++) {
+                const newImage = this.iframe_doc.createElement('img');
+                fragment.appendChild(newImage);
+            }
+            preloadContainer.appendChild(fragment);
+            imgElements = preloadContainer.querySelectorAll('img'); // Update the imgElements after adding new images
+
+        }
         // 필요한 이미지를 미리 로드하고 src만 업데이트
         for (let idx = 0; idx < length; idx++) {
             const panelIndex = currentPanel + idx;
@@ -652,21 +678,16 @@ class EXHaustViewer {
             // 이미지가 존재하는 경우에만 로드
             if (panelIndex < this.number_of_images) {
                 const imagePath = this.images[panelIndex].path;
-
-                if (idx < imgElements.length) {
-                    // 이미 img 요소가 있으면 src만 변경
-                    $(imgElements[idx], this.iframe_jq.contents()).attr('src', imagePath);
-                } else {
-                    // 부족한 경우 새 img 요소를 추가
-                    const newImage = $('<img />', { src: imagePath });
-                    preloadContainer.append(newImage);
-                    imgElements = preloadContainer.find('img'); // imgElements 업데이트
-                }
+                // 이미 img 요소가 있으면 src만 변경
+                imgElements[idx].src = imagePath;
             }
         }
         // 불필요한 추가 노드가 있으면 제거
         if (imgElements.length > length) {
-            imgElements.slice(length).remove();
+            // imgElements.slice(length).remove();
+            for (let i = length; i < imgElements.length; i++) {
+                imgElements[i].remove();
+            }
         }
     };
 
@@ -684,8 +705,8 @@ class EXHaustViewer {
     pageChanged() {
         // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
         this.drawPanel();
-        this.curPanel == 1 ? this.disable($('#prevPanel', this.iframe_jq.contents())) : this.enable($('#prevPanel', this.iframe_jq.contents()));
-        this.curPanel == this.number_of_images ? this.disable($('#nextPanel', this.iframe_jq.contents())) : this.enable($('#nextPanel', this.iframe_jq.contents()));
+        this.curPanel == 1 ? this.disable(this.iframe_doc.getElementById('prevPanel')) : this.enable(this.iframe_doc.getElementById('prevPanel'));
+        this.curPanel == this.number_of_images ? this.disable(this.iframe_doc.getElementById('nextPanel')) : this.enable(this.iframe_doc.getElementById('nextPanel'));
         for (const handler of this.pageChangedHalders) {
             handler(this.curPanel);
         }
@@ -707,13 +728,13 @@ class EXHaustViewer {
     }
 
     toggleTimer () {
-        var intervalSeconds = parseFloat(this.iframe.contentDocument.getElementById('pageTimer').value);
+        var intervalSeconds = parseFloat(this.iframe_doc.getElementById('pageTimer').value);
         if (intervalSeconds < 1 || isNaN(intervalSeconds)) {
             return;
         }
 
         this.timerflag = !this.timerflag;
-        var pagerButton = this.iframe.contentDocument.getElementById('autoPager');
+        var pagerButton = this.iframe_doc.getElementById('autoPager');
 
         if (this.timerflag) {
             pagerButton.style.color = 'white';
@@ -725,9 +746,8 @@ class EXHaustViewer {
     };
 
     selectorChanged() {
-        var selector = $('#single-page-select', this.iframe_jq.contents());
-
-        var selectedValue = selector.val();
+        var selector = this.iframe_doc.getElementById('single-page-select');
+        var selectedValue = selector.value;
         this.curPanel = Number(selectedValue);
         this.pageChanged();
         selector.trigger('blur');
@@ -742,7 +762,7 @@ class EXHaustViewer {
         }
 
         this.curPanel = target;
-        $('#single-page-select', this.iframe_jq.contents()).prop('selectedIndex', target - 1);
+        this.iframe_doc.getElementById('single-page-select').value = target; // Update the dropdown value
 
         // Use a small timeout to ensure UI updates first
         this._panelChangeTimeout = setTimeout(() => {
@@ -765,8 +785,7 @@ class EXHaustViewer {
             this.panelChange(newPanel);
         }
 
-        // Fix: Use the iframe's content document for scrolling
-        $(this.iframe.contentDocument.body).scrollTop(0);
+        this.iframe_doc.body.scrollTop = 0;
         this.comicImages.scrollTop = 0;
     };
 
@@ -786,7 +805,7 @@ class EXHaustViewer {
         }
 
         // Fix: Use the iframe's content document for scrolling
-        $(this.iframe.contentDocument.body).scrollTop(0);
+        this.iframe_doc.body.scrollTop = 0;
         this.comicImages.scrollTop = 0;
     };
 
@@ -799,11 +818,11 @@ class EXHaustViewer {
     ];
 
     renderChange(){
-        var centerer = this.iframe.contentDocument.getElementById('centerer');
+        const centerer = this.iframe_doc.getElementById('centerer');
         this.renderType = (this.renderType + 1) % this.renderOptions.length;
         var render_class = this.renderOptions[this.renderType];
 
-        this.removeClasses(centerer, this.renderOptions);
+        centerer.classList.remove(...this.renderOptions);
         centerer.classList.add(render_class);
     }
 
@@ -820,38 +839,40 @@ class EXHaustViewer {
         this.fitType = (this.fitType + 1) % Object.keys(this.fitOptions).length;
         const classes = Object.keys(this.fitOptions);
 
-        const centerer = this.iframe.contentDocument.getElementById('centerer');
-        this.removeClasses(centerer, classes);
+        const centerer = this.iframe_doc.getElementById('centerer');
+        centerer.classList.remove(...classes);
         centerer.classList.add(classes[this.fitType]);
         
-        const fitChanger = this.iframe.contentDocument.getElementById('fitChanger');
+        const fitChanger = this.iframe_doc.getElementById('fitChanger');
         fitChanger.innerHTML = this.fitOptions[classes[this.fitType]];
     }
+
+    spreads = [
+        `<i class="bi bi-book-half"></i> Single Page`,
+        `<i class="bi bi-book"></i> Full Spread`,
+    ]
 
     toggleSpread() {
         this.setSpread(this.set_spread == 1 ? 2 : 1);
     }
-
     setSpread(num) {
-        if (this.set_spread == num) return
-
+        if (this.set_spread == num) return;
         this.set_spread = num;
-        const isSinglePage = this.set_spread === 1;
-
-        $('#singlePage', this.iframe_jq.contents()).toggle(isSinglePage);
-        $('#fullSpread', this.iframe_jq.contents()).toggle(!isSinglePage);
+        const spreadChanger = this.iframe_doc.getElementById('spreadChanger');
+        spreadChanger.innerHTML = this.spreads[this.set_spread - 1];
         this.drawPanel();
     }
-
     /**
      * Set spread's class "Without" changing spread mode; Used to inner logic to single page view on landscape picture
      * @param {Number} num - number to set spread class. 1 or 2
      * @returns 
      */
     setSpreadClass(num) {
-        if (this.class_spread == num) return
-        $('body', this.iframe_jq.contents()).removeClass('spread1 spread2');
-        $('body', this.iframe_jq.contents()).addClass('spread' + num);
+        if (this.class_spread == num) return;
+        const body = this.iframe_doc.body;
+        // Remove existing spread classes
+        body.classList.remove('spread1', 'spread2');
+        body.classList.add('spread' + num);
         this.class_spread = num;
     }
 
@@ -877,7 +898,7 @@ class EXHaustViewer {
     }
 
     handleFullscreenChange () {
-        const toprt = this.iframe.contentDocument.getElementById('fullBtnTopRt');
+        const toprt = this.iframe_doc.getElementById('fullBtnTopRt');
         if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
             // Fullscreen mode is active
             toprt.style.display = 'block';
@@ -1083,24 +1104,13 @@ class EXHaustViewer {
     // ============== Utility functions ==============
     
     disable(elem) {
-        elem.parent().addClass('disabled');
-        elem.children().removeClass('icon_white');
+        elem.parentElement.classList.add('disabled');
+        elem.firstChild.classList.remove('icon_white');
     }
 
     enable(elem) {
-        elem.parent().removeClass('disabled');
-        elem.children().addClass('icon_white');
-    }
-
-    /**
-     * 
-     * @param {Element} elem - target element
-     * @param {[string]} classes - List of strings to remove
-     */
-    removeClasses(elem, classes) {
-        classes.forEach(cls => {
-            elem.classList.remove(cls);
-        });
+        elem.parentElement.classList.remove('disabled');
+        elem.firstChild.classList.add('icon_white');
     }
 
     /**
@@ -1725,14 +1735,9 @@ class EXHaustViewer {
         <div class="collapse navbar-collapse justify-content-center" id="collapseNavbar">
         <ul id="funcs" class="navbar-nav text-end">
             <li class="seperator-lg nav-item">
-                <a class="nav-link" title="Left arrow or j" id="nextPanel">
-                    <i class="bi bi-chevron-left"></i> Next
-                </a>
+                <a class="nav-link" title="Left arrow or j" id="nextPanel"><i class="bi bi-chevron-left"></i> Next</a>
             </li>
-            <li class="seperator-lg nav-item">
-                <a class="nav-link" title="Right arrow or k" id="prevPanel">
-                    <i class="bi bi-chevron-right"></i> Prev
-                </a>
+            <li class="seperator-lg nav-item"><a class="nav-link" title="Right arrow or k" id="prevPanel"><i class="bi bi-chevron-right"></i> Prev</a>
             </li>
             <li class="seperator-lg nav-item">
                 <div class="align-items-center">
@@ -1772,13 +1777,8 @@ class EXHaustViewer {
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" title="f" id="fullSpread">
+                        <a class="dropdown-item" title="f" id="spreadChanger">
                             <i class="bi bi-book"></i> Full Spread
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" title="s" id="singlePage">
-                            <i class="bi bi-book-half"></i> Single Page
                         </a>
                     </li>
                     <li>
@@ -1834,6 +1834,9 @@ class EXHaustViewer {
     <div id="preload"></div>
     `
 }
+
+(function() {
+'use strict';
 // ============== Exh global ==============
 var exhaust;
 var API = null;
