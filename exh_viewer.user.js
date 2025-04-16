@@ -16,7 +16,6 @@
 // @grant		  GM.getResourceUrl
 // ==/UserScript==
 
-
 class EXHaustViewer {
     "use strict";
     // Viewer elements
@@ -26,7 +25,7 @@ class EXHaustViewer {
     }
     comicImages;
     thumbnailContainer;
-
+    
     update_check = false;
     PanelListenerAdded = false;
     set_spread = 0;
@@ -36,23 +35,23 @@ class EXHaustViewer {
     timerInterval = null;
     renderType = -1; // make sure renderType start from 0
     fitType = -1;
-
+    
     dragState = {
         isDragging: false,
         prevX: 0,
         prevY: 0
     };
-
+    
     images = {}; // image datas. 0-indexed. {idx: {url, width, height, path, nl, updated}}
     thumbnails = {}; // thumbnail datas. {idx: element} // each element has data-idx attribute.
-
+    
     curPanel = 1; // current panel number (1-indexed, always has to be integer)
-
+    
     #number_of_images;
     get number_of_images() {
         return this.#number_of_images;
     }
-
+    
     set number_of_images(value) {
         if (value < 1) {
             console.error("Invalid number of images:", value);
@@ -61,7 +60,7 @@ class EXHaustViewer {
         this.#number_of_images = value;
         this.createPageDropdown();
     }
-
+    
     set_number_of_images(value, make_thumb) {
         this.number_of_images = value;
         if (make_thumb) {
@@ -71,24 +70,24 @@ class EXHaustViewer {
             );
         }
     }
-
+    
     #gallery_url;
     get gallery_url() {
         return this.#gallery_url;
     }
     set gallery_url(value) {
         this.#gallery_url = value;
-
+    
         var gallery_info = this.iframe_doc.getElementById('galleryInfo');
         if (!gallery_info) {
             return;
         }
-
+    
         if (this.#gallery_url) {
             gallery_info.href = this.#gallery_url
         }
     }
-
+    
     constructor(curPanel) {
         if (!curPanel) {
             curPanel = 1;
@@ -97,34 +96,34 @@ class EXHaustViewer {
         this.addIframe();
         this.iframe.onload = () => this.init();
     }
-
+    
     async init() {
         this.body = this.iframe_doc.body;
         this.renderStyle = this.addRenderStyle(this.iframe_doc);
         this.comicImages = this.iframe_doc.getElementById('comicImages');
         this.thumbnailContainer = this.iframe_doc.getElementById('thumb_container');
         // prevent dropdown from close
-
+    
         let dropdowns = this.iframe_doc.querySelectorAll('.dropdown-menu');
         dropdowns.forEach((dropdown) => {
             dropdown.addEventListener('click', (e) => {
                 e.stopPropagation(); // Prevent click event from propagating to the document
             })
         });
-
+    
         this.iframe_doc.body.setAttribute('class', 'spread1');
         //this.addStyle('div#i1 {display:none;} p.ip {display:none;}');
-
+    
         this.addEventListeners(this.iframe_doc);
         this.addFullscreenHandler(this.iframe_doc);
-
+    
         this.renderChange();
         this.changeFit();
         this.iframe_doc.getElementById('single-page-select').value = this.curPanel - 1;
     }
-
+    
     finally = this.pageChanged;
-
+    
     // ==============  ==============
     // these functions can be overridden by nenecessary
     
@@ -133,26 +132,26 @@ class EXHaustViewer {
      * @returns {number} current page that Original page is showing
      *  */
     getPageFromOriginal = null;
-
+    
     prevEpisode() {
         console.log("override required: prevEpisode()");
         return;
     }
-
+    
     nextEpisode() {
         console.log("override required: nextEpisode()");
         return;
     }
-
+    
     getReloadInfo = async (nl_url, path) => {
         return { path: path, nl_url: nl_url };
     };
-
+    
     extractImageData = async (url, idx) => {
         // in default, it just return nothing
         return { path: url };
     }
-
+    
     // ============== setup functions ==============
     saveConfig(key, value) {
         if (!GM_getValue) {
@@ -161,7 +160,7 @@ class EXHaustViewer {
         }
         return GM_setValue(key, value);
     }
-
+    
     loadConfig(key) {
         if (!GM_getValue) {
             console.error("GM_getValue is not defined. Cannot load config.");
@@ -169,26 +168,26 @@ class EXHaustViewer {
         }
         return GM_getValue(key);
     }
-
+    
     addShowbutton(selector, elem_type, inner_html) {
         var elem_ = elem_type ? elem_type : 'a';
         var inner = inner_html ? inner_html : '<div style="font-size: 2em; user-select: none">🕮</div>';
         var target = document.querySelector(selector);
-
+    
         var btn = document.createElement(elem_);
         btn.id = 'enableViewer';
         btn.innerHTML = inner;
         btn.onclick = ()=>this.toggleViewer();
         target.appendChild(btn);
     }
-
+    
     // Viewer iframe
     addIframe() {
         var iframe = document.createElement('iframe');
         iframe.id = 'exhaustviewer';
         var src = document.location.href
         //iframe.src = src;
-
+    
         iframe.style.position = 'fixed';
         iframe.style.top = '0';
         iframe.style.left = '0';
@@ -197,7 +196,7 @@ class EXHaustViewer {
         iframe.style.border = 'none';
         iframe.style.zIndex = '9999';
         iframe.style.display = 'none';
-
+    
         iframe.srcdoc = `<!DOCTYPE html><html>
             <head>
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -217,7 +216,7 @@ class EXHaustViewer {
         this.iframe = iframe;
         return iframe;
     }
-
+    
     addRenderStyle(docu) {
         // Image rendering option. needs ID to render swap
         var parent = docu.head || docu.documentElement;
@@ -229,19 +228,19 @@ class EXHaustViewer {
         parent.appendChild(style);
         return renderStyle;
     }
-
+    
     addHTML(code) {
         var body = this.iframe_doc.body;
         body.innerHTML += code;
     }
-
+    
     createPageDropdown() {
         // clear previous dropdown
         const dropdown = this.iframe_doc.getElementById('single-page-select');
         dropdown.innerHTML = ''; // Clear previous options
-
+    
         const fragment = this.iframe_doc.createDocumentFragment();
-
+    
         for (var i = 1; i <= this.number_of_images; i++) {
             const option = this.iframe_doc.createElement('option');
             option.value = i;
@@ -251,26 +250,26 @@ class EXHaustViewer {
         }
         dropdown.appendChild(fragment);
     }
-
+    
     setGalleryTitle(text, title) {
         var gallery_info = this.iframe_doc.getElementById('galleryInfo');
         if (gallery_info == null) {
             console.log("galleryInfo is null");
             return;
         }
-
+    
         if (text) {
             gallery_info.textContent = text;
         }
-
+    
         if (title) {
             gallery_info.title = title;
         }
     }
-
+    
     addEventListeners(docu) {
-        docu.addEventListener('keydown', (e) => this.doHotkey(e));
-        docu.getElementById('centerer').addEventListener('wheel', (e) => {
+        docu.addEventListener('keydown', (e) => this.interalKeyHandler(e));
+        docu.getElementById('comicImages').addEventListener('wheel', (e) => {
             this.doWheel(e)
             // ensure wheel don't propagae to parent
             e.stopPropagation();
@@ -294,10 +293,10 @@ class EXHaustViewer {
         docu.getElementById('comicImages').addEventListener('touchstart', (e) => this.touchStart(e), {passive:false});
         docu.getElementById('comicImages').addEventListener('touchmove', (e) => this.touchDrag(e));
         docu.getElementById('comicImages').addEventListener('touchend', () => this.imgDragEnd());
-
+    
         docu.getElementById('viewerCloser').addEventListener('click', () => this.closeViewer());
         docu.getElementById('galleryInfo').addEventListener('click', () => this.goGallery());
-
+    
         docu.getElementById('fullscreen').addEventListener('click', ()=>this.toggleFullscreen());
         
         docu.getElementById('thumbnailModal').addEventListener('show.bs.modal', () => {
@@ -324,7 +323,7 @@ class EXHaustViewer {
         //     this.setThumbnail(thumb_count, thumb_elem)
         // });
     }
-
+    
     // ============== Dangerous functions ==============
     // functions affects WHOLE page
     clearStyle() {
@@ -341,13 +340,13 @@ class EXHaustViewer {
             }
         }
     }
-
+    
     clearHotkeys() {
         // remove original events.
         document.onkeydown = null;
         document.onkeyup = null;
     }
-
+    
     addStyle(css) {
         var doc = this.iframe_doc;
         var parent = doc.head || doc.documentElement;
@@ -357,30 +356,30 @@ class EXHaustViewer {
         style.appendChild(textNode);
         parent.appendChild(style);
     }
-
+    
     // ============== Draw functions ==============
     drawPanel_() {
         const comicImagesContainer = this.iframe_doc.getElementById('centerer');
         const currentPanel = this.curPanel;
         const totalImages = this.number_of_images;
         const singleSpread = this.set_spread === 1;
-
+    
         // 기존 img 요소를 가져오거나 없는 경우 새로 추가
         // let imgElements = comicImagesContainer.find('img');
         let imgElements = comicImagesContainer.querySelectorAll('img');
         const requiredImageCount = singleSpread ? 1 : 2;
-
+    
         let count = requiredImageCount - imgElements.length;
         for (let idx = 0; idx < count; idx++) {
             const newImage = this.iframe_doc.createElement('img');
             comicImagesContainer.appendChild(newImage);
         }
         imgElements = comicImagesContainer.querySelectorAll('img'); // Update the imgElements after adding new images
-
+    
         if (!singleSpread && currentPanel > 1 && currentPanel < totalImages) {
             const nextImage = this.images[currentPanel];
             const currentImage = this.images[currentPanel - 1];
-
+    
             // TODO : nextPanel, prevPanel에서도 계산되는거 제거하기?
             // normally 
             var hw_ratio = currentImage.height / currentImage.width;
@@ -391,7 +390,7 @@ class EXHaustViewer {
                 rt_img.classList.add('rt_img');
                 var lt_img = imgElements[0];
                 lt_img.classList.add('lt_img');
-
+    
                 this.showImage(rt_img, currentImage, currentPanel-1, currentPanel);
                 this.showImage(lt_img, nextImage, currentPanel, currentPanel);
                 this.is_single_displayed = false;
@@ -418,7 +417,7 @@ class EXHaustViewer {
             }
             this.preloadImage(2);
         }
-
+    
         if (!this.PanelListenerAdded) {
             this.iframe_doc.getElementById('leftBtn').addEventListener('click', () => this.nextPanel());
             this.iframe_doc.getElementById('rightBtn').addEventListener('click', () => this.prevPanel());
@@ -426,22 +425,22 @@ class EXHaustViewer {
         }
         comicImagesContainer.scrollTop = 0;;
     };
-
+    
     drawPanel() {
         var n_curPanel = this.curPanel;
         this.updageImgsRange(n_curPanel, n_curPanel+2)
         .then(()=>this.drawPanel_());
     };
-
+    
     showImage(imgElement, imgObj, idx, curPanel) {
         var RETRY_LIMIT = 3;
         var retry_count = 0;
-
+    
         // check if newSrc is undefined
         if (!imgObj.path) {
             return;
         }
-
+    
         const tempImg = new Image();
         
         tempImg.onload = () => {
@@ -454,7 +453,7 @@ class EXHaustViewer {
         tempImg.onerror = () => {
             console.error("Img load failed:", imgObj.path);
         };
-
+    
         // imgElement.css('opacity', '0'); // 로드 중에는 투명하게 유지
         tempImg.src = imgObj.path;
             // 이미 캐시에 있는 경우 즉시 표시
@@ -465,14 +464,14 @@ class EXHaustViewer {
             imgElement.style.opacity = '0'; // 로드 중에는 투명하게 유지
         }
     }
-
+    
     // ============== Thumbnail functions ==============
     createThumbnailWrapper(idx, element, callback) {
         if (element == null || element === undefined) {
             console.error("Element is null or undefined:", element);
             return;
         }
-
+    
         const wrapper = document.createElement('div');
         wrapper.className = 'thumbnail_wrapper';
         wrapper.id = 'thumbnail_' + idx;
@@ -489,7 +488,7 @@ class EXHaustViewer {
                 }
             });
         }
-
+    
         // if element type is string, then just set wrapper's innerHTML
         if (typeof element === 'string' || typeof element === 'number') {
             wrapper.innerHTML = element;
@@ -499,22 +498,22 @@ class EXHaustViewer {
         }
         return wrapper;
     }
-
+    
     batchReplaceThumbnails(elements, class_string, callback) {
         // empthy thumbnail
         this.thumbnailContainer.innerHTML = '';
         this.thumbnails = {};
-
+    
         this.batchAddThumbnails(elements, class_string, callback);
     }
-
+    
     batchAddThumbnails(elements, class_strings, callback) {
         if (!elements || typeof elements[Symbol.iterator] !== 'function') {
             console.error("elements is not iterable", elements);
             return;
         }
         const frag = this.iframe_doc.createDocumentFragment();
-
+    
         var idx = 0;
         for (const element of elements) {
             const wrapper = this.createThumbnailWrapper(idx, element, callback);
@@ -527,15 +526,15 @@ class EXHaustViewer {
         }
         this.thumbnailContainer.appendChild(frag);
     }
-
+    
     setThumbnail(idx, element, class_strings, force, callback) {
         const neww = this.createThumbnailWrapper(idx, element, callback);
         if (class_strings) {
             neww.classList.add(...class_strings.split(' '));
         }
-
+    
         const oldw = this.thumbnailContainer.querySelector('#thumbnail_' + idx);
-
+    
         if (oldw) {
             if (!force) {
                 return; // Thumbnail already exists, no need to replace
@@ -546,18 +545,18 @@ class EXHaustViewer {
         }
         this.thumbnails[idx] = neww;
     }
-
+    
     // ============== Image loading functions ==============
     setImgData(page, imgData) {
         this.images[page] = imgData;
     };
-
+    
     async updateImgData(img, idx, callback, reload) {
         if (!img || !img.url) {
             console.error("Invalid image data:", img);
             return;
         }
-
+    
         try {
             // imgData structure
             // {url: string // url of page contiang image
@@ -572,7 +571,7 @@ class EXHaustViewer {
             } else {
                 imgData = await callback(img.url, idx)
             }
-
+    
             if (!imgData) {
                 return;
             }
@@ -583,7 +582,7 @@ class EXHaustViewer {
             if (imgData.height) img.height = imgData.height;
             if (imgData.nl) img.nl = imgData.nl;
             img.updated = true;
-
+    
             // check if thumbnails is empty
             const cls_list = this.thumbnails[idx]?.classList;
             if (!this.thumbnails[idx] || cls_list.contains('empty_thumb') || (reload && cls_list.contains("original_image")))  {
@@ -591,47 +590,47 @@ class EXHaustViewer {
                 thumb_elem.src = img.path;
                 this.setThumbnail(idx, thumb_elem, "original_image", true);
             }
-
+    
         } catch (error) {
             console.error("Error updating image:", error);
             throw error;  // 오류가 발생한 경우 상위로 throw하여 처리
         }
     };
-
+    
     async updageImgsRange(start, end) {
         if (end < start) {
             console.error("Error in updateImgsAndCall: start is greater than end");
             return;
         }
-
+    
         const update_entry = [];
         for (let idx = Math.max(start, 1); idx < Math.min(end, this.number_of_images + 1); idx++) {
             update_entry.push(idx - 1);
         }
-
+    
         const promise_entry = update_entry.map(async (idx) => {
             const img = this.images[idx];
             if (img && img.updated) return;  // 이미 업데이트된 경우 skip
             await this.updateImgData(img, idx, this.extractImageData);
         });
-
+    
         await Promise.all(promise_entry);
     };
-
+    
     async reloadCurrentImg() {
         //console.log('reloadImg called');
         var n_curPanel = this.curPanel;
-
+    
         // images[n_curPanel] = next page
         // if current page is last, entry current page only
-
+    
         var update_entry;
         if (n_curPanel == this.number_of_images) {
             update_entry = [n_curPanel];
         } else {
             update_entry = [n_curPanel-1, n_curPanel];
         }
-
+    
         const promise_entry = update_entry.map(async (idx) => {
             var iobj = this.images[idx];
             await this.reloadImg(iobj, idx);
@@ -639,27 +638,27 @@ class EXHaustViewer {
         await Promise.all(promise_entry);
         this.drawPanel();
     };
-
+    
     async reloadImg(imgObj, idx) {
         await this.updateImgData(imgObj, idx, this.extractImageData, true)
     }
-
+    
     preloader() {
         var len = this.iframe_doc.getElementById('preloadInput').value;
         this.preloadImage(parseInt(len));
     }
-
+    
     async preloadImage(length) {
         const preloadContainer = this.iframe_doc.getElementById('preload');
         const currentPanel = this.curPanel;
-
+    
         // 이미지 업데이트 호출 및 완료 후 처리
         await this.updageImgsRange(currentPanel - 2, currentPanel + length + 1);
-
+    
         // 현재 preloadContainer 내의 img 요소 선택
         let imgElements = preloadContainer.querySelectorAll('img');
         let cnt = length - imgElements.length;
-
+    
         // 부족한 경우 새 img 요소를 추가
         if (cnt > 0) {
             let fragment = this.iframe_doc.createDocumentFragment();
@@ -669,12 +668,12 @@ class EXHaustViewer {
             }
             preloadContainer.appendChild(fragment);
             imgElements = preloadContainer.querySelectorAll('img'); // Update the imgElements after adding new images
-
+    
         }
         // 필요한 이미지를 미리 로드하고 src만 업데이트
         for (let idx = 0; idx < length; idx++) {
             const panelIndex = currentPanel + idx;
-
+    
             // 이미지가 존재하는 경우에만 로드
             if (panelIndex < this.number_of_images) {
                 const imagePath = this.images[panelIndex].path;
@@ -690,17 +689,17 @@ class EXHaustViewer {
             }
         }
     };
-
+    
     // ============== Paging functions ==============
     goPanel() {
         const target = parseInt(prompt('target page'), 10);
-
+    
         // target이 NaN이 아니고, 지정된 범위 내에 있을 때만 패널을 변경
         if (Number.isInteger(target) && target >= 0 && target <= this.number_of_images) {
             this.panelChange(target);
         }
     };
-
+    
     pageChangedHalders = [];
     pageChanged() {
         // `prevPanel`과 `nextPanel`을 조건에 따라 enable/disable
@@ -726,16 +725,16 @@ class EXHaustViewer {
     clearPageChangedHandlers() {
         this.pageChangedHalders = [];
     }
-
+    
     toggleTimer () {
         var intervalSeconds = parseFloat(this.iframe_doc.getElementById('pageTimer').value);
         if (intervalSeconds < 1 || isNaN(intervalSeconds)) {
             return;
         }
-
+    
         this.timerflag = !this.timerflag;
         var pagerButton = this.iframe_doc.getElementById('autoPager');
-
+    
         if (this.timerflag) {
             pagerButton.style.color = 'white';
             this.timerInterval = setInterval(()=>this.nextPanel(), intervalSeconds * 1000);
@@ -744,7 +743,7 @@ class EXHaustViewer {
             clearInterval(this.timerInterval);
         }
     };
-
+    
     selectorChanged() {
         var selector = this.iframe_doc.getElementById('single-page-select');
         var selectedValue = selector.value;
@@ -752,29 +751,29 @@ class EXHaustViewer {
         this.pageChanged();
         selector.trigger('blur');
     };
-
+    
     panelChange(target) {
         if (target === this.curPanel) return; // Prevent unnecessary updates
-
+    
         // Clear any pending image updates
         if (this._panelChangeTimeout) {
             clearTimeout(this._panelChangeTimeout);
         }
-
+    
         this.curPanel = target;
         this.iframe_doc.getElementById('single-page-select').value = target; // Update the dropdown value
-
+    
         // Use a small timeout to ensure UI updates first
         this._panelChangeTimeout = setTimeout(() => {
             this.pageChanged();
         }, 10);
     };
-
+    
     prevPanel() {
         const currentPanel = this.curPanel;
-
+    
         if (currentPanel <= 1) return;
-
+    
         if (this.is_single_displayed) {
             this.panelChange(currentPanel - 1);
         } else {
@@ -784,16 +783,16 @@ class EXHaustViewer {
                             : currentPanel - 1;
             this.panelChange(newPanel);
         }
-
+    
         this.iframe_doc.body.scrollTop = 0;
         this.comicImages.scrollTop = 0;
     };
-
+    
     nextPanel() {
         const currentPanel = this.curPanel;
-
+    
         if (currentPanel >= this.number_of_images) return;
-
+    
         if (this.is_single_displayed) {
             this.panelChange(currentPanel + 1);
         } else {
@@ -803,29 +802,29 @@ class EXHaustViewer {
                         : currentPanel + 1;
             this.panelChange(newPanel);
         }
-
+    
         // Fix: Use the iframe's content document for scrolling
         this.iframe_doc.body.scrollTop = 0;
         this.comicImages.scrollTop = 0;
     };
-
+    
     // ============== Viewer options ==============
-
+    
     renderOptions = [
         'render_auto',
         'render_crisp',
         'render_pixelated',
     ];
-
+    
     renderChange(){
         const centerer = this.iframe_doc.getElementById('centerer');
         this.renderType = (this.renderType + 1) % this.renderOptions.length;
         var render_class = this.renderOptions[this.renderType];
-
+    
         centerer.classList.remove(...this.renderOptions);
         centerer.classList.add(render_class);
     }
-
+    
     fitOptions = {
         'stretchBoth': '<i class="bi bi-arrows-move"></i> Stretch Both',
         'stretchHorizontal': '<i class="bi bi-arrows"></i> Stretch Width',
@@ -834,11 +833,11 @@ class EXHaustViewer {
         'fitHorizontal': '<i class="bi bi-dash-lg"></i> Fit Width',
         'fitVertical': '<span>┃</span> Fit Height',
     };
-
+    
     changeFit() {
         this.fitType = (this.fitType + 1) % Object.keys(this.fitOptions).length;
         const classes = Object.keys(this.fitOptions);
-
+    
         const centerer = this.iframe_doc.getElementById('centerer');
         centerer.classList.remove(...classes);
         centerer.classList.add(classes[this.fitType]);
@@ -846,12 +845,12 @@ class EXHaustViewer {
         const fitChanger = this.iframe_doc.getElementById('fitChanger');
         fitChanger.innerHTML = this.fitOptions[classes[this.fitType]];
     }
-
+    
     spreads = [
         `<i class="bi bi-book-half"></i> Single Page`,
         `<i class="bi bi-book"></i> Full Spread`,
     ]
-
+    
     toggleSpread() {
         this.setSpread(this.set_spread == 1 ? 2 : 1);
     }
@@ -875,20 +874,20 @@ class EXHaustViewer {
         body.classList.add('spread' + num);
         this.class_spread = num;
     }
-
+    
     //  ============== full screen functions ==============
-
+    
     requestFullscreen() {
         if (document.fullscreenElement) return;
         var elem = this.comicImages;
         elem.requestFullscreen?.() || elem.msRequestFullscreen?.() || elem.mozRequestFullScreen?.() || elem.webkitRequestFullscreen?.();
     }
-
+    
     exitFullscreen() {
         if (!document.fullscreenElement) return;
         document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
     }
-
+    
     toggleFullscreen() {
         if (!document.fullscreenElement) {
             this.requestFullscreen()
@@ -896,7 +895,7 @@ class EXHaustViewer {
             this.exitFullscreen()
         }
     }
-
+    
     handleFullscreenChange () {
         const toprt = this.iframe_doc.getElementById('fullBtnTopRt');
         if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
@@ -909,7 +908,7 @@ class EXHaustViewer {
             this.saveConfig('is_fullscreen', false);
         }
     }
-
+    
     addFullscreenHandler(docu) {
         // Full screen handler
         docu.addEventListener('fullscreenchange', (() => this.handleFullscreenChange()));
@@ -917,10 +916,10 @@ class EXHaustViewer {
         docu.addEventListener('mozfullscreenchange', (() => this.handleFullscreenChange()));
         docu.addEventListener('MSFullscreenChange', (() => this.handleFullscreenChange()));
     }
-
+    
     // ============== Viewer functions ==============
     // functions called by user input
-
+    
     openViewer() {
         var original_page = this.getPageFromOriginal ? this.getPageFromOriginal() : null;
         if (original_page) {
@@ -931,12 +930,12 @@ class EXHaustViewer {
         // to catch key events
         console.log("Viewer opened");
     }
-
+    
     closeViewer() {
         this.iframe.style.display = 'none';
         this.exitFullscreen();
     };
-
+    
     toggleViewer() {
         var is_visible = this.iframe.style.display === 'block';
         if (is_visible) {
@@ -945,15 +944,15 @@ class EXHaustViewer {
             this.openViewer();
         }
     };
-
+    
     goGallery() {
         // by clicking galleryInfo, go to gallery page by brower, not iframe
         document.location = this.gallery_url;
     };
-
+    
     imgDrag(e) {
         if (!this.dragState.isDragging) return;
-
+    
         if (e.pageX > 0) {
             const deltaX = this.dragState.prevX - e.pageX;
             this.comicImages.scrollLeft += deltaX;
@@ -966,10 +965,10 @@ class EXHaustViewer {
         }
         e.preventDefault();
     };
-
+    
     touchDrag(e) {
         if (!this.dragState.isDragging || e.touches.length !== 1) return; // multi touch
-
+    
         const touch = e.touches[0];
         if (touch.pageX > 0) {
             const deltaX = this.dragState.prevX - touch.pageX;
@@ -982,7 +981,7 @@ class EXHaustViewer {
             this.dragState.prevY = touch.pageY;
         }
     }
-
+    
     imgDragStart(e) {
         this.dragState.prevX = e.pageX;
         this.dragState.prevY = e.pageY;
@@ -997,11 +996,11 @@ class EXHaustViewer {
         this.dragState.isDragging = true;
         e.preventDefault();
     };
-
+    
     imgDragEnd() {
         this.dragState.isDragging = false;
     };
-
+    
     // wheel on bottom to next image
     doWheel(e) {
         e.preventDefault();
@@ -1033,8 +1032,8 @@ class EXHaustViewer {
             }
         });
     };
-
-    doHotkey(e) {
+    
+    interalKeyHandler(e) {
         switch (e.key.toLowerCase()) {
             case 'h':
             case 'a':
@@ -1082,7 +1081,7 @@ class EXHaustViewer {
                 break;
         }
     };
-
+    
     // ==========  Update function ==========
     checkUpdate() {
         var github_api = "https://api.github.com";
@@ -1100,19 +1099,19 @@ class EXHaustViewer {
             }
         });
     }
-
+    
     // ============== Utility functions ==============
     
     disable(elem) {
         elem.parentElement.classList.add('disabled');
         elem.firstChild.classList.remove('icon_white');
     }
-
+    
     enable(elem) {
         elem.parentElement.classList.remove('disabled');
         elem.firstChild.classList.add('icon_white');
     }
-
+    
     /**
      * @param {Element} element - target element
      * @param {number} visibleRatio - visible ratio (0.0 ~ 1.0). Default is 0.5 (50%)
@@ -1134,8 +1133,7 @@ class EXHaustViewer {
             observer.observe(element);
         });
     }
-
-
+    
     scrollToElem(scroll_elem, target_elem, option = { behavior: 'smooth', block: 'center' }) {
         if (scroll_elem == null || target_elem == null) return;
         // check if target_elem is descendant of scroll_elem
@@ -1143,12 +1141,12 @@ class EXHaustViewer {
             console.warn(`Target element is not a descendant of scroll element: ${target_elem}`);
             return;
         }
-
+    
         // Get the target element's position relative to the scroll container
         const targetTop = target_elem.offsetTop - scroll_elem.offsetTop;
         const targetHeight = target_elem.offsetHeight;
         const containerHeight = scroll_elem.clientHeight;
-
+    
         let ttop = 0;
         // Calculate the scroll position based on the block option
         switch (option.block) {
@@ -1162,7 +1160,7 @@ class EXHaustViewer {
                 const scrollTop = scroll_elem.scrollTop;
                 const scrollBottom = scrollTop + containerHeight;
                 const targetBottom = targetTop + targetHeight;
-
+    
                 if (targetBottom <= scrollBottom && targetTop >= scrollTop) {
                     // Already visible, no need to scroll
                     ttop = scrollTop;
@@ -1204,7 +1202,7 @@ class EXHaustViewer {
         
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
-
+    
         let targetPoint;
         switch (position.toLowerCase()) {
             case 'top':
@@ -1218,7 +1216,7 @@ class EXHaustViewer {
                 targetPoint = scrollTop + (windowHeight * 0.5);
                 break;
         }
-
+    
         let bestMatch = null;
         let minDistance = Infinity;
         
@@ -1257,7 +1255,7 @@ class EXHaustViewer {
         
         return bestMatch;
     }
-
+    
     /**
      * Helper to make moveOriginalByViewer function; move to idx-th element by querySelectorAll(selector)
      * */
@@ -1271,7 +1269,7 @@ class EXHaustViewer {
             }
         }
     }
-
+    
     sleepSync(ms) {
         // can cause UI freeze
         var start = new Date().getTime();
@@ -1279,25 +1277,25 @@ class EXHaustViewer {
             // do nothing
         }
     }
-
+    
     sleepAsync(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-
+    
     openInNewTab(url) {
         var win = window.open(url, '_blank');
         win.focus();
     }
-
+    
     // code from koreapyj/dcinside_lite
     xmlhttpRequest(details) {
         var bfloc = null;
         var xmlhttp = new XMLHttpRequest();
-
+    
         if (details.withCredentials) {
             xmlhttp.withCredentials = true;
         }
-
+    
         xmlhttp.ontimeout = function () {
             details.ontimeout();
         };
@@ -1369,7 +1367,7 @@ class EXHaustViewer {
         if (bfloc !== null)
             history.pushState(bfloc, bfloc, bfloc);
     };
-
+    
     simpleRequestAsync(url, method = 'GET', headers = {}, data = null, withCredentials = true) {
         return new Promise((resolve, reject) => {
             var details = {
@@ -1399,13 +1397,13 @@ class EXHaustViewer {
             this.xmlhttpRequest(details);
         });
     };
-
+    
     parseHTML(response) {
         var doc = document.implementation.createHTMLDocument('temp');
         doc.documentElement.innerHTML = response.responseText;
         return doc;
     };
-
+    
     // ============== style ==============
     viewer_style = `
     html {
@@ -1431,7 +1429,7 @@ class EXHaustViewer {
     .nav>li>a {
         padding: 15px 10px;
     }
-
+    
     #comicImages {
         height: 100%;
         width: 100%;
@@ -1448,12 +1446,25 @@ class EXHaustViewer {
         align-items: center;
         justify-content: center;
     }
-
+    
+    #centerer img{
+        margin: auto;
+    }
+    
+    .spread2 #comicImages img.lt_img {
+        object-position: right center;
+        margin: 0px 0px 0px auto;
+    }
+    .spread2 #comicImages img.rt_img {
+        object-position: left center;
+        margin : 0px auto 0px 0px;
+    }
+    
     /* vanila state */
     img {
         display: inline-block;
     }
-
+    
     /* stretchBoth */
     .stretchBoth img {
         display: inline-block;
@@ -1461,14 +1472,17 @@ class EXHaustViewer {
         height: 100%;
         object-fit: contain;
     }
-
+    
     /* stretchHorizontal */
+    #centerer.stretchHorizontal {
+        align-items: flex-start;
+    }
     .stretchHorizontal img {
         display: inline-block;
         width: 100%;
         height: auto;
     }
-
+    
     /* stretchVertical */
     .stretchVertical img {
         display: inline-block;
@@ -1479,42 +1493,34 @@ class EXHaustViewer {
     /* fitBoth */
     .fitBoth img {
         display: inline-block;
-        vertical-align: middle;
         max-width: 100%;
         max-height: 100%;
     }
-
+    .spread2 .fitBoth img {
+        max-width: 50%;
+    }
+    
     /* fitHorizontal styles */
+    #centerer.fitHorizontal {
+        align-items: flex-start;
+    }
     .fitHorizontal img {
         display: inline-block;
-        vertical-align: middle;
         max-width: 100%;
     }
     .spread2 .fitHorizontal img {
         max-height: none;
         max-width: 50%;
     }
-
+    
     /* fitVertical styles */
     .fitVertical img {
         display: inline-block;
-        vertical-align: middle;
         max-height: 100%;
     }
     .spread2 .fitVertical img {
         max-width: none;
         max-height: 100%;
-    }
-
-    .spread2 #comicImages img.lt_img {
-        object-position: right center;
-    }
-    .spread2 #comicImages img.rt_img {
-        object-position: left center;
-    }
-
-    .spread2 #comicImages img{
-        max-width: fit-content;
     }
     
     #preload {
@@ -1541,7 +1547,7 @@ class EXHaustViewer {
     .disabled > a {
         color: #333333 !important;
     }
-
+    
     .icon_white {
         color: white;
     }
@@ -1566,7 +1572,7 @@ class EXHaustViewer {
         margin-right: 25px;
         right: 0px;
     }
-
+    
     /* dropdown styles */
     #interfaceNav {
         margin: 0px;
@@ -1591,14 +1597,14 @@ class EXHaustViewer {
         color: #fff !important;
         background-color: #000 !important;
     }
-
+    
     #autoPager {
         display: inline;
     }
     #pageChanger {
         display: inline;
     }
-
+    
     .input-medium {
         margin: 15px 15px 15px 3px;
         height: 20px;
@@ -1609,7 +1615,7 @@ class EXHaustViewer {
         width: 3em;
         height: 1.8em;
     }
-
+    
     #pageTimer {
         margin-left: 0.5rem;
         height: 2rem;
@@ -1620,11 +1626,11 @@ class EXHaustViewer {
         height: 2rem;
         width: 4rem;
     }
-
+    
     #interfaceNav {
         padding: 0.2rem;
     }
-
+    
     #funcs .nav-item:not(:first-child)  {
         padding-left: 0.5rem;
         margin-left: 0.5rem;
@@ -1634,22 +1640,22 @@ class EXHaustViewer {
     .render_auto img {
         image-rendering: auto;
     }
-
+    
     .render_crisp img {
         image-rendering: -moz-crisp-edges; image-rendering: -webkit-optimize-contrast;
     }
-
+    
     .render_pixelated img {
         image-rendering: pixelated;
     }
-
+    
     .display_block {
         display: block !important;
     }
     .display_none {
         display: none !important;
     }
-
+    
     .thumbnail_wrapper {
         display: flex;
         align-items: center;
@@ -1660,17 +1666,17 @@ class EXHaustViewer {
         background-color:rgba(60, 60, 60, 0.2);
         margin: 2px;
     }
-
+    
     .thumbnail_wrapper > * {
         max-width: 100%;
         max-height: 100%;
     }
-
+    
     #thumb_content {
         width: 100%;
         height: 100%;
     }
-
+    
     /* fullscreen buttons */
     #fullBtnTopRt {
         display: none;
@@ -1682,7 +1688,7 @@ class EXHaustViewer {
         font-size: 20px;
         color: rgba(255, 255, 255, 0.3);
     }`
-
+    
     // ============== Dynamic styles ==============
     breakpoints = [
         { name: 'xs', width: 0 },
@@ -1692,10 +1698,10 @@ class EXHaustViewer {
         { name: 'xl', width: 1200 },
         { name: 'xxl', width: 1400 }
     ];
-
+    
     d_style = `
     @media (max-width: {bp_width-1}px) {
-
+    
     }
     @media (min-width: {bp_width}px) {
         .seperator-{bp_name}:not(:first-child)  {
@@ -1713,7 +1719,7 @@ class EXHaustViewer {
         });
         return ret;
     }
-
+    
     fullscreen_style = `
     .modal-backdrop:-webkit-full-screen,
     .modal-backdrop:-moz-full-screen,
@@ -1723,7 +1729,7 @@ class EXHaustViewer {
         z-index: 1040 !important;
     }
     `
-
+    
     // ============== HTML ==============
     navbarHTML = `
     <nav id="interfaceNav" class="navbar bg-dark navbar-expand-lg" data-bs-theme="dark" aria-label="Main navigation">
@@ -1802,7 +1808,7 @@ class EXHaustViewer {
     </div>
     </nav>
     `
-
+    
     thumbnailModalHTML = `
     <div id="thumbnailModal" class="modal fade" tabindex="-1" data-bs-theme="dark" aria-labelledby="thumbnailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
@@ -1819,7 +1825,7 @@ class EXHaustViewer {
         </div>
     </div>
     `
-
+    
     imgFrameHTML = `
     <div id="comicImages" tabindex="1">
         <div id="fullBtnTopRt" class="flullscreenBtns">
@@ -1835,9 +1841,9 @@ class EXHaustViewer {
     `
 }
 
-(function() {
+(()=>{
 'use strict';
-// ============== Exh global ==============
+
 var exhaust;
 var API = null;
 var S_API = null;
@@ -1864,7 +1870,6 @@ if (host === 'exhentai.org') {
 }
 
 // ============== Exh specific functions ==============
-
 function set_gallery_data() {
     // mpv only
     var scripts = document.querySelectorAll('script');
@@ -1896,7 +1901,6 @@ function is_mpv() {
     IS_MPV = path.includes('/mpv/');
     return IS_MPV;
 }
-
 
 async function getToken() {
     // GID_TOKEN이 이미 존재하면 즉시 반환
@@ -1948,7 +1952,6 @@ async function getToken() {
     }
 }
 
-
 async function getGdataAsync(gid, token) {
     var data = {
         'method': 'gdata',
@@ -1957,7 +1960,6 @@ async function getGdataAsync(gid, token) {
     const response = await exhaust.simpleRequestAsync(API, 'POST', {}, JSON.stringify(data));
     return response;
 };
-
 
 async function extract_page (url, idx) {
     const response = await exhaust.simpleRequestAsync(url);  // 비동기 요청 대기
@@ -2091,7 +2093,6 @@ function page_from_original() {
     }
 }
 
-
 function get_thumb_size(idx) {
     var thumb_elem = document.querySelector('#thumb_'+(idx+1));
     var width = thumb_elem.clientWidth;
@@ -2119,7 +2120,6 @@ function make_mpv_thumbnails() {
         return pv;
     }, []);
 }
-
 
 async function init () {
     var cur_url = document.location.href;
@@ -2152,7 +2152,6 @@ async function init () {
         exhaust.toggleViewer();
     });
 
-    exhaust.openViewer();
     if (is_mpv()) {
         getToken()
         .then(token => {
@@ -2266,7 +2265,7 @@ async function init () {
         })
         .catch(error => console.error("Error initializing viewer:", error));
     }
+    exhaust.openViewer();
 };
-
 init();
 })();
