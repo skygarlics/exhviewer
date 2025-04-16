@@ -214,7 +214,6 @@ class EXHaustViewer {
             <body>
                 ${this.navbarHTML}
                 ${this.imgFrameHTML}
-                ${this.thumbnailModalHTML}
             </body></html>`;
         document.body.appendChild(iframe);
         this.iframe = iframe;
@@ -270,7 +269,7 @@ class EXHaustViewer {
 
     addEventListeners(docu) {
         docu.addEventListener('keydown', (e) => this.doHotkey(e));
-        this.comicImages.addEventListener('wheel', (e) => {
+        docu.getElementById('centerer').addEventListener('wheel', (e) => {
             this.doWheel(e)
             // ensure wheel don't propagae to parent
             e.stopPropagation();
@@ -279,7 +278,6 @@ class EXHaustViewer {
         docu.getElementById('prevPanel').addEventListener('click', ()=>this.prevPanel());
         docu.getElementById('nextPanel').addEventListener('click', ()=>this.nextPanel());
         docu.getElementById('fitChanger').addEventListener('click', () => this.changeFit());
-        docu.getElementById('fullscreen').addEventListener('click', ()=>this.toggleFullscreen());
         docu.getElementById('fullscreener').addEventListener('click', ()=>this.toggleFullscreen());
         docu.getElementById('fullSpread').addEventListener('click', ()=>this.setSpread(1));
         docu.getElementById('singlePage').addEventListener('click', ()=>this.setSpread(2));
@@ -300,7 +298,17 @@ class EXHaustViewer {
         docu.getElementById('viewerCloser').addEventListener('click', () => this.closeViewer());
         docu.getElementById('galleryInfo').addEventListener('click', () => this.goGallery());
 
+        docu.getElementById('fullscreen').addEventListener('click', ()=>this.toggleFullscreen());
+        
         docu.getElementById('thumbnailModal').addEventListener('show.bs.modal', () => {
+            setTimeout(() => {
+                // Move the backdrop to the comicImages container; for fullscreen
+                const backdrop = docu.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    this.comicImages.appendChild(backdrop);
+                }
+            }, 0);
+            
             setTimeout(() => {
                 const curr = this.curPanel;
                 const target_thumb = this.thumbnailContainer.querySelector(`#thumbnail_${curr - 1}`);
@@ -309,7 +317,6 @@ class EXHaustViewer {
                 }
             }, 150);
         });
-
         // docu.getElementById('addthumb').addEventListener('click', () => {
         //     var thumb_count = this.thumbnailContainer.childElementCount;
         //     var thumb_elem = docu.createElement('div');
@@ -875,14 +882,14 @@ class EXHaustViewer {
     }
 
     handleFullscreenChange () {
-        var fullscreenButton = this.iframe.contentDocument.getElementById('fullscreen');
+        const toprt = this.iframe.contentDocument.getElementById('fullBtnTopRt');
         if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
             // Fullscreen mode is active
-            fullscreenButton.style.display = 'block';
+            toprt.style.display = 'block';
             this.saveConfig('is_fullscreen', true);
         } else {
             // Fullscreen mode is inactive
-            fullscreenButton.style.display = 'none';
+            toprt.style.display = 'None';
             this.saveConfig('is_fullscreen', false);
         }
     }
@@ -912,7 +919,7 @@ class EXHaustViewer {
     closeViewer() {
         this.iframe.style.display = 'none';
         this.exitFullscreen();
-    }
+    };
 
     toggleViewer() {
         var is_visible = this.iframe.style.display === 'block';
@@ -921,12 +928,12 @@ class EXHaustViewer {
         } else {
             this.openViewer();
         }
-    }
+    };
 
     goGallery() {
         // by clicking galleryInfo, go to gallery page by brower, not iframe
         document.location = this.gallery_url;
-    }
+    };
 
     imgDrag(e) {
         if (!this.dragState.isDragging) return;
@@ -943,6 +950,7 @@ class EXHaustViewer {
         }
         e.preventDefault();
     };
+
     touchDrag(e) {
         if (!this.dragState.isDragging || e.touches.length !== 1) return; // multi touch
 
@@ -999,7 +1007,7 @@ class EXHaustViewer {
             top: this.comicImages.scrollTop + deltaY,
             behavior: 'smooth'
         });
-    }
+    };
     setGlobalHotkey(key, callback) {
         // Add global hotkey listener to root document
         document.addEventListener('keydown', (e) => {
@@ -1008,7 +1016,7 @@ class EXHaustViewer {
                 callback(e); // Call the provided callback function
             }
         });
-    }
+    };
 
     doHotkey(e) {
         switch (e.key.toLowerCase()) {
@@ -1528,9 +1536,7 @@ class EXHaustViewer {
     .disabled > a {
         color: #333333 !important;
     }
-    :-moz-full-screen {
-        background: #000 none repeat scroll 0 0;
-    }
+
     .icon_white {
         color: white;
     }
@@ -1587,9 +1593,7 @@ class EXHaustViewer {
     #pageChanger {
         display: inline;
     }
-    #fullscreen {
-        display: none;
-    }
+
     .input-medium {
         margin: 15px 15px 15px 3px;
         height: 20px;
@@ -1610,17 +1614,6 @@ class EXHaustViewer {
         margin-left: 0.5rem;
         height: 2rem;
         width: 4rem;
-    }
-
-    /* exitfullscreen button */
-    #fullscreen {
-        position: fixed;
-        top: 0;
-        right: 10px;
-        z-index: 1000;
-        margin: 10px;
-        font-size: 20px;
-        color: white;
     }
 
     #interfaceNav {
@@ -1672,7 +1665,18 @@ class EXHaustViewer {
         width: 100%;
         height: 100%;
     }
-    `
+
+    /* fullscreen buttons */
+    #fullBtnTopRt {
+        display: none;
+        position: fixed;
+        top: 0;
+        right: 10px;
+        z-index: 1000;
+        margin: 10px;
+        font-size: 20px;
+        color: rgba(255, 255, 255, 0.3);
+    }`
 
     // ============== Dynamic styles ==============
     breakpoints = [
@@ -1706,25 +1710,13 @@ class EXHaustViewer {
     }
 
     fullscreen_style = `
-    div:-webkit-full-screen {background-color: black;}
-    div:-moz-full-screen {background-color: black;}
-    div:-ms-fullscreen {background-color: black;}
-    div:fullscreen {background-color: black;}
-
-    .fitVertical:-webkit-full-screen img {max-height: 100% !important;}
-    .fitVertical:-moz-full-screen img {max-height: 100% !important;}
-    .fitVertical:-ms-fullscreen img {max-height: 100% !important;}
-    .fitVertical:fullscreen img {max-height: 100% !important;}
-
-    .stretchBoth:-webkit-full-screen img {height: 100% !important; width: auto !important;}
-    .stretchBoth:-moz-full-screen img {height: 100% !important; width: auto !important;}
-    .stretchBoth:-ms-fullscreen img {height: 100% !important; width: auto !important;}
-    .stretchBoth:fullscreen img {height: 100% !important; width: auto !important;}
-
-    .fitBoth:-webkit-full-screen img {max-height: 100% !important; max-width: 100% !important;}
-    .fitBoth:-moz-full-screen img {max-height: 100% !important; max-width: 100% !important;}
-    .fitBoth:-ms-fullscreen img {max-height: 100% !important; max-width: 100% !important;}
-    .fitBoth:fullscreen img {max-height: 100% !important; max-width: 100% !important;}
+    .modal-backdrop:-webkit-full-screen,
+    .modal-backdrop:-moz-full-screen,
+    .modal-backdrop:-ms-fullscreen,
+    .modal-backdrop:fullscreen {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        z-index: 1040 !important;
+    }
     `
 
     // ============== HTML ==============
@@ -1760,13 +1752,13 @@ class EXHaustViewer {
                 </div>
             </li>
             <li class="seperator-lg nav-item">
-                <a class="nav-link" id="fullscreener" title="Space">
-                    <i class="bi bi-arrows-fullscreen"></i>
+                <a class="nav-link" id="thumbnailBtn" title="Show Thumbnails" data-bs-toggle="modal" data-bs-target="#thumbnailModal">
+                    <i class="bi bi-grid"></i>
                 </a>
             </li>
             <li class="seperator-lg nav-item">
-                <a class="nav-link" id="thumbnailBtn" title="Show Thumbnails" data-bs-toggle="modal" data-bs-target="#thumbnailModal">
-                    <i class="bi bi-grid"></i>
+                <a class="nav-link" id="fullscreener" title="Space">
+                    <i class="bi bi-arrows-fullscreen"></i>
                 </a>
             </li>
             <li class="seperator-lg nav-item dropdown">
@@ -1835,11 +1827,14 @@ class EXHaustViewer {
 
     imgFrameHTML = `
     <div id="comicImages" tabindex="1">
-        <a id="fullscreen" title="Enter or Space">⛶</a>
+        <div id="fullBtnTopRt" class="flullscreenBtns">
+                <a id="fullThumbnailBtn" title="Show Thumbnails" data-bs-toggle="modal" data-bs-target="#thumbnailModal"><i class="bi bi-grid"></i></a>
+                <a id="fullscreen" title="Space"><i class="bi bi-arrows-fullscreen"></i></a>
+        </div>
         <a id="leftBtn" class="imageBtn"></a>
         <a id="rightBtn" class="imageBtn"></a>
-        <div id="centerer" class="d-flex">
-        </div>
+        <div id="centerer" class="d-flex"></div>
+        ${this.thumbnailModalHTML}
     </div>
     <div id="preload"></div>
     `
