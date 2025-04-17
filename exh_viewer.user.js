@@ -269,7 +269,7 @@ class EXHaustViewer {
     
     addEventListeners(docu) {
         docu.addEventListener('keydown', (e) => this.interalKeyHandler(e));
-        docu.getElementById('comicImages').addEventListener('wheel', (e) => {
+        docu.getElementById('centerer').addEventListener('wheel', (e) => {
             this.doWheel(e)
             // ensure wheel don't propagae to parent
             e.stopPropagation();
@@ -1832,9 +1832,10 @@ class EXHaustViewer {
                 <a id="fullThumbnailBtn" title="Show Thumbnails" data-bs-toggle="modal" data-bs-target="#thumbnailModal"><i class="bi bi-grid"></i></a>
                 <a id="fullscreen" title="Space"><i class="bi bi-arrows-fullscreen"></i></a>
         </div>
-        <a id="leftBtn" class="imageBtn"></a>
-        <a id="rightBtn" class="imageBtn"></a>
-        <div id="centerer" class="d-flex"></div>
+        <div id="centerer" class="d-flex">
+            <a id="leftBtn" class="imageBtn"></a>
+            <a id="rightBtn" class="imageBtn"></a>
+        </div>
         ${this.thumbnailModalHTML}
     </div>
     <div id="preload"></div>
