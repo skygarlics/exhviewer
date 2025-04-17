@@ -314,7 +314,7 @@ class EXHaustViewer {
                 if (target_thumb) {
                     target_thumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-            }, 150);
+            }, 170);
         });
         // docu.getElementById('addthumb').addEventListener('click', () => {
         //     var thumb_count = this.thumbnailContainer.childElementCount;
