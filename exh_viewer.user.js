@@ -2053,6 +2053,7 @@ function make_extract_api(gid, imagelist, mpvkey) {
             // i = https://kynlskr.mqqquvqcmmzg.hath.network/h/3dd67a4edbdfa53f2cfa2df36747cd206af646f7-147164-1280-1870-wbp/keystamp=1744552200-b069c77a4b;fileindex=172110486;xres=1280/batch_250104_09483266.webp
             // s = 41611  <- this means nl
             const parsed = JSON.parse(response.responseText);
+            imagelist[idx].nl = parsed.s;
             return {
                 path: parsed.i,
                 width: Number(parsed.xres),
