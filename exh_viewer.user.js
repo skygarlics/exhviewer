@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          exh_viewer
 // @namespace     skgrlcs
-// @version       250416
+// @version       250427
 // @author        aksmf
 // @description   image viewer for exhentai
 // @include       https://exhentai.org/s/*
@@ -551,7 +551,7 @@ class EXHaustViewer {
         this.images[page] = imgData;
     };
     
-    async updateImgData(img, idx, callback, reload) {
+    async updateImgData(img, idx, extractor, reload) {
         if (!img || !img.url) {
             console.error("Invalid image data:", img);
             return;
@@ -567,9 +567,9 @@ class EXHaustViewer {
             //  nl: number // page url get when reload requested
             var imgData;
             if (reload) {
-                imgData = await callback(img.nl, idx)
+                imgData = await extractor(img.nl, idx)
             } else {
-                imgData = await callback(img.url, idx)
+                imgData = await extractor(img.url, idx)
             }
     
             if (!imgData) {
@@ -2063,7 +2063,8 @@ function make_extract_api(gid, imagelist, mpvkey) {
         } catch (error) {
             console.error("Error fetching image data:", error);
             console.log("API call failed. diable API call.");
-            API_AVAIL = false; // disable api call
+            API_AVAIL = false; // disable api call for moment
+            setTimeout(()=>{API_AVAIL = true;}, 10 * 1000);
             return null;
         }
     }
